@@ -1,0 +1,501 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GPPL – German Pakistan Padel Liga</title>
+  <meta name="description" content="GPPL – German Pakistan Padel Liga: rules, schedule, table and the GPPC Cup.">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎾</text></svg>">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header>
+    <div class="hero">
+      <div class="flags">🇩🇪 🇵🇰</div>
+      <h1>GPPL <span>Season 1</span></h1>
+      <p>German Pakistan Padel Liga – league, GPPC Cup &amp; a finale for our community</p>
+    </div>
+    <nav id="nav">
+      <a href="#home">Home</a>
+      <a href="#rules">Rules</a>
+      <a href="#schedule">Schedule</a>
+      <a href="#table">Table</a>
+      <a href="#cup">GPPC Cup</a>
+      <a href="#gallery">Gallery</a>
+      <a href="#register">Register</a>
+      <a href="#verify">✅ Verify draw</a>
+      <a href="#admin">🔒 Admin</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- HOME -->
+    <section id="home">
+      <div class="card">
+        <span class="pill">Season 1 · Experimental</span>
+        <h2 style="margin-top:10px">Welcome to the GPPL 🎾</h2>
+        <p>A league from our Pakistani community in Germany – open to all padel friends 🌍.
+          This first season is an experiment to gauge interest – if all goes well, more seasons will follow! 🚀</p>
+      </div>
+      <div class="grid" id="home-stats"></div>
+      <div class="card" id="home-next"></div>
+    </section>
+
+    <!-- RULES (rulebook) -->
+    <section id="rules">
+      <div class="rulebook">
+        <div class="rb-cover">
+          <div class="rb-kicker">Official rulebook</div>
+          <h2 class="rb-title">GPPL <span>Season 1</span></h2>
+          <p class="rb-subtitle">German Pakistan Padel Liga · League &amp; GPPC Cup</p>
+          <p class="rb-version">Version 1.0 · Effective from 19 October 2026</p>
+          <a class="btn ghost rb-print" href="GPPL-Rulebook-Season-1.pdf" download="GPPL-Rulebook-Season-1.pdf">⬇️ Download the rulebook (PDF)</a>
+        </div>
+
+        <div class="rb-layout">
+          <div class="rb-toc" role="navigation" aria-label="Contents">
+            <div class="rb-toc-title">Contents</div>
+            <button type="button" data-goto="rb-1"><span>§1</span> General</button>
+            <button type="button" data-goto="rb-2"><span>§2</span> League</button>
+            <button type="button" data-goto="rb-3"><span>§3</span> Points &amp; tiebreakers</button>
+            <button type="button" data-goto="rb-4"><span>§4</span> GPPC Cup</button>
+            <button type="button" data-goto="rb-5"><span>§5</span> Courts</button>
+            <button type="button" data-goto="rb-6"><span>§6</span> Postponements &amp; walkovers</button>
+            <button type="button" data-goto="rb-7"><span>§7</span> Replacements &amp; withdrawals</button>
+            <button type="button" data-goto="rb-8"><span>§8</span> Prizes &amp; finale</button>
+            <button type="button" data-goto="rb-9"><span>§9</span> Matchday</button>
+            <button type="button" data-goto="rb-10"><span>§10</span> Playtomic &amp; results</button>
+            <button type="button" data-goto="rb-11"><span>§11</span> Photos &amp; media</button>
+            <button type="button" data-goto="rb-12"><span>§12</span> Terms &amp; conditions</button>
+          </div>
+
+          <article class="rb-body">
+            <div class="rb-ch" id="rb-1" data-ch="1">
+              <h3><span class="rb-num">§1</span> General</h3>
+              <div class="facts">
+                <div class="fact"><span class="v">8–12</span><span class="l">pairs (max. tentative)</span></div>
+                <div class="fact"><span class="v">2.5–4 months</span><span class="l">league, cup &amp; finale</span></div>
+                <div class="fact"><span class="v">Best of 3</span><span class="l">sets, match tie-break at 1–1</span></div>
+                <div class="fact"><span class="v">Playtomic</span><span class="l">every match recorded as competitive</span></div>
+              </div>
+              <ol class="rb-rules">
+                <li>The GPPL is a league from our Pakistani community in Germany – open to all padel friends. If more pairs register than there are places by the deadline, full Pakistani pairs get priority.</li>
+                <li>The league has a minimum of <b>8 pairs</b> and a maximum of <b>12 pairs</b> (the maximum is tentative).</li>
+                <li>The season lasts approx. <b>2.5–4 months</b>, depending on the number of pairs (about 2.5 months with 8 pairs, about 4 months with 12): the league and the cup, ending with a finale.</li>
+                <li>Matches are best of 3 sets and are recorded as <b>competitive matches in Playtomic</b>.</li>
+                <li>At 1–1 in sets, a <b>match tie-break</b> (first to 10, win by 2) decides. It counts as the 3rd set.</li>
+                <li>At 2–0 the match is over. A 3rd set played for fun doesn't count and must not be entered in Playtomic.</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-2" data-ch="2">
+              <h3><span class="rb-num">§2</span> League</h3>
+              <div class="facts">
+                <div class="fact"><span class="v">1 league</span><span class="l">one table for all pairs</span></div>
+                <div class="fact"><span class="v">7–11</span><span class="l">matches – everyone plays everyone once</span></div>
+                <div class="fact"><span class="v">10 days</span><span class="l">per matchday</span></div>
+                <div class="fact"><span class="v">3 milestones</span><span class="l">2 → 6 → all matches played</span></div>
+              </div>
+              <ol class="rb-rules">
+                <li>There is one league. Every pair plays every other pair once – 7 to 11 matches, depending on the number of pairs.</li>
+                <li>Matches are played in <b>10-day matchdays</b>. The start date and the <b>whole schedule</b> – all matchdays and pairings – will be published at once on the <a href="#schedule">Schedule</a> tab.</li>
+                <li>Within the matchdays, pairs are flexible – but every pair must reach these <b>milestones</b><sup>*</sup>:
+                  <div class="rb-table-wrap">
+                    <table class="rb-table rb-milestones">
+                      <thead>
+                        <tr><th>Milestone</th><th>8 pairs <span class="sub">7 matches · 7 matchdays</span></th><th>12 pairs <span class="sub">11 matches · 11 matchdays</span></th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><th scope="row">1</th>
+                          <td><b>at least 2</b><span class="sub">end of matchday 3</span></td>
+                          <td><b>at least 2</b><span class="sub">end of matchday 4</span></td></tr>
+                        <tr><th scope="row">2</th>
+                          <td><b>at least 4</b><span class="sub">end of matchday 6</span></td>
+                          <td><b>at least 6</b><span class="sub">end of matchday 8</span></td></tr>
+                        <tr><th scope="row">3</th>
+                          <td><b>all</b><span class="sub">end of matchday 7</span></td>
+                          <td><b>all</b><span class="sub">end of matchday 11</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <span class="rb-note">With a different number of pairs, the milestones are adjusted on the same model.</span>
+                  <span class="rb-note"><sup>*</sup> The milestones might change after the registration deadline, depending on the proposed start date.</span>
+                </li>
+                <li>Matches missing at a milestone are treated as walkovers (§6): the pair responsible gets a 1-point deduction – if both pairs are at fault, both do.</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-3" data-ch="3">
+              <h3><span class="rb-num">§3</span> Points &amp; tiebreakers</h3>
+              <ol class="rb-rules">
+                <li>Points per match:
+                  <div class="rb-table-wrap">
+                    <table class="rb-table">
+                      <thead><tr><th>Result</th><th>Winner</th><th>Loser</th></tr></thead>
+                      <tbody>
+                        <tr><th scope="row">2–0</th><td>3 points</td><td>0 points</td></tr>
+                        <tr><th scope="row">2–1</th><td>2 points</td><td>1 point</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </li>
+                <li>Pairs level on points are ranked by:
+                  <div class="flow">
+                    <div class="step"><b>Head-to-head</b>result between the pairs</div><span class="arrow">→</span>
+                    <div class="step"><b>Matches won</b></div><span class="arrow">→</span>
+                    <div class="step"><b>Set difference</b></div><span class="arrow">→</span>
+                    <div class="step"><b>Game difference</b></div>
+                  </div>
+                </li>
+                <li>If 2 pairs are still level for a medal position, a playoff match of a <b>single set</b> decides (tie-break at 6–6).</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-4" data-ch="4">
+              <h3><span class="rb-num">§4</span> GPPC Cup</h3>
+              <p class="rb-intro">The <b>German Pakistan Padel Champion Cup</b> – a tribute to GPPC itself.</p>
+              <div class="facts draw-facts">
+                <div class="fact"><span class="v">🎱 Live draw</span><span class="l">before every round – who plays whom is a surprise</span></div>
+                <div class="fact"><span class="v">🔐 Seed words</span><span class="l">from 3 random people decide each draw</span></div>
+                <div class="fact"><span class="v">✅ Verifiable</span><span class="l">anyone can recheck a draw on the website</span></div>
+              </div>
+              <div class="flow">
+                <div class="step"><b>Round 1</b>random draw – every pair plays</div><span class="arrow">→</span>
+                <div class="step muted-step"><b>Lucky losers</b>random draw – where applicable</div><span class="arrow">→</span>
+                <div class="step"><b>Quarter-finals</b>random draw</div><span class="arrow">→</span>
+                <div class="step"><b>Semi-finals</b>random draw</div><span class="arrow">→</span>
+                <div class="step"><b>Final</b>no draw – the semi-final winners meet at the finale</div>
+              </div>
+              <ol class="rb-rules">
+                <li>The GPPC Cup is a knockout cup. Every pair takes part, and rounds are drawn randomly (Pokal style).</li>
+                <li>The cup is played alongside the second half of the league. Each round has a window of <b>2 league matchdays</b>, and its draw takes place at the start of the window:
+                  <div class="rb-table-wrap">
+                    <table class="rb-table rb-milestones">
+                      <thead>
+                        <tr><th>Cup round</th><th>8 pairs <span class="sub">league: 7 matchdays</span></th><th>12 pairs <span class="sub">league: 11 matchdays</span></th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><th scope="row">Round 1</th><td class="none">–<span class="sub">round 1 is the quarter-final</span></td><td><b>Matchdays 6–7</b><span class="sub">all 12 pairs</span></td></tr>
+                        <tr><th scope="row">Quarter-finals</th><td><b>Matchdays 4–5</b><span class="sub">all 8 pairs</span></td><td><b>Matchdays 8–9</b><span class="sub">6 winners + 2 lucky losers</span></td></tr>
+                        <tr><th scope="row">Semi-finals</th><td><b>Matchdays 6–7</b></td><td><b>Matchdays 10–11</b></td></tr>
+                        <tr><th scope="row">Final</th><td colspan="2"><b>At the finale</b><span class="sub">no draw</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <span class="rb-note">With a different number of pairs, the cup windows are adjusted on the same model.</span>
+                </li>
+                <li><b>Round 1:</b> every pair plays. With an odd number of pairs, one pair gets a random bye.</li>
+                <li>Where applicable, <b>lucky losers</b> drawn from the round 1 losers fill up the quarter-finals. They aren't needed when round 1 already leaves exactly 8 pairs (e.g. with 16 pairs).</li>
+                <li>The quarter-finals and semi-finals are drawn randomly again.</li>
+                <li>There is <b>no draw for the final</b> – the two semi-final winners meet.</li>
+                <li>Every draw is decided by <b>seed words</b>: 3 randomly chosen people – participants or not – each give one word, and the words are revealed at the same time. Anyone can check a draw on the <a href="#verify">Verify draw</a> tab.</li>
+                <li>Cup matches are played with a <b>full 3rd set</b> – book 2 hours.</li>
+                <li>Courts for cup matches are booked as for league matches (§5), except the final (§8).</li>
+                <li>A cup match must be played within its window. Otherwise, the pair responsible is <b>out of the cup</b> (walkover). If both pairs are at fault, both are out: the next draw gives a bye for the free place – and in a semi-final, the other semi-final winner wins the cup.</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-5" data-ch="5">
+              <h3><span class="rb-num">§5</span> Courts</h3>
+              <div class="split">
+                <div class="primary"><span class="tag">Default</span><b class="t">Wellpass court</b>Date and time agreed by both pairs.</div>
+                <div><span class="tag">Exception</span><b class="t">Paid court</b>Only if both pairs agree (costs split equally), or the pair suggesting it pays the full court.</div>
+              </div>
+              <ol class="rb-rules">
+                <li>By default, matches are played on <b>Wellpass courts</b>. Date and time are agreed by both pairs.</li>
+                <li>A paid court is only used if both pairs agree (costs split equally), or if the pair suggesting it pays the full court.</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-6" data-ch="6">
+              <h3><span class="rb-num">§6</span> Postponements &amp; walkovers</h3>
+              <div class="split">
+                <div><span class="tag">Valid reasons to postpone</span>
+                  <div class="chips" style="margin:6px 0 0"><span>Home-country trip</span><span>Long business trip</span><span>Injury</span><span>Illness</span></div>
+                </div>
+                <div class="primary"><span class="tag">Walkover</span>
+                  <div class="wo-score"><div><span>+3</span>opponent</div><div><span>−1</span>pair responsible</div><div class="both"><span>−1 / −1</span>both at fault</div></div>
+                  Counts as 2–0 in sets, 0–0 in games.</div>
+              </div>
+              <ol class="rb-rules">
+                <li>A match may only be postponed for a home-country trip, a long business trip (covering at least 50% of the matchday window), injury or illness.</li>
+                <li>The organizers must be informed as soon as possible.</li>
+                <li>Milestones and the end of the league are <b>hard deadlines</b>.</li>
+                <li>In case of a <b>walkover</b>, the opponent gets 3 points and the pair responsible gets a 1-point deduction.</li>
+                <li>If <b>both pairs</b> are responsible for the match not being played, both get a 1-point deduction.</li>
+                <li>A walkover counts as 2–0 in sets and 0–0 in games.</li>
+                <li>Walkovers are not entered in Playtomic – the organizers record them.</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-7" data-ch="7">
+              <h3><span class="rb-num">§7</span> Replacements &amp; withdrawals</h3>
+              <div class="split">
+                <div><span class="tag">Replacement player</span><b class="t">Injury, illness or unplanned home trip</b>Similar level, approved by the organizers. At least one original player plays.</div>
+                <div><span class="tag">Withdrawal</span><b class="t">Free until the draw</b>After that: find a new partner – or the waiting list / a replacement team takes the place.</div>
+              </div>
+              <ol class="rb-rules">
+                <li>A replacement player is only allowed for injury, illness or an unplanned trip to the home country.</li>
+                <li>The replacement must be of similar level and approved by the organizers in due time.</li>
+                <li>At least one original player of the pair must play.</li>
+                <li>A replacement can't be a player from another league pair.</li>
+                <li>Withdrawing is free until the registration deadline / before the draw.</li>
+                <li>After that, if one player can't continue, they find another partner.</li>
+                <li>If the whole pair withdraws, the first team of similar level on the waiting list takes their place. If there is none, the pair must find their own replacement team.</li>
+                <li>Replacement players and teams must be of similar level and approved by the organizers.</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-8" data-ch="8">
+              <h3><span class="rb-num">§8</span> Prizes &amp; finale</h3>
+              <ol class="rb-rules">
+                <li>Prizes:
+                  <div class="rb-table-wrap">
+                    <table class="rb-table rb-prizes">
+                      <thead>
+                        <tr><th></th><th><span class="medal">🥇</span>1st</th><th><span class="medal">🥈</span>2nd</th><th><span class="medal">🥉</span>3rd</th></tr>
+                      </thead>
+                      <tbody>
+                        <tr><th scope="row">League</th><td>Trophy or medal</td><td>Medal</td><td class="none">–</td></tr>
+                        <tr><th scope="row">GPPC Cup</th><td>Trophy or medal</td><td>Medal</td><td>Medal<sup>*</sup></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <span class="rb-note"><sup>*</sup> Only if a 3rd-place match is played – to be decided later.</span>
+                </li>
+                <li>The <b>season finale</b> includes the GPPC Cup final (and maybe the 3rd-place match) and the awards ceremony.
+                  <div class="facts" style="margin-top:10px">
+                    <div class="fact"><span class="v">Final</span><span class="l">GPPC Cup final (&amp; maybe 3rd place)</span></div>
+                    <div class="fact"><span class="v">Awards</span><span class="l">league and cup prizes</span></div>
+                    <div class="fact"><span class="v">Get-together</span><span class="l">watch, cheer, mingle, refreshments</span></div>
+                  </div>
+                </li>
+                <li>The finale is more than just the final – it's a get-together for our community: watch the final, support your friends, mingle and enjoy some refreshments.</li>
+                <li>Finale courts will be Wellpass courts, booked by the organizers. We'll need some flexibility from everyone on date and time to keep costs down.</li>
+                <li>The finale may be postponed or cancelled for unavoidable reasons. In that case, the organizers announce how the cup final is played and how the prizes are handed out.</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-9" data-ch="9">
+              <h3><span class="rb-num">§9</span> Matchday</h3>
+              <div class="rb-checklist">
+                <div><span>📸</span><b>Before</b>Team photo of all 4 players, posted in the GPPL group</div>
+                <div><span>🎾</span><b>Play</b>Best of 3 sets – match tie-break at 1–1</div>
+                <div><span>📲</span><b>After</b>Result in Playtomic as a competitive match</div>
+              </div>
+              <div class="callout warn"><b>No photo, no result.</b> A match without the team photo isn't counted – if it isn't replayed in time, both pairs get −1 point (§9.2).</div>
+              <ol class="rb-rules">
+                <li><b>Before each match</b>, take a photo of all 4 players together on court and post it in the GPPL WhatsApp group before the match starts.</li>
+                <li><b>Without the photo, the match isn't counted.</b> It counts as not played and must be played again within the matchday window or, at the latest, before the next milestone (§6 applies). If it isn't played again in time, <b>both pairs get a 1-point deduction</b>.</li>
+                <li>If a replacement player plays (§7), they must be in the photo – it shows who actually played.</li>
+                <li>The match is played as described in §1 (league) or §4 (cup).</li>
+                <li>After the match, the result is entered in Playtomic (§10).</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-10" data-ch="10">
+              <h3><span class="rb-num">§10</span> Playtomic &amp; results</h3>
+              <div class="flow">
+                <div class="step"><b>Competitive match</b>with the 4 players who play</div><span class="arrow">→</span>
+                <div class="step"><b>Winners enter</b>the result within 48 hours</div><span class="arrow">→</span>
+                <div class="step"><b>Opponents confirm</b>in Playtomic</div><span class="arrow">→</span>
+                <div class="step"><b>Official result</b>added to the website</div>
+              </div>
+              <ol class="rb-rules">
+                <li>Every player needs a <b>Playtomic account with a level</b> before the season starts, and must keep it for the <b>whole duration of the league</b>.</li>
+                <li>Every league and cup match is recorded as a <b>competitive match</b> in Playtomic, with the 4 players who actually played.</li>
+                <li>The winning pair enters the result in Playtomic within <b>48 hours</b>, and the opponents confirm it.</li>
+                <li>The confirmed Playtomic result is the <b>official result</b>. The organizers enter it into the league table and the cup on the website.</li>
+                <li>If the pairs disagree on the result, they inform the organizers within 48 hours. The organizers decide.</li>
+                <li>A 3rd set played for fun (§1.6) and walkovers (§6.7) are never entered in Playtomic.</li>
+                <li>Competitive matches change your Playtomic level – that's part of playing in the league.</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-11" data-ch="11">
+              <h3><span class="rb-num">§11</span> Photos &amp; media</h3>
+              <div class="split">
+                <div><span class="tag">WhatsApp group</span><b class="t">Matchday photos</b>As proof that a match was played.</div>
+                <div><span class="tag">Website &amp; social media</span><b class="t">Selected photos</b>You can opt out at any time – your photos are then removed.</div>
+              </div>
+              <ol class="rb-rules">
+                <li>During the season, photos and short videos are taken – matchday photos (§9), draws and the finale.</li>
+                <li>Matchday photos are shared in the GPPL WhatsApp group as proof that a match was played.</li>
+                <li>Selected photos may be published on the GPPL website and its social media channels.</li>
+                <li>By registering, players agree to this. Anyone can opt out at any time by telling the organizers – photos of them will then not be published, and published ones are removed.</li>
+                <li>Please only share photos of other players outside the league channels with their permission.</li>
+              </ol>
+            </div>
+
+            <div class="rb-ch" id="rb-12" data-ch="12">
+              <h3><span class="rb-num">§12</span> Terms &amp; conditions</h3>
+
+              <h4 class="rb-sub">Registration &amp; eligibility</h4>
+              <ol class="rb-rules">
+                <li>By registering, every player accepts this rulebook, including these terms.</li>
+                <li>Players must be at least <b>18 years old</b>, or have the consent of a parent or guardian.</li>
+                <li>Each player can only be registered in <b>one pair</b>.</li>
+                <li>The <b>registration deadline</b> is one week after the 8th pair has registered. The exact date is then announced on the website.</li>
+                <li>A registration is only valid once the entry fee has been paid – the <b>time of payment</b> counts as the time of registration. Places are given first come, first served, with the priority rule in §1.1. One organizer pair may be exempt from this.</li>
+                <li>Team names must be respectful. The organizers can ask a pair to change an offensive or inappropriate name.</li>
+                <li>If fewer than <b>8 pairs</b> register, the season doesn't take place and all entry fees are refunded.</li>
+              </ol>
+
+              <h4 class="rb-sub">On and off court</h4>
+              <ol class="rb-rules">
+                <li><b>Fair play:</b> respect your opponents, the rules and the clubs. Players call the balls on their own side – if in doubt, the point is replayed.</li>
+                <li>Be on time. If a pair is more than <b>15 minutes late</b> without notice, the opponent can claim a walkover. The organizers decide.</li>
+                <li>If a match can't be finished in the booked court time because a pair – or one of its players – arrived late, the <b>opponent gets a walkover</b> (§6).</li>
+                <li>Every player brings their own racket. Each pair brings balls in good condition – the organizers provide new balls for the cup semi-finals and finals.</li>
+                <li>The house rules of each club apply. Cancellation fees and damage are paid by whoever caused them.</li>
+                <li>If a court becomes unavailable (e.g. closure or a booking problem), this counts as a valid reason to postpone (§6).</li>
+                <li>The organizers can exclude players or pairs for unsporting behaviour. The entry fee is not refunded.</li>
+              </ol>
+
+              <h4 class="rb-sub">Money</h4>
+              <ol class="rb-rules">
+                <li>The <b>entry fee is €30 per pair</b>. It covers prizes, balls for the cup semi-finals and finals, and the finale. It is not refunded after the registration deadline.</li>
+                <li>If the season has to be stopped early, entry fees are only refunded if the organizers are at fault. Otherwise, the organizers decide how any remaining money is used.</li>
+              </ol>
+
+              <h4 class="rb-sub">Safety, data &amp; organizers</h4>
+              <ol class="rb-rules">
+                <li><b>Participation is at your own risk.</b> The organizers are not liable for injuries, lost or damaged belongings, or court costs. Every player is responsible for their own health and insurance.</li>
+                <li><b>Data:</b> team names, player names and results are shown publicly on the website. Contact details are only used by the organizers to run the league and are deleted after the season.</li>
+                <li>Official communication happens in the GPPL WhatsApp group and on the website. Players must be reachable there.</li>
+                <li>If an organizer plays in a match that needs a decision, another organizer or a neutral person decides.</li>
+                <li>For anything this rulebook doesn't cover, the official rules of the <b>International Padel Federation (FIP)</b> apply.</li>
+                <li>In situations neither this rulebook nor the FIP rules cover, the organizers decide. Their decision is final.</li>
+                <li>The organizers may adjust the rules during the season if it becomes necessary. Changes are announced in the GPPL WhatsApp group and apply from the announcement onwards.</li>
+              </ol>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- SCHEDULE -->
+    <section id="schedule">
+      <h2>Schedule</h2>
+      <p class="note">Each matchday is a 10-day window – book your court with your opponent within the window.</p>
+      <div id="schedule-list"></div>
+    </section>
+
+    <!-- TABLE -->
+    <section id="table">
+      <h2>League table</h2>
+      <div class="card table-wrap" id="standings"></div>
+      <p class="note">W = 2–0 or 2–1 wins · Sets/Games = difference · Walkover deductions included in points.</p>
+    </section>
+
+    <!-- CUP -->
+    <section id="cup">
+      <h2>🏆 GPPC Cup</h2>
+      <div class="card">
+        <p style="margin:0">Every pair takes part. Each round is drawn live and randomly by the organizers – Pokal style. 🎱
+          Results appear here after each draw.</p>
+      </div>
+      <div id="cup-rounds"></div>
+    </section>
+
+    <!-- GALLERY -->
+    <section id="gallery">
+      <h2>📸 Gallery</h2>
+      <div id="gallery-grid"></div>
+    </section>
+
+    <!-- VERIFY DRAW -->
+    <section id="verify">
+      <h2>✅ Verify a cup draw</h2>
+      <div class="card">
+        <p style="margin:0">Every GPPC Cup draw is calculated from <b>seed words given by 3 randomly chosen people</b> – the organizers can't choose the result.
+          Pick a draw below to recalculate it, or check it with your own program (instructions at the bottom).</p>
+      </div>
+
+      <div class="card verify-form">
+        <div class="form-row"><label for="v-round">Draw</label><select id="v-round"></select></div>
+        <div class="form-row"><label for="v-words">Seed words</label><input type="text" id="v-words" placeholder="e.g. mango lahore padel"></div>
+        <div class="form-row"><label for="v-ids">Pair IDs in the bowl</label><input type="text" id="v-ids" placeholder="e.g. 1, 2, 3, 4, 5, 6, 7, 8, 9, 10"></div>
+        <div class="form-row"><label for="v-type">Type</label>
+          <select id="v-type">
+            <option value="lucky-format">Matches – everyone plays</option>
+            <option value="classic">Matches – classic byes</option>
+            <option value="lucky">Lucky loser draw</option>
+          </select>
+        </div>
+        <div class="form-row" id="v-lucky-row" hidden><label for="v-lucky">Lucky losers</label><input type="number" id="v-lucky" min="1" value="2" style="max-width:100px"></div>
+        <button class="btn" id="v-run">Verify</button>
+      </div>
+
+      <div id="v-output"></div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Check it with your own program</h3>
+        <ol class="rules">
+          <li><b>Clean the words:</b> lowercase, keep only the letters a–z and spaces, single spaces between words.
+            <span class="note">"Mango  Lahore Padel!" → "mango lahore padel"</span></li>
+          <li><b>Seed:</b> start with 0. For each character: <code>seed = (seed × 31 + ASCII code) mod 4294967296</code>
+            <span class="note">(a = 97 … z = 122, space = 32)</span></li>
+          <li><b>Start list:</b> the pair IDs in the bowl, sorted from smallest to largest.</li>
+          <li><b>Shuffle:</b> <code>state = seed</code>. For <code>i</code> = last position down to 1 (positions start at 0):
+            <code>state = (1664525 × state + 1013904223) mod 4294967296</code>, <code>j = state mod (i + 1)</code>, swap positions <code>i</code> and <code>j</code>.</li>
+          <li><b>Read the result:</b> 1st vs 2nd, 3rd vs 4th, … · byes are the pairs left at the end ·
+            in a lucky loser draw, the first pairs in the list get back in.</li>
+        </ol>
+        <p class="note">Test case: words "mango lahore padel" → seed 2770641191 → pairs 1–10 shuffle to 8, 6, 4, 10, 9, 7, 3, 5, 2, 1.</p>
+        <h3>Python</h3>
+<pre><code>import re
+
+def gppc_draw(words, pair_ids):
+    text = " ".join(re.sub(r"[^a-z ]", "", words.lower()).split())
+    seed = 0
+    for c in text:
+        seed = (seed * 31 + ord(c)) % 2**32
+    order, state = sorted(pair_ids), seed
+    for i in range(len(order) - 1, 0, -1):
+        state = (1664525 * state + 1013904223) % 2**32
+        j = state % (i + 1)
+        order[i], order[j] = order[j], order[i]
+    return order
+
+print(gppc_draw("mango lahore padel", range(1, 11)))</code></pre>
+        <h3>JavaScript</h3>
+<pre><code>function gppcDraw(words, pairIds) {
+  const text = words.toLowerCase().replace(/[^a-z ]/g, "").split(" ").filter(Boolean).join(" ");
+  let seed = 0;
+  for (const c of text) seed = (seed * 31 + c.charCodeAt(0)) % 4294967296;
+  const order = [...pairIds].sort((a, b) => a - b);
+  let state = seed;
+  for (let i = order.length - 1; i > 0; i--) {
+    state = (1664525 * state + 1013904223) % 4294967296;
+    const j = state % (i + 1);
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return order;
+}</code></pre>
+        <p class="note">Languages with 32-bit integers (C, Java <code>int</code>): use 64-bit types so the multiplication doesn't overflow.</p>
+      </div>
+    </section>
+
+    <!-- ADMIN (organizers only – results, cup and live draw) -->
+    <section id="admin">
+      <iframe class="admin-frame" src="admin.html" title="GPPL admin" allow="fullscreen"
+        style="width:100%;min-height:720px;border:0;display:block"></iframe>
+    </section>
+
+    <!-- REGISTER -->
+    <section id="register">
+      <h2>📝 Register</h2>
+      <div id="register-body"></div>
+    </section>
+  </main>
+
+  <footer>GPPL – German Pakistan Padel Liga 🇩🇪🇵🇰</footer>
+
+  <script src="assets/data.js"></script>
+  <script src="assets/pairs-loader.js"></script>
+  <script src="assets/league.js"></script>
+  <script src="assets/store.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
