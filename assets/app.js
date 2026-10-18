@@ -321,8 +321,27 @@ function updateRulebookToc() {
 window.addEventListener("scroll", updateRulebookToc, { passive: true });
 
 // ---------- tabs ----------
+// ---------- visible tabs (pre-season: only some) ----------
+const visibleTabs = Array.isArray(LEAGUE.visibleTabs) && LEAGUE.visibleTabs.length ? LEAGUE.visibleTabs : null;
+const tabAllowed = id => !visibleTabs || visibleTabs.includes(id) || id === "admin";
+if (visibleTabs) {
+  const nav = document.getElementById("nav");
+  const links = [...nav.querySelectorAll("a")];
+  links.forEach(a => a.remove());
+  visibleTabs.forEach(id => { const a = links.find(l => l.getAttribute("href") === "#" + id); if (a) nav.appendChild(a); });
+  // links in the text to hidden tabs (e.g. "Schedule tab" in the rulebook) become plain text
+  document.querySelectorAll('main a[href^="#"]').forEach(a => {
+    const id = a.getAttribute("href").slice(1);
+    if (id && !tabAllowed(id) && !a.classList.contains("rb-ref")) a.replaceWith(document.createTextNode(a.textContent));
+  });
+}
+
 function showTab() {
-  const id = (location.hash || "#home").slice(1);
+  let id = (location.hash || "#" + (visibleTabs ? visibleTabs[0] : "home")).slice(1);
+  if (!tabAllowed(id) || !document.getElementById(id)) {
+    id = visibleTabs ? visibleTabs[0] : "home";
+    history.replaceState(null, "", "#" + id);
+  }
   document.querySelectorAll("main > section").forEach(s => s.classList.toggle("active", s.id === id));
   document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#" + id));
   window.scrollTo(0, 0);

@@ -9,6 +9,12 @@ const LEAGUE = {
   season: "Season 1",
 
   // First day of matchday 1 (YYYY-MM-DD) and matchday length in days
+  // Tabs shown in the menu, in this order (the first one opens by default).
+  // Pre-season: only registration and rules. During the season, use e.g.:
+  // ["home", "rules", "schedule", "table", "cup", "gallery", "register", "verify", "admin"]
+  // Tabs not listed are hidden; #admin always stays reachable by its link.
+  visibleTabs: ["register", "rules"],
+
   startDate: "2026-11-09",
   matchdayLengthDays: 10,
   // false = the start date isn't final yet: the website shows no dates (only "Matchday 1, 2, …").
