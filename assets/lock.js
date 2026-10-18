@@ -1,7 +1,7 @@
 // Admin password lock for the Draw and Admin pages.
 // This keeps players out of the admin tools – it is not real security on a static site.
 // Change the password: printf '%s' 'new-password' | shasum -a 256  → paste below.
-const ADMIN_HASH = "bc5b78b8693dd0ba6c8fba8fdaa896a39e2ba80cf8b6febe97f25050d764abd7";
+const ADMIN_HASH = "d3f009ef9561f55f578b1cebb2769d8d305a69633f243a0dda9cda1230ac8b3f";
 
 if (window.self !== window.top) document.documentElement.classList.add("embedded");
 
