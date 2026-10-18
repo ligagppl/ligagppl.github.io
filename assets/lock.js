@@ -47,7 +47,7 @@ function requireAdmin(onUnlock) {
 
   lock.querySelector("form").addEventListener("submit", async e => {
     e.preventDefault();
-    const pw = lock.querySelector("input").value;
+    const pw = lock.querySelector("input").value.trim(); // ignore spaces/line breaks from copy & paste
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(pw));
     const hash = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("");
     if (hash === ADMIN_HASH) {
