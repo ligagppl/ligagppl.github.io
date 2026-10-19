@@ -50,7 +50,7 @@ const LEAGUE = {
   logos: {
     "Sting Smashers": "img/logos/sting-smashers.svg",
     "Vibora Vipers": "img/logos/vibora-vipers.svg",
-    "Kaantay Walay Phool (KWP)": "img/logos/kwp.svg",
+    "Kaantay Walay Phool": "img/logos/kwp.svg",
   },
 
   // ----------------------------------------------------------
