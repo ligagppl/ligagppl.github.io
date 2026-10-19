@@ -194,7 +194,8 @@ td.pts { font-weight: 700; }
 .part-seed { font-size: .8rem; font-weight: 800; color: var(--green-2); }
 .part-loading { flex: none; width: 168px; height: 168px; border-radius: 50%; border: 3px dashed var(--line); display: flex; align-items: center; justify-content: center; }
 .part-loading span { width: 44px; height: 44px; border-radius: 50%; background: #d7f34a; box-shadow: inset -4px -4px 0 rgba(0,0,0,.08);
-  animation: part-bounce 1.1s ease-in-out infinite; }
+  animation: part-bounce 1.1s ease-in-out -.275s infinite; animation-play-state: paused; }
+.part-grid.anim-on .part-loading span, .part-card:hover .part-loading span { animation-play-state: running; }
 @keyframes part-bounce { 0%, 100% { transform: translateY(-22px); } 50% { transform: translateY(22px) scaleY(.85); } }
 @media (prefers-reduced-motion: reduce) { .part-loading span { animation: none; } }
 @media (prefers-color-scheme: dark) { .part-seed { color: var(--ball); } }
