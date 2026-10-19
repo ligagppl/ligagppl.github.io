@@ -228,11 +228,13 @@ function renderParticipants() {
   const logos = LEAGUE.logos || {};
   // logo if there is one; a "loading" ball while the team name is still TBD; otherwise the number
   const logo = n => typeof logos[n] === "string" ? { src: logos[n] } : logos[n];
-  const badge = p => logos[p.name] ? `<img class="part-logo" src="${esc(logo(p.name).src)}"${logo(p.name).anim ? ` data-still="${esc(logo(p.name).src)}" data-anim="${esc(logo(p.name).anim)}"` : ""} alt="${esc(p.name)} logo">`
+  // Admin → Pairs → Logo animations: "always" plays them by default, otherwise on hover / tap
+  const always = settings.logoAnimation === "always" && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const badge = p => logos[p.name] ? `<img class="part-logo" src="${esc(always && logo(p.name).anim ? logo(p.name).anim : logo(p.name).src)}"${logo(p.name).anim ? ` data-still="${esc(logo(p.name).src)}" data-anim="${esc(logo(p.name).anim)}"` : ""} alt="${esc(p.name)} logo">`
     : /^tbd$/i.test(p.name.trim()) ? `<span class="part-loading" role="img" aria-label="Team name coming soon"><span></span></span>`
     : `<span class="part-num">#${p.id}</span>`;
   const label = p => logos[p.name] || /^tbd$/i.test(p.name.trim()) ? `<span class="part-seed">#${p.id}</span>` : "";
-  el.innerHTML = count + `<div class="part-grid">` + pairs.map(p => `<div class="card part-card${logos[p.name] && logo(p.name).anim ? " has-anim" : ""}">
+  el.innerHTML = count + `<div class="part-grid">` + pairs.map(p => `<div class="card part-card${logos[p.name] && logo(p.name).anim && !always ? " has-anim" : ""}">
       ${badge(p)}
       <div class="part-info">${label(p)}<b class="part-team">${esc(p.name)}</b>
         <span class="part-players">${p.players.filter(Boolean).map(esc).join(" &amp; ")}</span></div></div>`).join("") + `</div>`;

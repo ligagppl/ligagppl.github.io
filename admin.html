@@ -191,6 +191,17 @@
       </div>
 
       <div class="card">
+        <h3 style="margin-top:0">Logo animations</h3>
+        <p class="note">How the team logos move on the Participants tab.</p>
+        <div class="reg-status" role="radiogroup" aria-label="Logo animations">
+          <label><input type="radio" name="logo-anim" value="hover"> <span><b>Only on hover / tap</b>Logos stay still until someone points at or taps a card</span></label>
+          <label><input type="radio" name="logo-anim" value="always"> <span><b>Always</b>All logos play their animation by default</span></label>
+        </div>
+        <button class="btn" id="logo-anim-save" style="margin-top:10px">Save</button>
+        <div class="msg" id="logo-anim-msg"></div>
+      </div>
+
+      <div class="card">
         <h3 style="margin-top:0">Reset</h3>
         <p class="note">Remove all pairs (clean slate).</p>
         <button class="btn ghost" id="pairs-reset">Remove all pairs</button>
@@ -601,8 +612,19 @@
       flash("man-msg", `#${last.id} ${last.name} removed – press “Publish” to update the website.`);
     });
 
+    function fillLogoAnim() {
+      const mode = siteSettings.logoAnimation === "always" ? "always" : "hover";
+      document.querySelectorAll('input[name="logo-anim"]').forEach(r => (r.checked = r.value === mode));
+    }
+    $("logo-anim-save").addEventListener("click", async () => {
+      const mode = (document.querySelector('input[name="logo-anim"]:checked') || {}).value || "hover";
+      const next = { ...siteSettings, logoAnimation: mode };
+      if (await persist("settings", next, `logo animations: ${mode}`, "logo-anim-msg")) siteSettings = next;
+    });
+
     function renderCurrentPairs() {
       renderManual();
+      fillLogoAnim();
       const draft = getDraft(), list = workingPairs(), pub = LEAGUE.pairs;
       const changed = !!draft && (draft.length !== pub.length || draft.some((p, i) => !sameTeam(p, pub[i])));
       if (draft && !changed) { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
