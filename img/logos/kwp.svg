@@ -21,7 +21,7 @@
   <!-- the thorny vine is the net -->
   <path d="M30 128 C66 116 98 138 120 126 C142 114 174 138 210 124" fill="none" stroke="#14451a" stroke-width="16" stroke-linecap="round"/>
   <path d="M30 128 C66 116 98 138 120 126 C142 114 174 138 210 124" fill="none" stroke="#2f7d32" stroke-width="10" stroke-linecap="round"/>
-  <g fill="#14451a">
+  <g fill="#111111" stroke="#7a4a1e" stroke-width="2.5" stroke-linejoin="round">
     <polygon points="44,122 48,94 58,120"/>
     <polygon points="66,124 62,152 76,128"/>
     <polygon points="88,128 94,100 102,128"/>

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Sting Smashers logo">
+  <defs>
+    <g id="h"><circle cx="-16" cy="-24" r="4.4"/><circle cx="0" cy="-24" r="4.4"/><circle cx="16" cy="-24" r="4.4"/><circle cx="-24" cy="-8" r="4.4"/><circle cx="-8" cy="-8" r="4.4"/><circle cx="8" cy="-8" r="4.4"/><circle cx="24" cy="-8" r="4.4"/><circle cx="-16" cy="8" r="4.4"/><circle cx="0" cy="8" r="4.4"/><circle cx="16" cy="8" r="4.4"/><circle cx="-8" cy="24" r="4.4"/><circle cx="8" cy="24" r="4.4"/></g>
+    <path id="arc" d="M34 120 A86 86 0 0 0 206 120" fill="none"/>
+  </defs>
+  <circle cx="120" cy="120" r="116" fill="#1b1b1b"/>
+  <circle cx="120" cy="120" r="106" fill="none" stroke="#f5c400" stroke-width="3"/>
+
+  <g transform="translate(30 16) scale(0.75)">
+  <!-- swing lines -->
+  <g stroke="#f5c400" stroke-width="3.5" stroke-linecap="round" opacity=".55">
+    <path d="M38 96 C40 70 52 50 70 38"/><path d="M50 104 C52 82 62 64 78 54"/>
+  </g>
+
+  <!-- racket mid-swing -->
+  <g transform="rotate(-35 86 82)">
+    <ellipse cx="86" cy="66" rx="34" ry="40" fill="#f5c400" stroke="#0d0d0d" stroke-width="3"/>
+    <ellipse cx="86" cy="66" rx="27" ry="33" fill="none" stroke="#c99f00" stroke-width="2"/>
+    <g fill="#1b1b1b" transform="translate(86 66) scale(1.05)"><use href="#h"/></g>
+    <path d="M74 104 L98 104 L93 116 L79 116 Z" fill="#f5c400" stroke="#0d0d0d" stroke-width="3"/>
+    <rect x="79" y="114" width="14" height="46" rx="5" fill="#f5c400" stroke="#0d0d0d" stroke-width="3"/>
+    <path d="M79 126 L93 132 M79 138 L93 144 M79 150 L93 156" stroke="#1b1b1b" stroke-width="2.5"/>
+  </g>
+
+  <!-- lightning bolt -->
+  <polygon points="134,58 108,114 130,114 112,170 168,96 142,96 160,58" fill="#ffffff" stroke="#f5c400" stroke-width="4" stroke-linejoin="round"/>
+
+  <!-- ball hitting the ground -->
+  <g transform="translate(170 150)">
+    <circle r="19" fill="#d7f34a" stroke="#0d0d0d" stroke-width="3"/>
+    <path d="M-17 -7 C-6 1 6 1 17 -7 M-17 7 C-6 -1 6 -1 17 7" fill="none" stroke="#fff" stroke-width="3"/>
+  </g>
+  <g stroke="#f5c400" stroke-width="4" stroke-linecap="round">
+    <path d="M150 178 L140 186"/><path d="M164 182 L160 194"/><path d="M180 182 L184 194"/><path d="M192 176 L202 184"/>
+  </g>
+
+  </g>
+
+  <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="16" letter-spacing="3" fill="#f5c400">
+    <textPath href="#arc" startOffset="50%" text-anchor="middle">STING SMASHERS</textPath>
+  </text>
+</svg>
