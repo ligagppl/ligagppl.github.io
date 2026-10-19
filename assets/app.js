@@ -233,14 +233,20 @@ function renderRegister() {
     open: `<div class="reg-banner open"><b>Registration is open</b><span>Deadline: ${esc(reg.deadline)}</span></div>`,
     closed: `<div class="reg-banner closed"><b>Registration is closed</b><span>Thanks to everyone who registered – see you on court!</span></div>`,
   }[status] || "";
-  let html = banner + `<div class="card">
-    <p><b>Registration deadline:</b> ${esc(reg.deadline)}<br><b>Entry fee:</b> ${esc(reg.fee)}</p>
+  // the fee as a big amount ("€30 per pair" → "€30" + "per pair")
+  const feeMatch = String(reg.fee || "").match(/^\s*(\S*\d\S*)\s*(.*)$/);
+  const feeCard = `<div class="card fee-card">
+    <div class="fee-main"><span class="fee-label">Entry fee</span>
+      ${feeMatch ? `<span class="fee-amount">${esc(feeMatch[1])}</span><span class="fee-unit">${esc(feeMatch[2])}</span>` : `<span class="fee-unit">${esc(reg.fee)}</span>`}
+      ${status === "open" && reg.paymentUrl ? `<span class="note">${esc(reg.paymentNote)}</span>` : ""}</div>
+    ${status === "open" && reg.paymentUrl ? `<a class="btn" href="${esc(reg.paymentUrl)}" target="_blank" rel="noopener">Pay via PayPal pool</a>` : ""}</div>`;
+  const perks = `<div class="card perks">
+    <div><span class="perk-icon">🗓️</span><b>A flexible league</b><span>Each matchday lasts 10 days – you and your opponents pick the day, time and court that suit you.</span></div>
+    <div><span class="perk-icon">📋</span><b>The whole league schedule from day one</b><span>All league fixtures are published at the start of the season, so you can plan ahead. GPPC Cup draws take place before each round.</span></div></div>`;
+  let html = banner + feeCard + perks + `<div class="card">
+    <p><b>Registration deadline:</b> ${esc(reg.deadline)}</p>
     <p class="note">${status === "open" && reg.paymentUrl ? "" : esc(reg.paymentNote) + " "}A registration only counts once it's paid – the time of payment is the time of registration.
     Places are first come, first served – one organizer pair may be exempt from this.</p></div>`;
-  if (status === "open" && reg.paymentUrl) {
-    html += `<div class="card pay-card"><div><b>Entry fee: ${esc(reg.fee)}</b><span class="note">${esc(reg.paymentNote)}</span></div>
-      <a class="btn" href="${esc(reg.paymentUrl)}" target="_blank" rel="noopener">Pay via PayPal pool</a></div>`;
-  }
   if (status === "open") {
     const url = reg.formUrl || "";
     const embeddable = /docs\.google\.com\/forms\/.+\/viewform/.test(url);

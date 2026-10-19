@@ -170,6 +170,19 @@ td.pts { font-weight: 700; }
 .reg-banner.soon { background: color-mix(in srgb, var(--ball) 22%, var(--card)); border-color: color-mix(in srgb, var(--ball) 55%, var(--line)); }
 .reg-banner.closed { background: var(--card); }
 
+.fee-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+  border: 2px solid var(--green-2); background: color-mix(in srgb, var(--green) 8%, var(--card)); }
+.fee-main { display: flex; flex-direction: column; }
+.fee-label { font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.fee-amount { font-size: 2.6rem; font-weight: 900; line-height: 1.05; color: var(--green-2); }
+.fee-unit { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
+.fee-card .btn { background: #0070ba; font-size: 1.05rem; padding: 12px 20px; }
+.fee-card .btn:hover { background: #005ea6; }
+@media (prefers-color-scheme: dark) { .fee-amount { color: var(--ball); } .fee-card { border-color: var(--ball); } }
+.perks { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.perks > div { display: flex; flex-direction: column; gap: 2px; }
+.perks .perk-icon { font-size: 1.5rem; }
+.perks span:not(.perk-icon) { color: var(--muted); font-size: .92rem; }
 .pay-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 .pay-card b { display: block; font-size: 1.05rem; }
 .pay-card .btn { background: #0070ba; }
