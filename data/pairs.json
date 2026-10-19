@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "id": 1,
+    "name": "Sting Smashers",
+    "players": [
+      "Ahmed Malik",
+      "Faizan Shah"
+    ]
+  },
+  {
+    "id": 2,
+    "name": "Kaantay Walay Phool (KWP)",
+    "players": [
+      "Awais Shafique",
+      "Ismail Khalid"
+    ]
+  },
+  {
+    "id": 3,
+    "name": "TBD",
+    "players": [
+      "Obaid ur Rehman Khan",
+      "Mystery Partner"
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Vibora Vipers",
+    "players": [
+      "Mohsin Mumtaz",
+      "Raz Nissim"
+    ]
+  }
+]
