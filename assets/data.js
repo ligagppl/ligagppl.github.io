@@ -39,22 +39,10 @@ const LEAGUE = {
   },
 
   // ----------------------------------------------------------
-  //  PAIRS – replace the placeholders after registration.
-  //  The order here decides the fixture list.
-  //  ⚠️ Don't change ids once results have been entered.
+  //  PAIRS – imported in 🔒 Admin → Pairs (saved in /data/pairs.json).
+  //  Empty until the first import.
   // ----------------------------------------------------------
-  pairs: [
-    { id: 1,  name: "Pair 1",  players: ["Player 1A", "Player 1B"] },
-    { id: 2,  name: "Pair 2",  players: ["Player 2A", "Player 2B"] },
-    { id: 3,  name: "Pair 3",  players: ["Player 3A", "Player 3B"] },
-    { id: 4,  name: "Pair 4",  players: ["Player 4A", "Player 4B"] },
-    { id: 5,  name: "Pair 5",  players: ["Player 5A", "Player 5B"] },
-    { id: 6,  name: "Pair 6",  players: ["Player 6A", "Player 6B"] },
-    { id: 7,  name: "Pair 7",  players: ["Player 7A", "Player 7B"] },
-    { id: 8,  name: "Pair 8",  players: ["Player 8A", "Player 8B"] },
-    { id: 9,  name: "Pair 9",  players: ["Player 9A", "Player 9B"] },
-    { id: 10, name: "Pair 10", players: ["Player 10A", "Player 10B"] },
-  ],
+  pairs: [],
 
   // ----------------------------------------------------------
   //  GALLERY – put images in the /img folder (keep them < 500 KB)

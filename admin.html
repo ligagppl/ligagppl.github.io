@@ -171,8 +171,8 @@
 
       <div class="card">
         <h3 style="margin-top:0">Reset</h3>
-        <p class="note">Go back to the placeholder pairs from data.js.</p>
-        <button class="btn ghost" id="pairs-reset">Reset to placeholders</button>
+        <p class="note">Remove all pairs (clean slate).</p>
+        <button class="btn ghost" id="pairs-reset">Remove all pairs</button>
       </div>
     </div>
 
@@ -212,7 +212,7 @@
     </div>
   </main>
 
-  <script src="assets/data.js?v=3"></script>
+  <script src="assets/data.js?v=4"></script>
   <script src="assets/pairs-loader.js?v=2"></script>
   <script src="assets/league.js?v=2"></script>
   <script src="assets/store.js"></script>
@@ -545,8 +545,8 @@
 
     function renderCurrentPairs() {
       const imported = (() => { try { return JSON.parse(localStorage.getItem("gppl-local-pairs") || "null"); } catch { return null; } })();
-      $("pairs-source").textContent = LEAGUE.pairs.some(p => /^Pair \d+$/.test(p.name))
-        ? "These are placeholders – import the real pairs below."
+      $("pairs-source").textContent = !LEAGUE.pairs.length
+        ? "No pairs yet – import the paid registrations below."
         : "Imported pairs (numbered in payment order).";
       $("pairs-current").innerHTML = `<table class="pairs-table"><tr><th>#</th><th>Team</th><th>Players</th></tr>` +
         LEAGUE.pairs.map(p => `<tr><td class="n">#${p.id}</td><td><b>${escH(p.name)}</b></td><td>${p.players.map(escH).join(" &amp; ")}</td></tr>`).join("") + `</table>`;
@@ -697,9 +697,9 @@
     }
     $("pairs-save").addEventListener("click", () => importList && savePairs(importList, `import ${importList.length} pairs`));
     $("pairs-reset").addEventListener("click", async () => {
-      if (!confirm("Go back to the placeholder pairs?")) return;
+      if (!confirm("Remove all pairs?")) return;
       try { localStorage.removeItem("gppl-local-pairs"); } catch {}
-      await savePairs([], "reset pairs to placeholders");
+      await savePairs([], "remove all pairs");
     });
 
     // ---------- settings ----------

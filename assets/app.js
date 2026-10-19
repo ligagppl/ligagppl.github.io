@@ -74,7 +74,7 @@ function renderHome() {
   const { from, to } = matchdayWindow(md);
   document.getElementById("home-next").innerHTML =
     `<h3 style="margin-top:0">${label} matchday: ${md} ${datesOn ? `<span class="note">(${fmt(from)} – ${fmt(to)})</span>` : ""}</h3>` +
-    fixtures[md - 1].map(([a, b]) => matchRow(a, b)).join("");
+    (fixtures[md - 1] || []).map(([a, b]) => matchRow(a, b)).join("");
 }
 
 function renderCup() {
