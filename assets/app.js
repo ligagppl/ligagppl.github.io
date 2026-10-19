@@ -335,6 +335,7 @@ if (visibleTabs) {
     if (id && !tabAllowed(id) && !a.classList.contains("rb-ref")) a.replaceWith(document.createTextNode(a.textContent));
   });
 }
+document.documentElement.classList.add("tabs-ready"); // the menu is hidden until it is filtered (no flash of all tabs)
 
 function showTab() {
   let id = (location.hash || "#" + (visibleTabs ? visibleTabs[0] : "home")).slice(1);
