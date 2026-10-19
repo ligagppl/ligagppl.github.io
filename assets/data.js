@@ -48,8 +48,8 @@ const LEAGUE = {
   //  TEAM LOGOS – by team name (exactly as registered), files in /img/logos
   // ----------------------------------------------------------
   logos: {
-    "Sting Smashers": "img/logos/sting-smashers.svg",
-    "Vibora Vipers": "img/logos/vibora-vipers.svg",
+    "Sting Smashers": "img/logos/sting-smashers.svg?v=2",
+    "Vibora Vipers": "img/logos/vibora-vipers.svg?v=2",
     "Kaantay Walay Phool": "img/logos/kwp.svg",
   },
 
