@@ -137,6 +137,21 @@
       </div>
 
       <div class="card">
+        <h3 style="margin-top:0">Add a team manually</h3>
+        <p class="note" id="manual-note"></p>
+        <div id="manual-form">
+          <div class="form-row"><label for="man-team">Team name</label><input id="man-team" maxlength="40"></div>
+          <div class="form-row"><label for="man-p1">Player 1</label><input id="man-p1" maxlength="40"></div>
+          <div class="form-row"><label for="man-p2">Player 2</label><input id="man-p2" maxlength="40"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn" id="man-add">Add team</button>
+            <button class="btn ghost" id="man-undo">Remove the last team</button>
+          </div>
+        </div>
+        <div class="msg" id="man-msg"></div>
+      </div>
+
+      <div class="card">
         <h3 style="margin-top:0">Import from CSV</h3>
         <p class="note">Export the registrations from the Google Sheet (File → Download → CSV) and choose the file here.
           Only rows <b>with a payment date</b> are imported, numbered in payment order (#1 = paid first).
@@ -304,6 +319,7 @@
 
     function fillMatches() {
       const games = fixtureList[$("md").value - 1];
+      if (!games) { $("match").innerHTML = ""; $("league-sets").innerHTML = '<p class="note">No pairs yet – import or add the teams on the Pairs tab first.</p>'; return; }
       const keep = $("match").value;
       $("match").innerHTML = games.map(([a, b]) =>
         `<option value="${a}-${b}">${GPPL.findResult(results, a, b) ? "✅ " : ""}${name(a)} vs ${name(b)}</option>`).join("");
@@ -533,6 +549,7 @@
       const label = { soon: "coming soon", open: "open", closed: "closed" }[status];
       if (await persist("settings", next, `registration ${label}`, "reg-msg")) {
         siteSettings = next;
+        renderManual();
         const saved = $("reg-msg").textContent;
         flash("reg-msg", `${saved} Registration is now: ${label}.`);
       }
@@ -543,7 +560,32 @@
     let csv = null;        // { header: [], rows: [[]] }
     let importList = null; // pairs ready to save
 
+    // manual entry: only while registration is open; the next number is the seed (#1, #2, …)
+    function renderManual() {
+      const open = ((siteSettings.registration || {}).status) === "open";
+      const next = LEAGUE.pairs.length + 1;
+      $("manual-note").textContent = open
+        ? `The team gets #${next} – teams are numbered in the order they are added. Add them in order of payment.`
+        : "Only possible while registration is open (Registration tab).";
+      document.querySelectorAll("#manual-form input, #manual-form button").forEach(el => (el.disabled = !open));
+      $("man-undo").disabled = !open || !LEAGUE.pairs.length;
+    }
+    $("man-add").addEventListener("click", () => {
+      if (((siteSettings.registration || {}).status) !== "open") return flash("man-msg", "❌ Registration isn't open.", false);
+      const team = $("man-team").value.trim(), p1 = $("man-p1").value.trim(), p2 = $("man-p2").value.trim();
+      if (!team || !p1 || !p2) return flash("man-msg", "❌ Fill in the team name and both players.", false);
+      if (LEAGUE.pairs.some(p => p.name.toLowerCase() === team.toLowerCase())) return flash("man-msg", `❌ “${team}” is already registered.`, false);
+      const list = LEAGUE.pairs.map(p => ({ ...p })).concat({ id: LEAGUE.pairs.length + 1, name: team, players: [p1, p2] });
+      savePairs(list, `add team #${list.length} ${team}`, "man-msg");
+    });
+    $("man-undo").addEventListener("click", () => {
+      const last = LEAGUE.pairs[LEAGUE.pairs.length - 1];
+      if (!last || !confirm(`Remove #${last.id} ${last.name}?`)) return;
+      savePairs(LEAGUE.pairs.slice(0, -1).map(p => ({ ...p })), `remove team #${last.id} ${last.name}`, "man-msg");
+    });
+
     function renderCurrentPairs() {
+      renderManual();
       const imported = (() => { try { return JSON.parse(localStorage.getItem("gppl-local-pairs") || "null"); } catch { return null; } })();
       $("pairs-source").textContent = !LEAGUE.pairs.length
         ? "No pairs yet – import the paid registrations below."
@@ -684,14 +726,14 @@
     });
     ["map-team", "map-p1", "map-p2", "map-paid", "map-pk1", "map-pk2", "map-datefmt", "map-max"].forEach(id => $(id).addEventListener("change", buildPreview));
 
-    async function savePairs(list, message) {
+    async function savePairs(list, message, msgId = "pairs-msg") {
       if ((results.length || cup.rounds.length) && !confirm("Results or cup rounds already exist – changing the pairs will mix them up. Continue?")) return;
-      if (await persist("pairs", list, message, "pairs-msg")) {
+      if (await persist("pairs", list, message, msgId)) {
         // "Last updated" on the Participants tab
         const next = { ...siteSettings, participantsUpdated: new Date().toISOString() };
-        if (await persist("settings", next, "participants updated", "pairs-msg")) siteSettings = next;
+        if (await persist("settings", next, "participants updated", msgId)) siteSettings = next;
         try { localStorage.setItem("gppl-local-pairs", JSON.stringify(list)); } catch {}
-        flash("pairs-msg", $("pairs-msg").textContent + " Reloading…");
+        flash(msgId, $(msgId).textContent + " Reloading…");
         setTimeout(() => window.top.location.reload(), 1200);
       }
     }
