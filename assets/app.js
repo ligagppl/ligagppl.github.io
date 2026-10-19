@@ -241,10 +241,14 @@ function renderRegister() {
       ${status === "open" && reg.paymentUrl ? `<span class="note">${esc(reg.paymentNote)}</span>` : ""}</div>
     ${status === "open" && reg.paymentUrl ? `<a class="btn" href="${esc(reg.paymentUrl)}" target="_blank" rel="noopener">Pay via PayPal pool</a>` : ""}</div>`;
   const perks = `<div class="card perks">
-    <div><span class="perk-icon">🗓️</span><b>A flexible league</b><ul>
-      <li>The whole league schedule is published at the start of the season – plan ahead.</li>
-      <li>Each matchday lasts 10 days – pick the day, time and court that suit you and your opponents.</li>
-      <li>Just make sure you've played the required number of matches by each milestone (see the Rules).</li></ul></div>
+    <div><span class="perk-icon">🗓️</span><b>Play at your own pace</b><ul>
+      <li><b>10 days per matchday</b> – plenty of time to find a day, time and court that suit both pairs.</li>
+      <li><b>The whole league schedule from day one</b> – you know all your opponents in advance and play at your own pace.</li>
+      <li><b>You don't even have to follow the matchday order</b> – if an opponent can't make it, play a match from a later matchday first.</li>
+      <li><b>Busy week or travelling?</b> Take a matchday off and catch up later – as long as you reach the milestones:</li></ul>
+      <div class="ms-slot"></div>
+      <span class="note">The milestones might change after the registration deadline, depending on the start date. Details in the <a href="#rules">Rules</a> (§2).</span></div></div>
+    <div class="card perks">
     <div><span class="perk-icon">🏆</span><b>GPPC Cup – a fresh draw every round</b><ul>
       <li>Every pair plays in the cup.</li>
       <li>Each round is drawn randomly just before it starts.</li>
@@ -265,6 +269,10 @@ function renderRegister() {
     }
   }
   document.getElementById("register-body").innerHTML = html;
+  // the milestones table, taken straight from the rulebook (§2)
+  const ms = document.querySelector("#rb-2 .rb-milestones");
+  const slot = document.querySelector("#register-body .ms-slot");
+  if (ms && slot) slot.appendChild(ms.closest(".rb-table-wrap").cloneNode(true));
 }
 
 // printing the page (e.g. "Save as PDF") → a sensible file name instead of the page/browser title

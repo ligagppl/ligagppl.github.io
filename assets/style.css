@@ -179,7 +179,8 @@ td.pts { font-weight: 700; }
 .fee-card .btn { background: #0070ba; font-size: 1.05rem; padding: 12px 20px; }
 .fee-card .btn:hover { background: #005ea6; }
 @media (prefers-color-scheme: dark) { .fee-amount { color: var(--ball); } .fee-card { border-color: var(--ball); } }
-.perks { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+.perks { display: grid; gap: 16px; }
+.perks .rb-table-wrap { margin: 8px 0 6px; }
 .perks > div { display: flex; flex-direction: column; gap: 2px; }
 .perks .perk-icon { font-size: 1.5rem; }
 .perks ul { margin: 4px 0 0; padding-left: 1.2em; color: var(--muted); font-size: .92rem; }
