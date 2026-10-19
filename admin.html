@@ -134,6 +134,12 @@
         <h3 style="margin-top:0">Current pairs</h3>
         <p class="note" id="pairs-source"></p>
         <div id="pairs-current"></div>
+        <div id="pairs-publish" hidden style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center">
+          <button class="btn" id="pub-btn">Publish</button>
+          <button class="btn ghost" id="pub-discard">Discard changes</button>
+          <span class="note" id="pub-info"></span>
+        </div>
+        <div class="msg" id="pub-msg"></div>
       </div>
 
       <div class="card">
@@ -178,7 +184,7 @@
           <div class="form-row"><label for="map-max">Max. pairs</label><input type="number" id="map-max" min="2" value="12" style="max-width:100px"></div>
           <div id="csv-preview"></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
-            <button class="btn" id="pairs-save" disabled>Save these pairs</button>
+            <button class="btn" id="pairs-save" disabled>Use these pairs (publish afterwards)</button>
           </div>
         </div>
         <div class="msg" id="pairs-msg"></div>
@@ -560,39 +566,70 @@
     let csv = null;        // { header: [], rows: [[]] }
     let importList = null; // pairs ready to save
 
+    // Changes to the pairs are kept as a draft in this browser and stay hidden from everyone else
+    // until "Publish" saves them to the website (data/pairs.json).
+    const DRAFT_KEY = "gppl-draft-pairs";
+    const getDraft = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch { return null; } };
+    const setDraft = list => { try { list ? localStorage.setItem(DRAFT_KEY, JSON.stringify(list)) : localStorage.removeItem(DRAFT_KEY); } catch {} renderCurrentPairs(); };
+    const workingPairs = () => getDraft() || LEAGUE.pairs;
+    const sameTeam = (x, y) => !!x && !!y && x.id === y.id && x.name === y.name && x.players.join("|") === y.players.join("|");
+
     // manual entry: only while registration is open; the next number is the seed (#1, #2, …)
     function renderManual() {
       const open = ((siteSettings.registration || {}).status) === "open";
-      const next = LEAGUE.pairs.length + 1;
+      const list = workingPairs();
       $("manual-note").textContent = open
-        ? `The team gets #${next} – teams are numbered in the order they are added. Add them in order of payment.`
+        ? `The team gets #${list.length + 1} – teams are numbered in the order they are added. Add them in order of payment.`
         : "Only possible while registration is open (Registration tab).";
       document.querySelectorAll("#manual-form input, #manual-form button").forEach(el => (el.disabled = !open));
-      $("man-undo").disabled = !open || !LEAGUE.pairs.length;
+      $("man-undo").disabled = !open || !list.length;
     }
     $("man-add").addEventListener("click", () => {
       if (((siteSettings.registration || {}).status) !== "open") return flash("man-msg", "❌ Registration isn't open.", false);
       const team = $("man-team").value.trim(), p1 = $("man-p1").value.trim(), p2 = $("man-p2").value.trim();
       if (!team || !p1 || !p2) return flash("man-msg", "❌ Fill in the team name and both players.", false);
-      if (LEAGUE.pairs.some(p => p.name.toLowerCase() === team.toLowerCase())) return flash("man-msg", `❌ “${team}” is already registered.`, false);
-      const list = LEAGUE.pairs.map(p => ({ ...p })).concat({ id: LEAGUE.pairs.length + 1, name: team, players: [p1, p2] });
-      savePairs(list, `add team #${list.length} ${team}`, "man-msg");
+      const list = workingPairs();
+      if (list.some(p => p.name.toLowerCase() === team.toLowerCase())) return flash("man-msg", `❌ “${team}” is already registered.`, false);
+      setDraft(list.map(p => ({ ...p })).concat({ id: list.length + 1, name: team, players: [p1, p2] }));
+      ["man-team", "man-p1", "man-p2"].forEach(id => ($(id).value = ""));
+      flash("man-msg", `✅ #${list.length + 1} ${team} added – not public yet. Press “Publish” above when you're ready.`);
     });
     $("man-undo").addEventListener("click", () => {
-      const last = LEAGUE.pairs[LEAGUE.pairs.length - 1];
+      const list = workingPairs(), last = list[list.length - 1];
       if (!last || !confirm(`Remove #${last.id} ${last.name}?`)) return;
-      savePairs(LEAGUE.pairs.slice(0, -1).map(p => ({ ...p })), `remove team #${last.id} ${last.name}`, "man-msg");
+      setDraft(list.slice(0, -1).map(p => ({ ...p })));
+      flash("man-msg", `#${last.id} ${last.name} removed – press “Publish” to update the website.`);
     });
 
     function renderCurrentPairs() {
       renderManual();
-      const imported = (() => { try { return JSON.parse(localStorage.getItem("gppl-local-pairs") || "null"); } catch { return null; } })();
-      $("pairs-source").textContent = !LEAGUE.pairs.length
-        ? "No pairs yet – import the paid registrations below."
-        : "Imported pairs (numbered in payment order).";
-      $("pairs-current").innerHTML = `<table class="pairs-table"><tr><th>#</th><th>Team</th><th>Players</th></tr>` +
-        LEAGUE.pairs.map(p => `<tr><td class="n">#${p.id}</td><td><b>${escH(p.name)}</b></td><td>${p.players.map(escH).join(" &amp; ")}</td></tr>`).join("") + `</table>`;
+      const draft = getDraft(), list = workingPairs(), pub = LEAGUE.pairs;
+      const changed = !!draft && (draft.length !== pub.length || draft.some((p, i) => !sameTeam(p, pub[i])));
+      if (draft && !changed) { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
+      $("pairs-source").textContent = !list.length
+        ? (changed ? "All pairs removed – not published yet." : "No pairs yet – add them below or import the paid registrations.")
+        : changed ? "Unpublished changes – only you can see them until you publish." : "Published – visible on the Participants tab.";
+      $("pairs-current").innerHTML = !list.length ? "" : `<table class="pairs-table"><tr><th>#</th><th>Team</th><th>Players</th><th></th></tr>` +
+        list.map((p, i) => `<tr><td class="n">#${p.id}</td><td><b>${escH(p.name)}</b></td><td>${p.players.map(escH).join(" &amp; ")}</td>
+          <td>${changed && !sameTeam(p, pub[i]) ? '<span class="note">not published</span>' : ""}</td></tr>`).join("") + `</table>`;
+      $("pairs-publish").hidden = !changed;
+      $("pairs-publish").style.display = changed ? "flex" : "none";
+      if (changed) {
+        const removed = pub.filter((p, i) => !sameTeam(p, list[i])).length;
+        const added = list.filter((p, i) => !sameTeam(p, pub[i])).length;
+        $("pub-info").textContent = [added && `${added} new/changed`, removed && `${removed} removed/replaced`].filter(Boolean).join(" · ");
+      }
     }
+    $("pub-btn").addEventListener("click", async () => {
+      const draft = getDraft();
+      if (!draft || !confirm(`Publish ${draft.length} team${draft.length === 1 ? "" : "s"} to the Participants tab?`)) return;
+      await savePairs(draft, `publish ${draft.length} pairs`, "pub-msg");
+    });
+    $("pub-discard").addEventListener("click", () => {
+      if (!confirm("Discard the unpublished changes?")) return;
+      setDraft(null);
+      flash("pub-msg", "Changes discarded.");
+    });
 
     // CSV with quotes; delimiter "," or ";" (whichever the header uses more)
     function parseCSV(text) {
@@ -732,16 +769,21 @@
         // "Last updated" on the Participants tab
         const next = { ...siteSettings, participantsUpdated: new Date().toISOString() };
         if (await persist("settings", next, "participants updated", msgId)) siteSettings = next;
-        try { localStorage.setItem("gppl-local-pairs", JSON.stringify(list)); } catch {}
+        try { localStorage.setItem("gppl-local-pairs", JSON.stringify(list)); localStorage.removeItem(DRAFT_KEY); } catch {}
         flash(msgId, $(msgId).textContent + " Reloading…");
         setTimeout(() => window.top.location.reload(), 1200);
       }
     }
-    $("pairs-save").addEventListener("click", () => importList && savePairs(importList, `import ${importList.length} pairs`));
-    $("pairs-reset").addEventListener("click", async () => {
-      if (!confirm("Remove all pairs?")) return;
-      try { localStorage.removeItem("gppl-local-pairs"); } catch {}
-      await savePairs([], "remove all pairs");
+    $("pairs-save").addEventListener("click", () => {
+      if (!importList) return;
+      setDraft(importList);
+      flash("pairs-msg", `✅ ${importList.length} pairs ready – not public yet. Press “Publish” under Current pairs.`);
+      $("panel-pairs").scrollIntoView({ behavior: "smooth" });
+    });
+    $("pairs-reset").addEventListener("click", () => {
+      if (!confirm("Remove all pairs? (You still need to publish afterwards.)")) return;
+      setDraft([]);
+      flash("pairs-msg", "All pairs removed – press “Publish” under Current pairs to update the website.");
     });
 
     // ---------- settings ----------
