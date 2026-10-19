@@ -225,9 +225,10 @@ function renderParticipants() {
     el.innerHTML = count + `<div class="card muted">No confirmed pairs yet. <a href="#register">Register now</a> 🎾</div>`;
     return;
   }
-  el.innerHTML = count + `<div class="grid part-grid">` + pairs.map(p => `<div class="card part-card">
-      <span class="part-num">#${p.id}</span><b>${esc(p.name)}</b>
-      <span class="note">${p.players.filter(Boolean).map(esc).join(" &amp; ")}</span></div>`).join("") + `</div>`;
+  el.innerHTML = count + `<div class="part-grid">` + pairs.map(p => `<div class="card part-card">
+      <span class="part-num">#${p.id}</span>
+      <div class="part-info"><b class="part-team">${esc(p.name)}</b>
+        <span class="part-players">${p.players.filter(Boolean).map(esc).join(" &amp; ")}</span></div></div>`).join("") + `</div>`;
 }
 
 function renderGallery() {

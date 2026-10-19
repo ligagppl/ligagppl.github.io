@@ -182,10 +182,15 @@ td.pts { font-weight: 700; }
 .perks { display: grid; gap: 16px; }
 .part-count { display: flex; align-items: center; gap: 16px; }
 .part-count > span:last-child { display: flex; flex-direction: column; }
-.part-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-.part-card { display: flex; flex-direction: column; gap: 2px; margin: 0; }
-.part-num { font-size: .8rem; font-weight: 800; color: var(--green-2); }
-@media (prefers-color-scheme: dark) { .part-num { color: var(--ball); } }
+.part-grid { display: grid; gap: 14px; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 640px) { .part-grid { grid-template-columns: 1fr; } }
+.part-card { display: flex; align-items: center; gap: 18px; margin: 0; padding: 20px 22px; border-left: 5px solid var(--green-2); }
+.part-num { flex: none; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--green); color: #fff; font-size: 1.25rem; font-weight: 800; }
+.part-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.part-team { font-size: 1.3rem; line-height: 1.2; overflow-wrap: anywhere; }
+.part-players { color: var(--muted); font-size: 1rem; }
+@media (prefers-color-scheme: dark) { .part-card { border-left-color: var(--ball); } }
 .perks .rb-table-wrap { margin: 8px 0 6px; }
 .perks > div { display: flex; flex-direction: column; gap: 2px; }
 .perks .perk-icon { font-size: 1.5rem; }
