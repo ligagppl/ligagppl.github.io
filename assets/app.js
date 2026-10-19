@@ -228,13 +228,17 @@ function renderParticipants() {
   const logos = LEAGUE.logos || {};
   // logo if there is one; a "loading" ball while the team name is still TBD; otherwise the number
   const logo = n => typeof logos[n] === "string" ? { src: logos[n] } : logos[n];
-  // Admin → Pairs → Logo animations: "always" plays them by default, otherwise on hover / tap
-  const always = settings.logoAnimation === "always" && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  // Admin → Pairs → Logo animations sets the default; each visitor can switch it on/off (remembered in this browser)
+  let mine = null;
+  try { mine = localStorage.getItem("gppl-logo-anim"); } catch {}
+  const always = (mine || settings.logoAnimation) === "always" && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const hasAnim = pairs.some(p => logos[p.name] && logo(p.name).anim);
+  const toggle = hasAnim ? `<label class="anim-toggle"><input type="checkbox" id="anim-toggle"${always ? " checked" : ""}> <span>Play logo animations</span></label>` : "";
   const badge = p => logos[p.name] ? `<img class="part-logo" src="${esc(always && logo(p.name).anim ? logo(p.name).anim : logo(p.name).src)}"${logo(p.name).anim ? ` data-still="${esc(logo(p.name).src)}" data-anim="${esc(logo(p.name).anim)}"` : ""} alt="${esc(p.name)} logo">`
     : /^tbd$/i.test(p.name.trim()) ? `<span class="part-loading" role="img" aria-label="Team name coming soon"><span></span></span>`
     : `<span class="part-num">#${p.id}</span>`;
   const label = p => logos[p.name] || /^tbd$/i.test(p.name.trim()) ? `<span class="part-seed">#${p.id}</span>` : "";
-  el.innerHTML = count + `<div class="part-grid">` + pairs.map(p => `<div class="card part-card${logos[p.name] && logo(p.name).anim && !always ? " has-anim" : ""}">
+  el.innerHTML = count + toggle + `<div class="part-grid">` + pairs.map(p => `<div class="card part-card${logos[p.name] && logo(p.name).anim && !always ? " has-anim" : ""}">
       ${badge(p)}
       <div class="part-info">${label(p)}<b class="part-team">${esc(p.name)}</b>
         <span class="part-players">${p.players.filter(Boolean).map(esc).join(" &amp; ")}</span></div></div>`).join("") + `</div>`;
@@ -243,8 +247,8 @@ function renderParticipants() {
 // team logos play their animation while hovered (desktop) or after a tap (phone)
 (function logoAnimations() {
   const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduce) return;
   const set = (card, on) => {
+    if (reduce) return;
     const img = card.querySelector("img[data-anim]");
     if (!img) return;
     img.src = on ? img.dataset.anim : img.dataset.still;
@@ -259,6 +263,11 @@ function renderParticipants() {
     const on = !c.classList.contains("playing");
     body.querySelectorAll(".part-card.playing").forEach(o => o !== c && set(o, false));
     set(c, on);
+  });
+  body.addEventListener("change", e => {
+    if (e.target.id !== "anim-toggle") return;
+    try { localStorage.setItem("gppl-logo-anim", e.target.checked ? "always" : "hover"); } catch {}
+    renderParticipants();
   });
   // load the animated files ahead of time, so the first hover starts right away
   window.addEventListener("load", () => Object.values(LEAGUE.logos || {}).forEach(l => { if (l && l.anim) new Image().src = l.anim; }));
