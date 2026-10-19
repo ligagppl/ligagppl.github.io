@@ -38,6 +38,9 @@
     .ball .blogo-sm { width: 46%; height: auto; filter: drop-shadow(0 3px 6px rgba(0,0,0,.3)); }
     .ball .bvs .bname { font-size: .6em; max-width: 46%; }
     .ball .bname-sm { font-size: .75em; }
+    .ball .bbye-wrap { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .ball .bbye { font-size: 1.1em; letter-spacing: .12em; color: #0b3d1e; }
+    .ball .blogo-bye { width: 52%; height: auto; filter: drop-shadow(0 3px 6px rgba(0,0,0,.3)); }
     .slot-logo { width: 28px; height: 28px; vertical-align: middle; margin-right: 6px; }
     /* members fade in below the team name after the reveal */
     .ball .bplayers {
@@ -402,9 +405,17 @@
           after(`🎟️ Byes: ${drawn.slice(first).map(name).join(", ")}`)();
         } else {
           const last = drawn[drawn.length - 1];
-          $("status").textContent = "…";
-          revealTeam(ball, ballHtml(last), !!logoSrc(last),
-            after(slotLabel(first).type === "bye" ? `🎟️ ${name(last)} gets the bye!` : `Last ball: ${name(last)}`));
+          if (slotLabel(first).type === "bye") {
+            // the bye isn't drawn – the remaining team is simply shown with "Bye"
+            ball.innerHTML = `<span class="bbye-wrap"><span class="bbye">BYE</span>` +
+              (logoSrc(last) ? `<img class="blogo-bye" src="${esc(logoSrc(last))}" alt="">` : "") +
+              `<span class="bname bname-sm">${esc(name(last))}</span></span>`;
+            ball.classList.add("show-info", "show-players");
+            after(`🎟️ ${name(last)} gets the bye!`)();
+          } else {
+            $("status").textContent = "…";
+            revealTeam(ball, ballHtml(last), !!logoSrc(last), after(`Last ball: ${name(last)}`));
+          }
         }
       }, 1500);
       return true;
