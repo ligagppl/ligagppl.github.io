@@ -182,7 +182,8 @@ td.pts { font-weight: 700; }
 .perks { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
 .perks > div { display: flex; flex-direction: column; gap: 2px; }
 .perks .perk-icon { font-size: 1.5rem; }
-.perks span:not(.perk-icon) { color: var(--muted); font-size: .92rem; }
+.perks ul { margin: 4px 0 0; padding-left: 1.2em; color: var(--muted); font-size: .92rem; }
+.perks li { margin: 3px 0; }
 .pay-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
 .pay-card b { display: block; font-size: 1.05rem; }
 .pay-card .btn { background: #0070ba; }

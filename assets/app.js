@@ -241,8 +241,14 @@ function renderRegister() {
       ${status === "open" && reg.paymentUrl ? `<span class="note">${esc(reg.paymentNote)}</span>` : ""}</div>
     ${status === "open" && reg.paymentUrl ? `<a class="btn" href="${esc(reg.paymentUrl)}" target="_blank" rel="noopener">Pay via PayPal pool</a>` : ""}</div>`;
   const perks = `<div class="card perks">
-    <div><span class="perk-icon">🗓️</span><b>A flexible league</b><span>The whole league schedule is published at the start of the season, and each matchday lasts 10 days – plan ahead and pick the day, time and court that suit you and your opponents.</span></div>
-    <div><span class="perk-icon">🏆</span><b>GPPC Cup – a fresh draw every round</b><span>Every pair plays in the cup. Each round is drawn randomly just before it starts – and anyone can verify the draw.</span></div></div>`;
+    <div><span class="perk-icon">🗓️</span><b>A flexible league</b><ul>
+      <li>The whole league schedule is published at the start of the season – plan ahead.</li>
+      <li>Each matchday lasts 10 days – pick the day, time and court that suit you and your opponents.</li>
+      <li>Just make sure you've played the required number of matches by each milestone (see the Rules).</li></ul></div>
+    <div><span class="perk-icon">🏆</span><b>GPPC Cup – a fresh draw every round</b><ul>
+      <li>Every pair plays in the cup.</li>
+      <li>Each round is drawn randomly just before it starts.</li>
+      <li>Anyone can verify the draw.</li></ul></div></div>`;
   let html = banner + feeCard + perks + `<div class="card">
     <p><b>Registration deadline:</b> ${esc(reg.deadline)}</p>
     <p class="note">${status === "open" && reg.paymentUrl ? "" : esc(reg.paymentNote) + " "}A registration only counts once it's paid – the time of payment is the time of registration.
