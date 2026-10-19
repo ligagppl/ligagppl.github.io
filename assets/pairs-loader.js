@@ -2,7 +2,7 @@
 // logic runs – the fixtures are built from them. Falls back to the placeholders in data.js.
 // Uses a synchronous request on purpose: everything else depends on the pair list.
 (function loadPairs() {
-  const use = list => { if (Array.isArray(list) && list.length) LEAGUE.pairs = list; };
+  const use = list => { if (Array.isArray(list) && list.length) { LEAGUE.pairs = list; LEAGUE.pairsImported = true; } };
   let gh = null;
   try { gh = JSON.parse(localStorage.getItem("gppl-gh") || "null"); } catch {}
   const connected = gh && gh.token && gh.owner && gh.repo;

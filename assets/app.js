@@ -211,6 +211,22 @@ document.addEventListener("click", e => {
   runVerify();
 });
 
+// registered pairs (imported in Admin → Pairs; the placeholders are never shown)
+function renderParticipants() {
+  const el = document.getElementById("participants-body");
+  const pairs = LEAGUE.pairsImported ? LEAGUE.pairs : [];
+  const max = 12, min = 8;
+  const count = `<div class="card part-count"><span class="fee-amount">${pairs.length}</span>
+    <span><b>${pairs.length === 1 ? "pair" : "pairs"} registered</b><span class="note">Minimum ${min} · maximum ${max} (tentative) – places in order of payment (§1.1)</span></span></div>`;
+  if (!pairs.length) {
+    el.innerHTML = count + `<div class="card muted">No confirmed pairs yet – pairs appear here once their entry fee has been paid. <a href="#register">Register now</a> 🎾</div>`;
+    return;
+  }
+  el.innerHTML = count + `<div class="grid part-grid">` + pairs.map(p => `<div class="card part-card">
+      <span class="part-num">#${p.id}</span><b>${esc(p.name)}</b>
+      <span class="note">${p.players.filter(Boolean).map(esc).join(" &amp; ")}</span></div>`).join("") + `</div>`;
+}
+
 function renderGallery() {
   const el = document.getElementById("gallery-grid");
   if (!LEAGUE.gallery.length) {
@@ -428,6 +444,7 @@ window.addEventListener("hashchange", () => { if (location.hash !== "#admin") re
 async function init() {
   showTab();
   renderGallery();
+  renderParticipants();
   await refresh();
 }
 init();

@@ -212,8 +212,8 @@
     </div>
   </main>
 
-  <script src="assets/data.js"></script>
-  <script src="assets/pairs-loader.js"></script>
+  <script src="assets/data.js?v=2"></script>
+  <script src="assets/pairs-loader.js?v=2"></script>
   <script src="assets/league.js?v=2"></script>
   <script src="assets/store.js"></script>
   <script src="assets/lock.js?v=2"></script>
@@ -638,7 +638,7 @@
       csv.rows.forEach((r, i) => {
         const team = (r[ct] || "").trim(), raw = (r[cp] || "").trim();
         let p1 = (r[c1] || "").trim(), p2 = splitNames ? "" : (r[c2] || "").trim();
-        if (splitNames) [p1, p2 = ""] = p1.split(/\s*(?:,|;|&|\+|\/|\band\b|\bund\b)\s*/i).filter(Boolean);
+        if (splitNames) [p1, p2 = ""] = p1.split(/\s*(?:\r?\n|,|;|&|\+|\/|\band\b|\bund\b)\s*/i).filter(Boolean);
         if (!team && !p1 && !p2) return;
         if (!raw) return skipped.push({ team, why: "no payment date" });
         const d = parseDate(raw, fmt);

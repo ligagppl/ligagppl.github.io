@@ -180,6 +180,12 @@ td.pts { font-weight: 700; }
 .fee-card .btn:hover { background: #005ea6; }
 @media (prefers-color-scheme: dark) { .fee-amount { color: var(--ball); } .fee-card { border-color: var(--ball); } }
 .perks { display: grid; gap: 16px; }
+.part-count { display: flex; align-items: center; gap: 16px; }
+.part-count > span:last-child { display: flex; flex-direction: column; }
+.part-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.part-card { display: flex; flex-direction: column; gap: 2px; margin: 0; }
+.part-num { font-size: .8rem; font-weight: 800; color: var(--green-2); }
+@media (prefers-color-scheme: dark) { .part-num { color: var(--ball); } }
 .perks .rb-table-wrap { margin: 8px 0 6px; }
 .perks > div { display: flex; flex-direction: column; gap: 2px; }
 .perks .perk-icon { font-size: 1.5rem; }
