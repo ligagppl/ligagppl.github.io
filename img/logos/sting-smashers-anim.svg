@@ -5,19 +5,19 @@
     .bolt{animation:bolt 3.6s linear infinite}
     @keyframes bolt{0%,28%{opacity:.12}29.5%,36%{opacity:1}46%,100%{opacity:.12}}
     .b{transform-box:fill-box;transform-origin:50% 50%;animation:b 3.6s linear infinite}
-    @keyframes b{0%,4%{transform:translate(-62px,-110px) scale(.7);opacity:0}10%{transform:translate(-62px,-102px) scale(1);opacity:1}26%{transform:translate(-62px,-92px)}28.5%{transform:translate(-62px,-92px)}31%{transform:translate(-42px,-112px)}34%{transform:translate(-22px,-132px)}35%{transform:translate(-20px,-134px) scale(.6)}37%{transform:translate(-20px,-134px) scale(1.15)}39%{transform:translate(-22px,-132px) scale(1)}46%{transform:translate(-48px,-122px)}53%{transform:translate(-30px,-140px)}60%{transform:translate(-6px,-124px)}67%{transform:translate(-36px,-116px)}74%{transform:translate(-18px,-136px);opacity:1}82%{transform:translate(40px,-200px) scale(.8);opacity:1}88%,100%{transform:translate(80px,-250px) scale(.6);opacity:0}}
+    @keyframes b{0%,4%{transform:translate(-62px,-110px) scale(.7);opacity:0}10%{transform:translate(-62px,-102px) scale(1);opacity:1}26%{transform:translate(-62px,-92px)}28.5%{transform:translate(-62px,-92px)}31.5%{transform:translate(-30px,-104px)}34.5%{transform:translate(-4px,-114px)}37.5%{transform:translate(20px,-124px)}38.5%{transform:translate(20px,-124px) scale(.6)}40.5%{transform:translate(18px,-124px) scale(1.15)}42.5%{transform:translate(14px,-122px) scale(1)}49%{transform:translate(-14px,-130px)}56%{transform:translate(-36px,-114px)}63%{transform:translate(-8px,-108px)}70%{transform:translate(-28px,-128px)}77%{transform:translate(4px,-118px);opacity:1}84%{transform:translate(50px,-200px) scale(.8);opacity:1}90%,100%{transform:translate(80px,-250px) scale(.6);opacity:0}}
     .ball{animation:ball 3.6s linear infinite}
-    @keyframes ball{0%,34.5%{opacity:1}35%,99%{opacity:0}100%{opacity:1}}
+    @keyframes ball{0%,38%{opacity:1}38.5%,99%{opacity:0}100%{opacity:1}}
     .bee{animation:bee 3.6s linear infinite;opacity:0}
-    @keyframes bee{0%,34.5%{opacity:0}35%,99%{opacity:1}100%{opacity:0}}
+    @keyframes bee{0%,38%{opacity:0}38.5%,99%{opacity:1}100%{opacity:0}}
     .wing{transform-box:fill-box;transform-origin:50% 100%;animation:wing .12s ease-in-out infinite alternate}
     @keyframes wing{from{transform:scaleY(1)}to{transform:scaleY(.35)}}
     .imp{animation:imp 3.6s linear infinite}
     @keyframes imp{0%,100%{opacity:0}}
     .st{animation:st 3.6s linear infinite;opacity:0}
-    @keyframes st{0%,29%{opacity:0}31%{opacity:.85}37%,100%{opacity:0}}
+    @keyframes st{0%,29%{opacity:0}32%{opacity:.85}40%,100%{opacity:0}}
     .pop{animation:pop 3.6s linear infinite;opacity:0}
-    @keyframes pop{0%,34.5%{opacity:0}35.5%{opacity:1}39%,100%{opacity:0}}
+    @keyframes pop{0%,38%{opacity:0}39%{opacity:1}43%,100%{opacity:0}}
     @media (prefers-reduced-motion: reduce){*{animation:none!important}.st,.imp,.bee,.pop{opacity:0}.bolt{opacity:1}}
   </style>
   <defs>
@@ -37,7 +37,7 @@
       <path d="M79 126 L93 132 M79 138 L93 144 M79 150 L93 156" stroke="#1b1b1b" stroke-width="2.5"/>
     </g></g>
     <polygon class="bolt" points="134,58 108,114 130,114 112,170 168,96 142,96 160,58" fill="#fff" stroke="#f5c400" stroke-width="4" stroke-linejoin="round"/>
-    <g class="st" stroke="#f5c400" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 6"><path d="M104 64 L146 22"/><path d="M116 70 L156 30"/></g>
+    <g class="st" stroke="#f5c400" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 6"><path d="M104 62 L176 34"/><path d="M110 74 L180 46"/></g>
     <g transform="translate(170 150)"><g class="b">
       <g class="ball"><circle r="19" fill="#d7f34a" stroke="#0d0d0d" stroke-width="3"/><path d="M-17 -7 C-6 1 6 1 17 -7 M-17 7 C-6 -1 6 -1 17 7" fill="none" stroke="#fff" stroke-width="3"/></g>
       <g class="bee">
@@ -50,7 +50,7 @@
         <path d="M-4 -28 C-8 -36 -12 -36 -14 -34 M4 -28 C8 -36 12 -36 14 -34" fill="none" stroke="#0d0d0d" stroke-width="2.4" stroke-linecap="round"/>
       </g>
     </g></g>
-    <g class="pop" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M150 0 L150 -12 M166 8 L176 0 M134 8 L124 0 M168 26 L180 28 M132 26 L120 28"/></g>
+    <g class="pop" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M190 0 L190 -10 M206 8 L216 0 M174 8 L164 0 M208 28 L220 30 M172 28 L160 30"/></g>
     <g class="imp" stroke="#f5c400" stroke-width="4" stroke-linecap="round"><path d="M150 178 L140 186"/><path d="M164 182 L160 194"/><path d="M180 182 L184 194"/><path d="M192 176 L202 184"/></g>
   </g></g>
   <circle cx="120" cy="120" r="106" fill="none" stroke="#f5c400" stroke-width="3"/>
