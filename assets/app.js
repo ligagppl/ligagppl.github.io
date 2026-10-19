@@ -95,7 +95,7 @@ function renderCup() {
     return `<div class="card"><h3 style="margin-top:0">${r.name}</h3>
       ${r.matches.map(m => {
         const w = GPPL.cupWinner(m);
-        const score = m.walkover === "both" ? "W/O – both out" : m.walkover ? "W/O" : m.sets && m.sets.length ? GPPL.scoreText(m, m.a, false) : "";
+        const score = m.walkover === "both" ? "W/O – both out" : m.walkover ? "W/O" : m.sets && m.sets.length ? GPPL.scoreText(m, m.a, !GPPL.cupFullSets(r)) : "";
         return `<div class="cupmatch">
           <div><span class="${w === m.a ? "w" : ""}">${pairName(m.a)}</span><span class="note">${score}</span></div>
           <div><span class="${w === m.b ? "w" : ""}">${pairName(m.b)}</span></div></div>`;
@@ -241,8 +241,8 @@ function renderRegister() {
       ${status === "open" && reg.paymentUrl ? `<span class="note">${esc(reg.paymentNote)}</span>` : ""}</div>
     ${status === "open" && reg.paymentUrl ? `<a class="btn" href="${esc(reg.paymentUrl)}" target="_blank" rel="noopener">Pay via PayPal pool</a>` : ""}</div>`;
   const perks = `<div class="card perks">
-    <div><span class="perk-icon">🗓️</span><b>A flexible league</b><span>Each matchday lasts 10 days – you and your opponents pick the day, time and court that suit you.</span></div>
-    <div><span class="perk-icon">📋</span><b>The whole league schedule from day one</b><span>All league fixtures are published at the start of the season, so you can plan ahead. GPPC Cup draws take place before each round.</span></div></div>`;
+    <div><span class="perk-icon">🗓️</span><b>A flexible league</b><span>The whole league schedule is published at the start of the season, and each matchday lasts 10 days – plan ahead and pick the day, time and court that suit you and your opponents.</span></div>
+    <div><span class="perk-icon">🏆</span><b>GPPC Cup – a fresh draw every round</b><span>Every pair plays in the cup. Each round is drawn randomly just before it starts – and anyone can verify the draw.</span></div></div>`;
   let html = banner + feeCard + perks + `<div class="card">
     <p><b>Registration deadline:</b> ${esc(reg.deadline)}</p>
     <p class="note">${status === "open" && reg.paymentUrl ? "" : esc(reg.paymentNote) + " "}A registration only counts once it's paid – the time of payment is the time of registration.

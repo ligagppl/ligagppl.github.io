@@ -109,7 +109,9 @@ const GPPL = (() => {
   }
 
   // ---------- cup ----------
-  // match: { a, b, sets: [[6,4],[3,6],[7,5]] (full sets), walkover: id, winner: id }
+  // match: { a, b, sets: [[6,4],[3,6],[10,7]], walkover: id, winner: id }
+  // 3rd set: match tie-break, except in the semi-finals and the final (3 full sets)
+  const cupFullSets = round => !!round && (round.name === "Semi-finals" || round.name === "Final");
   // walkover "both": both pairs at fault → both out, nobody goes through
   function cupWinner(m) {
     if (m.walkover === "both") return null;
@@ -219,7 +221,7 @@ const GPPL = (() => {
 
   return {
     DAY, start, fmt, pairById, pairName, matchdayWindow, fixtures, findResult, samePair,
-    evaluate, scoreText, rankStandings, cupWinner, cupLoser, cupNextStage, mainRounds, roundName, addFinalIfDue,
+    evaluate, scoreText, rankStandings, cupFullSets, cupWinner, cupLoser, cupNextStage, mainRounds, roundName, addFinalIfDue,
     cleanWords, wordsToSeed, seededShuffle, drawFromOrder, verifyRound,
   };
 })();

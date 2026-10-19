@@ -214,7 +214,7 @@
 
   <script src="assets/data.js"></script>
   <script src="assets/pairs-loader.js"></script>
-  <script src="assets/league.js"></script>
+  <script src="assets/league.js?v=2"></script>
   <script src="assets/store.js"></script>
   <script src="assets/lock.js?v=2"></script>
   <script>
@@ -409,8 +409,8 @@
             <div style="margin-bottom:6px"><b>${name(m.a)}</b> vs <b>${name(m.b)}</b> ${w ? `· <span class="done">🏆 ${name(w)}</span>` : m.walkover === "both" ? '· <span class="muted">both out</span>' : ""}</div>
             <div class="sets">
               <span></span><span>${name(m.a)}</span><span>${name(m.b)}</span>
-              ${[0, 1, 2].map(si => `<span class="head">Set ${si + 1}</span>` + [m.a, m.b].map((p, pi) =>
-                `<input type="number" min="0" max="7" data-s="${si}" data-p="${pi}" aria-label="Set ${si + 1} ${name(p)}" value="${m.sets && m.sets[si] ? m.sets[si][pi] : ""}">`).join("")).join("")}
+              ${[0, 1, 2].map(si => `<span class="head">${si === 2 && !GPPL.cupFullSets(r) ? "Tie-break" : `Set ${si + 1}`}</span>` + [m.a, m.b].map((p, pi) =>
+                `<input type="number" min="0" max="${si === 2 && !GPPL.cupFullSets(r) ? 99 : 7}" data-s="${si}" data-p="${pi}" aria-label="Set ${si + 1} ${name(p)}" value="${m.sets && m.sets[si] ? m.sets[si][pi] : ""}">`).join("")).join("")}
             </div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
               <select data-wo style="width:auto">
@@ -466,6 +466,7 @@
       const ri = +box.dataset.r, mi = +box.dataset.m;
       const next = structuredClone(cup);
       const m = next.rounds[ri].matches[mi];
+      const fullSets = GPPL.cupFullSets(next.rounds[ri]);
       const wo = box.querySelector("[data-wo]").value;
       delete m.sets; delete m.walkover;
       if (wo) m.walkover = wo === "both" ? "both" : +wo;
@@ -475,7 +476,9 @@
           const x = box.querySelector(`[data-s="${si}"][data-p="0"]`).value, y = box.querySelector(`[data-s="${si}"][data-p="1"]`).value;
           if (x === "" && y === "") continue;
           if (x === "" || y === "") return flash("cup-msg", `❌ Set ${si + 1} is incomplete.`, false);
-          if (!validSet([+x, +y])) return flash("cup-msg", `❌ Set ${si + 1}: a set must end 6–0…6–4, 7–5 or 7–6.`, false);
+          if (si === 2 && !fullSets) {
+            if (!validTieBreak([+x, +y])) return flash("cup-msg", "❌ Match tie-break: first to 10, win by 2 (e.g. 10–8, 12–10).", false);
+          } else if (!validSet([+x, +y])) return flash("cup-msg", `❌ Set ${si + 1}: a set must end 6–0…6–4, 7–5 or 7–6.`, false);
           sets.push([+x, +y]);
         }
         m.sets = sets;
