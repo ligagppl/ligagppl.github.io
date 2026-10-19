@@ -225,9 +225,15 @@ function renderParticipants() {
     el.innerHTML = count + `<div class="card muted">No confirmed pairs yet. <a href="#register">Register now</a> 🎾</div>`;
     return;
   }
+  const logos = LEAGUE.logos || {};
+  // logo if there is one; a "loading" ball while the team name is still TBD; otherwise the number
+  const badge = p => logos[p.name] ? `<img class="part-logo" src="${esc(logos[p.name])}" alt="${esc(p.name)} logo">`
+    : /^tbd$/i.test(p.name.trim()) ? `<span class="part-loading" role="img" aria-label="Team name coming soon"><span></span></span>`
+    : `<span class="part-num">#${p.id}</span>`;
+  const label = p => logos[p.name] || /^tbd$/i.test(p.name.trim()) ? `<span class="part-seed">#${p.id}</span>` : "";
   el.innerHTML = count + `<div class="part-grid">` + pairs.map(p => `<div class="card part-card">
-      <span class="part-num">#${p.id}</span>
-      <div class="part-info"><b class="part-team">${esc(p.name)}</b>
+      ${badge(p)}
+      <div class="part-info">${label(p)}<b class="part-team">${esc(p.name)}</b>
         <span class="part-players">${p.players.filter(Boolean).map(esc).join(" &amp; ")}</span></div></div>`).join("") + `</div>`;
 }
 

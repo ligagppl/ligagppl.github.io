@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Kaantay Walay Phool (KWP) logo">
+  <defs>
+    <g id="rose">
+      <circle r="19" fill="#c8102e" stroke="#5c0614" stroke-width="2.5"/>
+      <path d="M-13 -3 C-8 -16 8 -16 13 -3 C5 -9 -5 -9 -13 -3 Z" fill="#8e0b20"/>
+      <path d="M-14 5 C-6 14 6 14 14 5 C6 9 -6 9 -14 5 Z" fill="#8e0b20"/>
+      <circle cy="1" r="7" fill="#8e0b20"/>
+      <path d="M-3 -1 C0 -5 4 -3 3 1" fill="none" stroke="#e8456b" stroke-width="2" stroke-linecap="round"/>
+    </g>
+    <g id="leaf"><path d="M0 0 C8 -10 22 -10 28 -2 C20 6 8 6 0 0 Z" fill="#2f7d32" stroke="#14451a" stroke-width="2"/></g>
+  </defs>
+  <circle cx="120" cy="120" r="116" fill="#fdecef"/>
+  <circle cx="120" cy="120" r="106" fill="none" stroke="#c8102e" stroke-width="3"/>
+
+  <!-- court in perspective -->
+  <path d="M56 64 L184 64 L200 196 L40 196 Z" fill="#1e5aa8" stroke="#0e3566" stroke-width="3"/>
+  <path d="M56 64 L184 64 L200 196 L40 196 Z" fill="none" stroke="#fff" stroke-width="3" transform="translate(0 0)"/>
+  <path d="M120 64 L120 196" stroke="#fff" stroke-width="2.5"/>
+  <path d="M52 92 L188 92 M44 166 L196 166" stroke="#fff" stroke-width="2.5"/>
+
+  <!-- the thorny vine is the net -->
+  <path d="M30 128 C66 116 98 138 120 126 C142 114 174 138 210 124" fill="none" stroke="#14451a" stroke-width="16" stroke-linecap="round"/>
+  <path d="M30 128 C66 116 98 138 120 126 C142 114 174 138 210 124" fill="none" stroke="#2f7d32" stroke-width="10" stroke-linecap="round"/>
+  <g fill="#14451a">
+    <polygon points="44,122 48,94 58,120"/>
+    <polygon points="66,124 62,152 76,128"/>
+    <polygon points="88,128 94,100 102,128"/>
+    <polygon points="112,128 108,156 122,128"/>
+    <polygon points="132,120 138,92 146,120"/>
+    <polygon points="156,124 152,152 166,126"/>
+    <polygon points="176,128 182,100 190,128"/>
+    <polygon points="198,124 194,150 206,124"/>
+  </g>
+  <use href="#leaf" transform="translate(70 120) rotate(-30)"/>
+  <use href="#leaf" transform="translate(150 124) rotate(150)"/>
+
+  <!-- roses at the net posts -->
+  <use href="#rose" transform="translate(30 128)"/>
+  <use href="#rose" transform="translate(210 124)"/>
+
+  <!-- padel ball -->
+  <circle cx="86" cy="176" r="15" fill="#d7f34a" stroke="#0e3566" stroke-width="2.5"/>
+  <path d="M73 170 C81 176 91 176 99 170 M73 182 C81 176 91 176 99 182" fill="none" stroke="#fff" stroke-width="2.5"/>
+
+  <!-- name -->
+  <text x="120" y="50" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="30" letter-spacing="4" fill="#c8102e">KWP</text>
+  <text x="120" y="222" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="10.5" letter-spacing="1.5" fill="#8e0b20">KAANTAY WALAY PHOOL</text>
+</svg>

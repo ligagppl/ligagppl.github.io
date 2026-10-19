@@ -45,6 +45,14 @@ const LEAGUE = {
   pairs: [],
 
   // ----------------------------------------------------------
+  //  TEAM LOGOS – by team name (exactly as registered), files in /img/logos
+  // ----------------------------------------------------------
+  logos: {
+    "Vibora Vipers": "img/logos/vibora-vipers.svg",
+    "Kaantay Walay Phool (KWP)": "img/logos/kwp.svg",
+  },
+
+  // ----------------------------------------------------------
   //  GALLERY – put images in the /img folder (keep them < 500 KB)
   // ----------------------------------------------------------
   gallery: [
