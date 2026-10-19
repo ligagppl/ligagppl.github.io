@@ -5,7 +5,7 @@
     .bolt{animation:bolt 3.6s linear infinite}
     @keyframes bolt{0%,28%{opacity:.12}29.5%,36%{opacity:1}46%,100%{opacity:.12}}
     .b{transform-box:fill-box;transform-origin:50% 50%;animation:b 3.6s linear infinite}
-    @keyframes b{0%,4%{transform:translate(-62px,-110px) scale(.7);opacity:0}10%{transform:translate(-62px,-102px) scale(1);opacity:1}26%{transform:translate(-62px,-92px)}28.5%{transform:translate(-62px,-92px)}31%{transform:translate(0,0) scale(1.25,.7)}32.5%{transform:translate(0,-40px) scale(.95,1.1)}36%{transform:translate(0,-110px) scale(1)}37%{transform:translate(0,-114px) scale(.6)}39%{transform:translate(0,-116px) scale(1.15)}41%{transform:translate(-8px,-118px) scale(1)}48%{transform:translate(-38px,-128px)}55%{transform:translate(-64px,-106px)}62%{transform:translate(-40px,-132px)}69%{transform:translate(-14px,-108px)}76%{transform:translate(-46px,-120px);opacity:1}84%{transform:translate(20px,-190px) scale(.8);opacity:1}90%,100%{transform:translate(60px,-250px) scale(.6);opacity:0}}
+    @keyframes b{0%,4%{transform:translate(-62px,-110px) scale(.7);opacity:0}10%{transform:translate(-62px,-102px) scale(1);opacity:1}26%{transform:translate(-62px,-92px)}28.5%{transform:translate(-62px,-92px)}31%{transform:translate(0,0) scale(1.25,.7)}33%{transform:translate(8px,-30px) scale(1)}36%{transform:translate(22px,-96px) scale(1)}37%{transform:translate(24px,-102px) scale(.6)}39%{transform:translate(24px,-104px) scale(1.15)}41%{transform:translate(18px,-108px) scale(1)}48%{transform:translate(-12px,-120px)}55%{transform:translate(-40px,-100px)}62%{transform:translate(-18px,-126px)}69%{transform:translate(8px,-104px)}76%{transform:translate(-24px,-114px);opacity:1}84%{transform:translate(30px,-190px) scale(.8);opacity:1}90%,100%{transform:translate(60px,-250px) scale(.6);opacity:0}}
     .ball{animation:ball 3.6s linear infinite}
     @keyframes ball{0%,36.5%{opacity:1}37%,99%{opacity:0}100%{opacity:1}}
     .bee{animation:bee 3.6s linear infinite;opacity:0}
@@ -37,7 +37,7 @@
       <path d="M79 126 L93 132 M79 138 L93 144 M79 150 L93 156" stroke="#1b1b1b" stroke-width="2.5"/>
     </g></g>
     <polygon class="bolt" points="134,58 108,114 130,114 112,170 168,96 142,96 160,58" fill="#fff" stroke="#f5c400" stroke-width="4" stroke-linejoin="round"/>
-    <g class="st" stroke="#f5c400" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 6"><path d="M160 150 L160 -20"/><path d="M180 150 L180 -20"/></g>
+    <g class="st" stroke="#d7f34a" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 7" fill="none"><path d="M172 140 C176 110 184 80 190 56"/><path d="M186 146 C190 116 198 86 204 62"/></g>
     <g transform="translate(170 150)"><g class="b">
       <g class="ball"><circle r="19" fill="#d7f34a" stroke="#0d0d0d" stroke-width="3"/><path d="M-17 -7 C-6 1 6 1 17 -7 M-17 7 C-6 -1 6 -1 17 7" fill="none" stroke="#fff" stroke-width="3"/></g>
       <g class="bee">
@@ -50,7 +50,7 @@
         <path d="M-4 -28 C-8 -36 -12 -36 -14 -34 M4 -28 C8 -36 12 -36 14 -34" fill="none" stroke="#0d0d0d" stroke-width="2.4" stroke-linecap="round"/>
       </g>
     </g></g>
-    <g class="pop" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M170 18 L170 6 M186 26 L196 18 M154 26 L144 18 M188 44 L200 46 M152 44 L140 46"/></g>
+    <g class="pop" stroke="#fff" stroke-width="3" stroke-linecap="round"><path d="M194 34 L194 22 M210 42 L220 34 M178 42 L168 34 M212 60 L224 62 M176 60 L164 62"/></g>
     <g class="imp" stroke="#f5c400" stroke-width="4" stroke-linecap="round"><path d="M150 178 L140 186"/><path d="M164 182 L160 194"/><path d="M180 182 L184 194"/><path d="M192 176 L202 184"/></g>
   </g></g>
   <circle cx="120" cy="120" r="106" fill="none" stroke="#f5c400" stroke-width="3"/>
