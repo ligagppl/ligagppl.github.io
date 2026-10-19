@@ -3,7 +3,7 @@
     .r{transform-box:view-box;transform-origin:64px 160px;animation:r 3s cubic-bezier(.45,0,.3,1) infinite}
     @keyframes r{0%{transform:rotate(0)}38%{transform:rotate(-35deg)}48%{transform:rotate(-35deg)}58%{transform:rotate(30deg)}68%{transform:rotate(22deg)}100%{transform:rotate(0)}}
     .b{animation:b 3s linear infinite}
-    @keyframes b{0%,14%{transform:translate(0,-80px) scale(.7);opacity:0}24%{transform:translate(0,-64px) scale(1);opacity:1}58%{transform:translate(0,0)}62%{transform:translate(40px,104px) scale(1.3,.65)}65%{transform:translate(48px,74px) scale(1)}72%{transform:translate(70px,0) scale(.75);opacity:1}80%{transform:translate(90px,-80px) scale(.45);opacity:.5}85%,100%{transform:translate(100px,-120px) scale(.35);opacity:0}}
+    @keyframes b{0%,14%{transform:translate(0,-80px) scale(.7);opacity:0}24%{transform:translate(0,-64px) scale(1);opacity:1}58%{transform:translate(0,0)}61.5%{transform:translate(18px,104px) scale(1.3,.65)}63.5%{transform:translate(18px,70px) scale(.9,1.15)}67%{transform:translate(18px,-10px) scale(.8,1.12);opacity:1}71%{transform:translate(18px,-80px) scale(.6);opacity:.4}74%,100%{transform:translate(18px,-112px) scale(.5);opacity:0}}
     .bud{transform-box:fill-box;transform-origin:50% 50%;animation:bud 3s linear infinite}
     @keyframes bud{0%,58%{transform:scale(.7)}61%{transform:scale(1.2)}66%,100%{transform:scale(1)}}
     .open{animation:open 3s linear infinite}
@@ -15,9 +15,9 @@
     .fl{animation:fl 3s linear infinite;opacity:0}
     @keyframes fl{0%,57.5%{opacity:0}59%{opacity:1}65%,100%{opacity:0}}
     .dust{animation:dust 3s linear infinite;opacity:0}
-    @keyframes dust{0%,61.5%{opacity:0}62.5%{opacity:1}74%,100%{opacity:0}}
+    @keyframes dust{0%,61%{opacity:0}62%{opacity:1}72%,100%{opacity:0}}
     .st{animation:st 3s linear infinite;opacity:0}
-    @keyframes st{0%,64%{opacity:0}70%{opacity:.8}84%,100%{opacity:0}}
+    @keyframes st{0%,63%{opacity:0}65.5%{opacity:.9}73%,100%{opacity:0}}
     @media (prefers-reduced-motion: reduce){*{animation:none!important}.pet,.fl,.dust,.st,.closed{opacity:0}.b{opacity:1}}
   </style>
   <defs>
@@ -38,8 +38,8 @@
       <use href="#t" transform="translate(7 62) rotate(90)"/><use href="#t" transform="translate(-7 76) rotate(-90)"/><use href="#t" transform="translate(7 90) rotate(90)"/><use href="#t" transform="translate(-7 100) rotate(-90)"/>
     </g></g>
     <g class="fl" stroke="#f6e7ea" stroke-width="3" stroke-linecap="round"><path d="M118 56 L110 48 M130 50 L130 38 M142 56 L150 48"/></g>
-    <g class="dust" stroke="#f6e7ea" stroke-width="2.5" stroke-linecap="round"><path d="M160 172 L152 166 M168 170 L166 160 M182 170 L186 160 M190 172 L198 166"/></g>
-    <g class="st" stroke="#e8456b" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 6" fill="none"><path d="M170 166 C180 120 200 70 222 30"/><path d="M184 168 C194 124 212 78 234 40"/></g>
+    <g class="dust" stroke="#f6e7ea" stroke-width="2.5" stroke-linecap="round"><path d="M138 172 L132 166 M144 170 L142 160 M154 170 L158 160 M160 172 L166 166"/></g>
+    <g class="st" stroke="#e8456b" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 6"><path d="M142 160 L142 24"/><path d="M154 160 L154 24"/></g>
     <g transform="translate(130 70)">
       <g class="pet" style="--x:-24px;--y:96px"><use href="#petal" transform="rotate(20)"/></g>
       <g class="pet" style="--x:-6px;--y:100px;animation-delay:.1s"><use href="#petal" transform="rotate(-40)"/></g>
