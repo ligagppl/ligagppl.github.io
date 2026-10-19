@@ -30,5 +30,13 @@
       "Mohsin Mumtaz",
       "Raz Nissim"
     ]
+  },
+  {
+    "id": 5,
+    "name": "Padel to the Metal",
+    "players": [
+      "Sameer Fatmi",
+      "Malik Sher"
+    ]
   }
 ]
