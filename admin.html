@@ -212,7 +212,7 @@
     </div>
   </main>
 
-  <script src="assets/data.js?v=2"></script>
+  <script src="assets/data.js?v=3"></script>
   <script src="assets/pairs-loader.js?v=2"></script>
   <script src="assets/league.js?v=2"></script>
   <script src="assets/store.js"></script>
@@ -687,6 +687,9 @@
     async function savePairs(list, message) {
       if ((results.length || cup.rounds.length) && !confirm("Results or cup rounds already exist – changing the pairs will mix them up. Continue?")) return;
       if (await persist("pairs", list, message, "pairs-msg")) {
+        // "Last updated" on the Participants tab
+        const next = { ...siteSettings, participantsUpdated: new Date().toISOString() };
+        if (await persist("settings", next, "participants updated", "pairs-msg")) siteSettings = next;
         try { localStorage.setItem("gppl-local-pairs", JSON.stringify(list)); } catch {}
         flash("pairs-msg", $("pairs-msg").textContent + " Reloading…");
         setTimeout(() => window.top.location.reload(), 1200);
