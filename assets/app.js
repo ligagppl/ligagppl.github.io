@@ -220,7 +220,7 @@ function renderParticipants() {
   const upd = settings.participantsUpdated ? new Date(settings.participantsUpdated) : null;
   const updatedLine = upd && !isNaN(upd) ? `<span class="note">Last updated: ${upd.toLocaleString("en-GB", { timeZone: "Europe/Berlin", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>` : "";
   const count = `<div class="card part-count"><span class="fee-amount">${pairs.length}</span>
-    <span><b>${pairs.length === 1 ? "pair" : "pairs"} registered</b><span class="note">Minimum ${min} · maximum ${max} (tentative) – places in order of payment (§1.1)</span>${updatedLine}</span></div>`;
+    <span><b>${pairs.length === 1 ? "team" : "teams"} registered</b><span class="note">Minimum ${min} · maximum ${max} (tentative) – places in order of payment (§1.1)</span>${updatedLine}</span></div>`;
   if (!pairs.length) {
     el.innerHTML = count + `<div class="card muted">No confirmed pairs yet. <a href="#register">Register now</a> 🎾</div>`;
     return;
