@@ -26,6 +26,11 @@
     }
     .ball .bnum { font-size: .7em; opacity: .7; }
     .ball .bname { position: relative; z-index: 1; }
+    .ball .blogo { position: relative; z-index: 1; width: 58%; height: auto; margin: 4px 0 0; filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)); }
+    .ball .bvs { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; }
+    .ball .blogo-sm { width: 40%; height: auto; filter: drop-shadow(0 3px 6px rgba(0,0,0,.3)); }
+    .ball .bvs .bname { font-size: .6em; max-width: 40%; }
+    .slot-logo { width: 28px; height: 28px; vertical-align: middle; margin-right: 6px; }
     /* members fade in below the team name after the reveal */
     .ball .bplayers {
       position: relative; z-index: 1; margin-top: 8px; font-size: .55em; font-weight: 600;
@@ -152,9 +157,16 @@
     const name = id => `#${id} ${team(id).name}`; // shown everywhere in the draw
     const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     // ball content: number + team name, members appear below after the reveal
+    // team logo (still version) instead of the name, where a team has one
+    const logoSrc = id => { const l = (LEAGUE.logos || {})[team(id).name]; return l ? (typeof l === "string" ? l : l.src) : null; };
+    const teamMark = (id, cls) => logoSrc(id)
+      ? `<img class="${cls}" src="${esc(logoSrc(id))}" alt="${esc(team(id).name)}">`
+      : `<span class="bname">${esc(team(id).name)}</span>`;
+    const smallLogo = id => logoSrc(id) ? `<img class="slot-logo" src="${esc(logoSrc(id))}" alt="">` : "";
+    window.addEventListener("load", () => pairs.forEach(p => { const src = logoSrc(p.id); if (src) new Image().src = src; }));
     function ballHtml(id, withPlayers) {
       const t = team(id);
-      return `<span class="bnum">#${id}</span><span class="bname">${esc(t.name)}</span>` +
+      return `<span class="bnum">#${id}</span>${teamMark(id, "blogo")}` +
         (withPlayers ? `<span class="bplayers">${t.players.map(esc).join(" & ")}</span>` : "");
     }
 
@@ -244,7 +256,7 @@
       let html = "";
       if (P.lucky) {
         html = `<h3 style="margin-top:0">🍀 Back in the cup</h3>` + drawn.map((id, i) =>
-          `<div class="slot ${newIdx === i ? "new" : ""}"><span><b>Lucky loser ${i + 1}:</b> ${name(id)}</span><span>🍀</span></div>`).join("");
+          `<div class="slot ${newIdx === i ? "new" : ""}"><span><b>Lucky loser ${i + 1}:</b> ${smallLogo(id)}${name(id)}</span><span>🍀</span></div>`).join("");
         if (drawn.length >= P.total && bowl.length) {
           html += `<h3>Out of the cup</h3><p class="muted">${bowl.map(name).join(", ")}</p>`;
         }
@@ -255,13 +267,13 @@
         const a = drawn[m * 2], b = drawn[m * 2 + 1];
         if (a === undefined) break;
         const isNew = newIdx === m * 2 || newIdx === m * 2 + 1;
-        html += `<div class="slot ${isNew ? "new" : ""}"><span><b>Match ${m + 1}:</b> ${name(a)}</span>
-          <span class="vs">vs</span><span>${b !== undefined ? name(b) : "…"}</span></div>`;
+        html += `<div class="slot ${isNew ? "new" : ""}"><span><b>Match ${m + 1}:</b> ${smallLogo(a)}${name(a)}</span>
+          <span class="vs">vs</span><span>${b !== undefined ? smallLogo(b) + name(b) : "…"}</span></div>`;
       }
       const byes = drawn.slice(P.matches * 2);
       if (byes.length) {
         html += `<h3>🎟️ Byes – straight to the next round</h3>` + byes.map((id, i) =>
-          `<div class="slot ${newIdx === P.matches * 2 + i ? "new" : ""}"><span>${name(id)}</span><span>🎟️</span></div>`).join("");
+          `<div class="slot ${newIdx === P.matches * 2 + i ? "new" : ""}"><span>${smallLogo(id)}${name(id)}</span><span>🎟️</span></div>`).join("");
       }
       $("result").innerHTML = html;
     }
@@ -348,7 +360,7 @@
         ball.classList.add("reveal");
         if (lastMatch) {
           const [a, b] = drawn.slice(-2);
-          ball.innerHTML = `<span class="bname">${esc(name(a))}</span><span class="bnum" style="margin:4px 0">vs</span><span class="bname">${esc(name(b))}</span>`;
+          ball.innerHTML = `<span class="bvs">${teamMark(a, "blogo-sm")}<span class="bnum">vs</span>${teamMark(b, "blogo-sm")}</span>`;
           $("status").textContent = `Last match is set: ${name(a)} vs ${name(b)}!`;
         } else if (onlyByesLeft && rest > 1) {
           ball.textContent = "🎟️";
