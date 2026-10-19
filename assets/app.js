@@ -235,9 +235,9 @@ function renderParticipants() {
   const hasAnim = pairs.some(p => logos[p.name] && logo(p.name).anim);
   const toggle = hasAnim ? `<label class="anim-toggle"><input type="checkbox" id="anim-toggle"${always ? " checked" : ""}> <span>Play logo animations</span></label>` : "";
   const badge = p => logos[p.name] ? `<img class="part-logo" src="${esc(always && logo(p.name).anim ? logo(p.name).anim : logo(p.name).src)}"${logo(p.name).anim ? ` data-still="${esc(logo(p.name).src)}" data-anim="${esc(logo(p.name).anim)}"` : ""} alt="${esc(p.name)} logo">`
-    : /^tbd$/i.test(p.name.trim()) ? `<span class="part-loading" role="img" aria-label="Team name coming soon"><span></span></span>`
+    : /\btbd\b/i.test(p.name) ? `<span class="part-loading" role="img" aria-label="Team name coming soon"><span></span></span>`
     : `<span class="part-num">#${p.id}</span>`;
-  const label = p => logos[p.name] || /^tbd$/i.test(p.name.trim()) ? `<span class="part-seed">#${p.id}</span>` : "";
+  const label = p => logos[p.name] || /\btbd\b/i.test(p.name) ? `<span class="part-seed">#${p.id}</span>` : "";
   el.innerHTML = count + toggle + `<div class="part-grid${always ? " anim-on" : ""}">` + pairs.map(p => `<div class="card part-card${logos[p.name] && logo(p.name).anim && !always ? " has-anim" : ""}">
       ${badge(p)}
       <div class="part-info">${label(p)}<b class="part-team">${esc(p.name)}</b>
