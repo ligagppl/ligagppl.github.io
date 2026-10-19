@@ -26,10 +26,18 @@
     }
     .ball .bnum { font-size: .7em; opacity: .7; }
     .ball .bname { position: relative; z-index: 1; }
-    .ball .blogo { position: relative; z-index: 1; width: 58%; height: auto; margin: 4px 0 0; filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)); }
-    .ball .bvs { position: relative; z-index: 1; display: flex; align-items: center; gap: 6px; }
-    .ball .blogo-sm { width: 40%; height: auto; filter: drop-shadow(0 3px 6px rgba(0,0,0,.3)); }
-    .ball .bvs .bname { font-size: .6em; max-width: 40%; }
+    .ball .blogo { position: relative; z-index: 1; width: 84%; height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)); }
+    .ball .bmystery { position: relative; z-index: 1; font-size: 2.4em; }
+    /* picked ball: logo and info stacked on top of each other; the info replaces the logo after a moment */
+    .ball .bstack { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; }
+    .ball .bstack > * { grid-area: 1 / 1; transition: opacity .45s ease; }
+    .ball .binfo { display: flex; flex-direction: column; align-items: center; opacity: 0; }
+    .ball.show-info .binfo { opacity: 1; }
+    .ball.show-info .bstack > .blogo, .ball.show-info .blogos { opacity: 0; }
+    .ball .bvs { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; }
+    .ball .blogo-sm { width: 46%; height: auto; filter: drop-shadow(0 3px 6px rgba(0,0,0,.3)); }
+    .ball .bvs .bname { font-size: .6em; max-width: 46%; }
+    .ball .bname-sm { font-size: .75em; }
     .slot-logo { width: 28px; height: 28px; vertical-align: middle; margin-right: 6px; }
     /* members fade in below the team name after the reveal */
     .ball .bplayers {
@@ -164,10 +172,25 @@
       : `<span class="bname">${esc(team(id).name)}</span>`;
     const smallLogo = id => logoSrc(id) ? `<img class="slot-logo" src="${esc(logoSrc(id))}" alt="">` : "";
     window.addEventListener("load", () => pairs.forEach(p => { const src = logoSrc(p.id); if (src) new Image().src = src; }));
-    function ballHtml(id, withPlayers) {
+    // shuffling: only the logo (a padel ball for teams without one) – no number, no name
+    const shuffleHtml = id => logoSrc(id) ? `<img class="blogo" src="${esc(logoSrc(id))}" alt="">` : `<span class="bmystery">🎾</span>`;
+    // picked: the logo first, then (after LOGO_HOLD) the number, team name and players
+    const LOGO_HOLD = 2500;
+    function ballHtml(id) {
       const t = team(id);
-      return `<span class="bnum">#${id}</span>${teamMark(id, "blogo")}` +
-        (withPlayers ? `<span class="bplayers">${t.players.map(esc).join(" & ")}</span>` : "");
+      return `<span class="bstack">` +
+        (logoSrc(id) ? `<img class="blogo" src="${esc(logoSrc(id))}" alt="${esc(t.name)}">` : "") +
+        `<span class="binfo"><span class="bnum">#${id}</span><span class="bname">${esc(t.name)}</span>` +
+        `<span class="bplayers">${t.players.map(esc).join(" & ")}</span></span></span>`;
+    }
+    // show the logo, wait, then swap to number + name + players; calls done() when the info is shown
+    let infoTimer = null;
+    function revealTeam(ball, html, hasLogo, done) {
+      clearTimeout(infoTimer);
+      ball.innerHTML = html;
+      const show = () => { ball.classList.add("show-info", "show-players"); done && done(); };
+      if (hasLogo) infoTimer = setTimeout(show, LOGO_HOLD);
+      else requestAnimationFrame(() => requestAnimationFrame(show));
     }
 
     // fair random integer using the browser's crypto RNG
@@ -299,7 +322,8 @@
       updateStartButton();
       $("btn-next").disabled = true;
       const ball = $("ball");
-      ball.classList.remove("reveal", "show-players");
+      clearTimeout(infoTimer);
+      ball.classList.remove("reveal", "show-players", "show-info");
       ball.classList.add("spin");
       const slot = slotLabel(drawn.length);
       $("status").textContent = slot.type === "lucky" ? `Lucky loser ${slot.n}… 🍀`
@@ -309,7 +333,7 @@
       // suspense: flicker through names in the bowl
       let ticks = 0;
       const flicker = setInterval(() => {
-        ball.innerHTML = ballHtml(bowl[randInt(bowl.length)], false);
+        ball.innerHTML = shuffleHtml(bowl[randInt(bowl.length)]);
         if (++ticks > 18) {
           clearInterval(flicker);
           // the order is fixed by the seed words (see the Verify draw tab)
@@ -319,17 +343,18 @@
           ball.classList.remove("spin");
           void ball.offsetWidth;
           ball.classList.add("reveal");
-          ball.innerHTML = ballHtml(pick, true);
-          requestAnimationFrame(() => requestAnimationFrame(() => ball.classList.add("show-players")));
-          $("status").textContent = slot.type === "lucky" ? `🍀 ${name(pick)} is back in the cup!`
-            : slot.type === "match"
-            ? (slot.side === 0 ? `Match ${slot.n}: ${name(pick)} vs …` : `Match ${slot.n}: ${name(drawn[drawn.length - 2])} vs ${name(pick)}!`)
-            : `🎟️ ${name(pick)} gets a bye!`;
-          renderBowl();
-          renderResult(drawn.length - 1);
-          busy = false;
-          if (drawn.length >= P.total) finish();
-          else if (!autoRevealRest()) $("btn-next").disabled = false;
+          $("status").textContent = "…";
+          revealTeam(ball, ballHtml(pick), !!logoSrc(pick), () => {
+            $("status").textContent = slot.type === "lucky" ? `🍀 ${name(pick)} is back in the cup!`
+              : slot.type === "match"
+              ? (slot.side === 0 ? `Match ${slot.n}: ${name(pick)} vs …` : `Match ${slot.n}: ${name(drawn[drawn.length - 2])} vs ${name(pick)}!`)
+              : `🎟️ ${name(pick)} gets a bye!`;
+            renderBowl();
+            renderResult(drawn.length - 1);
+            busy = false;
+            if (drawn.length >= P.total) finish();
+            else if (!autoRevealRest()) $("btn-next").disabled = false;
+          });
         }
       }, 90);
     }
@@ -355,25 +380,32 @@
           drawn.push(pick);
         }
         const ball = $("ball");
-        ball.classList.remove("reveal", "show-players");
+        clearTimeout(infoTimer);
+        ball.classList.remove("reveal", "show-players", "show-info");
         void ball.offsetWidth;
         ball.classList.add("reveal");
+        const after = statusText => () => {
+          $("status").textContent = statusText;
+          renderBowl();
+          renderResult(drawn.length - 1);
+          setTimeout(finish, 1500);
+        };
         if (lastMatch) {
           const [a, b] = drawn.slice(-2);
-          ball.innerHTML = `<span class="bvs">${teamMark(a, "blogo-sm")}<span class="bnum">vs</span>${teamMark(b, "blogo-sm")}</span>`;
-          $("status").textContent = `Last match is set: ${name(a)} vs ${name(b)}!`;
+          const logos = !!(logoSrc(a) || logoSrc(b));
+          const html = `<span class="bstack"><span class="bvs blogos">${teamMark(a, "blogo-sm")}<span class="bnum">vs</span>${teamMark(b, "blogo-sm")}</span>` +
+            `<span class="binfo"><span class="bname bname-sm">${esc(name(a))}</span><span class="bnum" style="margin:4px 0">vs</span><span class="bname bname-sm">${esc(name(b))}</span></span></span>`;
+          $("status").textContent = "…";
+          revealTeam(ball, html, logos, after(`Last match is set: ${name(a)} vs ${name(b)}!`));
         } else if (onlyByesLeft && rest > 1) {
           ball.textContent = "🎟️";
-          $("status").textContent = `🎟️ Byes: ${drawn.slice(first).map(name).join(", ")}`;
+          after(`🎟️ Byes: ${drawn.slice(first).map(name).join(", ")}`)();
         } else {
           const last = drawn[drawn.length - 1];
-          ball.innerHTML = ballHtml(last, true);
-          requestAnimationFrame(() => requestAnimationFrame(() => ball.classList.add("show-players")));
-          $("status").textContent = slotLabel(first).type === "bye" ? `🎟️ ${name(last)} gets the bye!` : `Last ball: ${name(last)}`;
+          $("status").textContent = "…";
+          revealTeam(ball, ballHtml(last), !!logoSrc(last),
+            after(slotLabel(first).type === "bye" ? `🎟️ ${name(last)} gets the bye!` : `Last ball: ${name(last)}`));
         }
-        renderBowl();
-        renderResult(drawn.length - 1);
-        setTimeout(finish, 1500);
       }, 1500);
       return true;
     }
@@ -429,7 +461,7 @@
       drawn = [];
       $("seed").disabled = false;
       $("round-title").textContent = $("round-name").value || "Draw";
-      $("ball").classList.remove("show-players");
+      clearTimeout(infoTimer); $("ball").classList.remove("show-players", "show-info");
       $("ball").textContent = P.lucky ? "🍀" : "🎾";
       $("share").value = "";
       $("btn-save").disabled = true;
@@ -451,7 +483,7 @@
       }
       $("btn-auto").textContent = "Pause";
       drawNext();
-      autoTimer = setInterval(drawNext, 3500);
+      autoTimer = setInterval(drawNext, 6000);
     });
 
     $("btn-full").addEventListener("click", () => {
