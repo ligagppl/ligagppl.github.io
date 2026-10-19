@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Kaantay Walay Phool logo, animated">
+  <style>
+    .r{transform-box:view-box;transform-origin:64px 160px;animation:r 3s cubic-bezier(.45,0,.3,1) infinite}
+    @keyframes r{0%{transform:rotate(0)}38%{transform:rotate(-35deg)}48%{transform:rotate(-35deg)}58%{transform:rotate(30deg)}68%{transform:rotate(22deg)}100%{transform:rotate(0)}}
+    .b{animation:b 3s linear infinite}
+    @keyframes b{0%,14%{transform:translate(0,-80px) scale(.7);opacity:0}24%{transform:translate(0,-64px) scale(1);opacity:1}58%{transform:translate(0,0)}61.5%{transform:translate(18px,104px) scale(1.3,.65)}63.5%{transform:translate(18px,70px) scale(.9,1.15)}67%{transform:translate(18px,-10px) scale(.8,1.12);opacity:1}71%{transform:translate(18px,-80px) scale(.6);opacity:.4}74%,100%{transform:translate(18px,-112px) scale(.5);opacity:0}}
+    .bud{transform-box:fill-box;transform-origin:50% 50%;animation:bud 3s linear infinite}
+    @keyframes bud{0%,58%{transform:scale(.7)}61%{transform:scale(1.2)}66%,100%{transform:scale(1)}}
+    .open{animation:open 3s linear infinite}
+    @keyframes open{0%,58%{opacity:0}59%,99%{opacity:1}100%{opacity:0}}
+    .closed{animation:closed 3s linear infinite}
+    @keyframes closed{0%,58%{opacity:1}59%,99%{opacity:0}100%{opacity:1}}
+    .pet{animation:pet 3s ease-in infinite;opacity:0}
+    @keyframes pet{0%,58.5%{opacity:0;transform:translate(0,0) rotate(0)}61%{opacity:1}92%{opacity:.9;transform:translate(var(--x),var(--y)) rotate(220deg)}100%{opacity:0;transform:translate(var(--x),var(--y)) rotate(260deg)}}
+    .fl{animation:fl 3s linear infinite;opacity:0}
+    @keyframes fl{0%,57.5%{opacity:0}59%{opacity:1}65%,100%{opacity:0}}
+    .dust{animation:dust 3s linear infinite;opacity:0}
+    @keyframes dust{0%,61%{opacity:0}62%{opacity:1}72%,100%{opacity:0}}
+    .st{animation:st 3s linear infinite;opacity:0}
+    @keyframes st{0%,63%{opacity:0}65.5%{opacity:.9}73%,100%{opacity:0}}
+    @media (prefers-reduced-motion: reduce){*{animation:none!important}.pet,.fl,.dust,.st,.closed{opacity:0}.b{opacity:1}}
+  </style>
+  <defs>
+    <g id="h"><circle cx="-16" cy="-24" r="4.3"/><circle cx="0" cy="-24" r="4.3"/><circle cx="16" cy="-24" r="4.3"/><circle cx="-24" cy="-8" r="4.3"/><circle cx="-8" cy="-8" r="4.3"/><circle cx="8" cy="-8" r="4.3"/><circle cx="24" cy="-8" r="4.3"/><circle cx="-16" cy="8" r="4.3"/><circle cx="0" cy="8" r="4.3"/><circle cx="16" cy="8" r="4.3"/><circle cx="-8" cy="24" r="4.3"/><circle cx="8" cy="24" r="4.3"/></g>
+    <polygon id="t" points="-5,0 0,-13 5,0" fill="#111" stroke="#7a4a1e" stroke-width="2" stroke-linejoin="round"/>
+    <path id="arc" d="M34 120 A86 86 0 0 0 206 120" fill="none"/>
+    <path id="petal" d="M0 0 C-6 -4 -6 -12 0 -14 C6 -12 6 -4 0 0Z" fill="#e8456b" stroke="#8e0b20" stroke-width="1.2"/>
+    <clipPath id="clip"><circle cx="120" cy="120" r="104"/></clipPath>
+  </defs>
+  <circle cx="120" cy="120" r="116" fill="#2a0810"/>
+  <g clip-path="url(#clip)">
+    <rect x="0" y="176" width="240" height="64" fill="#1e5aa8"/>
+    <path d="M0 176 L240 176" stroke="#f6e7ea" stroke-width="2.5"/>
+    <g class="r"><g transform="translate(64 75) scale(.8)">
+      <use href="#t" transform="rotate(0) translate(0 -41)"/><use href="#t" transform="rotate(30) translate(0 -40)"/><use href="#t" transform="rotate(60) translate(0 -37)"/><use href="#t" transform="rotate(90) translate(0 -35)"/><use href="#t" transform="rotate(120) translate(0 -37)"/><use href="#t" transform="rotate(-30) translate(0 -40)"/><use href="#t" transform="rotate(-60) translate(0 -37)"/><use href="#t" transform="rotate(-90) translate(0 -35)"/><use href="#t" transform="rotate(-120) translate(0 -37)"/>
+      <ellipse rx="34" ry="40" fill="#f6e7ea" stroke="#14451a" stroke-width="5"/><g fill="#2a0810" transform="scale(1.05)"><use href="#h"/></g>
+      <path d="M-12 38 L12 38 L7 50 L-7 50 Z" fill="#2f7d32" stroke="#14451a" stroke-width="3"/><rect x="-7" y="48" width="14" height="58" rx="5" fill="#2f7d32" stroke="#14451a" stroke-width="3"/>
+      <use href="#t" transform="translate(7 62) rotate(90)"/><use href="#t" transform="translate(-7 76) rotate(-90)"/><use href="#t" transform="translate(7 90) rotate(90)"/><use href="#t" transform="translate(-7 100) rotate(-90)"/>
+    </g></g>
+    <g class="fl" stroke="#f6e7ea" stroke-width="3" stroke-linecap="round"><path d="M118 56 L110 48 M130 50 L130 38 M142 56 L150 48"/></g>
+    <g class="dust" stroke="#f6e7ea" stroke-width="2.5" stroke-linecap="round"><path d="M138 172 L132 166 M144 170 L142 160 M154 170 L158 160 M160 172 L166 166"/></g>
+    <g class="st" stroke="#e8456b" stroke-width="3" stroke-linecap="round" stroke-dasharray="6 6"><path d="M142 160 L142 24"/><path d="M154 160 L154 24"/></g>
+    <g transform="translate(130 70)">
+      <g class="pet" style="--x:-24px;--y:96px"><use href="#petal" transform="rotate(20)"/></g>
+      <g class="pet" style="--x:-6px;--y:100px;animation-delay:.1s"><use href="#petal" transform="rotate(-40)"/></g>
+      <g class="pet" style="--x:-40px;--y:92px;animation-delay:.2s"><use href="#petal" transform="rotate(70)"/></g>
+    </g>
+    <g class="b"><g transform="translate(130 70) scale(.8)"><g class="bud">
+      <g class="closed"><circle r="20" fill="#c8102e" stroke="#4a0510" stroke-width="3"/><path d="M-10 -14 C-2 -6 2 6 -4 16 M10 -14 C2 -4 -2 8 6 16" fill="none" stroke="#8e0b20" stroke-width="3"/><path d="M-18 -6 C-6 2 6 2 18 -6 M-18 8 C-6 0 6 0 18 8" fill="none" stroke="#f6e7ea" stroke-width="2.4"/></g>
+      <g class="open"><circle r="22" fill="#c8102e" stroke="#4a0510" stroke-width="3"/><path d="M-16 -2 C-10 -19 10 -19 16 -2 C6 -10 -6 -10 -16 -2Z" fill="#8e0b20"/><path d="M-17 7 C-8 18 8 18 17 7 C8 12 -8 12 -17 7Z" fill="#8e0b20"/><circle cy="1" r="8" fill="#8e0b20"/><path d="M-4 -1 C0 -6 5 -4 4 1" fill="none" stroke="#f06b8a" stroke-width="2.4" stroke-linecap="round"/><path d="M-20 -6 C-7 2 7 2 20 -6 M-20 8 C-7 0 7 0 20 8" fill="none" stroke="#f6e7ea" stroke-width="2.4" opacity=".8"/></g>
+    </g></g></g>
+  </g>
+  <circle cx="120" cy="120" r="106" fill="none" stroke="#e8456b" stroke-width="3"/>
+  <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="22" letter-spacing="4" fill="#f6e7ea"><textPath href="#arc" startOffset="50%" text-anchor="middle">KWP</textPath></text>
+</svg>

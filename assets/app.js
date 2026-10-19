@@ -227,15 +227,40 @@ function renderParticipants() {
   }
   const logos = LEAGUE.logos || {};
   // logo if there is one; a "loading" ball while the team name is still TBD; otherwise the number
-  const badge = p => logos[p.name] ? `<img class="part-logo" src="${esc(logos[p.name])}" alt="${esc(p.name)} logo">`
+  const logo = n => typeof logos[n] === "string" ? { src: logos[n] } : logos[n];
+  const badge = p => logos[p.name] ? `<img class="part-logo" src="${esc(logo(p.name).src)}"${logo(p.name).anim ? ` data-still="${esc(logo(p.name).src)}" data-anim="${esc(logo(p.name).anim)}"` : ""} alt="${esc(p.name)} logo">`
     : /^tbd$/i.test(p.name.trim()) ? `<span class="part-loading" role="img" aria-label="Team name coming soon"><span></span></span>`
     : `<span class="part-num">#${p.id}</span>`;
   const label = p => logos[p.name] || /^tbd$/i.test(p.name.trim()) ? `<span class="part-seed">#${p.id}</span>` : "";
-  el.innerHTML = count + `<div class="part-grid">` + pairs.map(p => `<div class="card part-card">
+  el.innerHTML = count + `<div class="part-grid">` + pairs.map(p => `<div class="card part-card${logos[p.name] && logo(p.name).anim ? " has-anim" : ""}">
       ${badge(p)}
       <div class="part-info">${label(p)}<b class="part-team">${esc(p.name)}</b>
         <span class="part-players">${p.players.filter(Boolean).map(esc).join(" &amp; ")}</span></div></div>`).join("") + `</div>`;
 }
+
+// team logos play their animation while hovered (desktop) or after a tap (phone)
+(function logoAnimations() {
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (reduce) return;
+  const set = (card, on) => {
+    const img = card.querySelector("img[data-anim]");
+    if (!img) return;
+    img.src = on ? img.dataset.anim : img.dataset.still;
+    card.classList.toggle("playing", on);
+  };
+  const body = document.getElementById("participants-body");
+  body.addEventListener("mouseover", e => { const c = e.target.closest(".part-card.has-anim"); if (c && !c.classList.contains("playing")) set(c, true); });
+  body.addEventListener("mouseout", e => { const c = e.target.closest(".part-card.has-anim"); if (c && !c.contains(e.relatedTarget)) set(c, false); });
+  body.addEventListener("click", e => {
+    const c = e.target.closest(".part-card.has-anim");
+    if (!c) return;
+    const on = !c.classList.contains("playing");
+    body.querySelectorAll(".part-card.playing").forEach(o => o !== c && set(o, false));
+    set(c, on);
+  });
+  // load the animated files ahead of time, so the first hover starts right away
+  window.addEventListener("load", () => Object.values(LEAGUE.logos || {}).forEach(l => { if (l && l.anim) new Image().src = l.anim; }));
+})();
 
 function renderGallery() {
   const el = document.getElementById("gallery-grid");

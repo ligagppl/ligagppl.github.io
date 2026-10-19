@@ -1,48 +1,29 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Kaantay Walay Phool (KWP) logo">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Kaantay Walay Phool logo">
   <defs>
-    <g id="rose">
-      <circle r="19" fill="#c8102e" stroke="#5c0614" stroke-width="2.5"/>
-      <path d="M-13 -3 C-8 -16 8 -16 13 -3 C5 -9 -5 -9 -13 -3 Z" fill="#8e0b20"/>
-      <path d="M-14 5 C-6 14 6 14 14 5 C6 9 -6 9 -14 5 Z" fill="#8e0b20"/>
-      <circle cy="1" r="7" fill="#8e0b20"/>
-      <path d="M-3 -1 C0 -5 4 -3 3 1" fill="none" stroke="#e8456b" stroke-width="2" stroke-linecap="round"/>
-    </g>
-    <g id="leaf"><path d="M0 0 C8 -10 22 -10 28 -2 C20 6 8 6 0 0 Z" fill="#2f7d32" stroke="#14451a" stroke-width="2"/></g>
+    <g id="h"><circle cx="-16" cy="-24" r="4.3"/><circle cx="0" cy="-24" r="4.3"/><circle cx="16" cy="-24" r="4.3"/><circle cx="-24" cy="-8" r="4.3"/><circle cx="-8" cy="-8" r="4.3"/><circle cx="8" cy="-8" r="4.3"/><circle cx="24" cy="-8" r="4.3"/><circle cx="-16" cy="8" r="4.3"/><circle cx="0" cy="8" r="4.3"/><circle cx="16" cy="8" r="4.3"/><circle cx="-8" cy="24" r="4.3"/><circle cx="8" cy="24" r="4.3"/></g>
+    <polygon id="t" points="-5,0 0,-13 5,0" fill="#111" stroke="#7a4a1e" stroke-width="2" stroke-linejoin="round"/>
+    <path id="arc" d="M34 120 A86 86 0 0 0 206 120" fill="none"/>
+    <clipPath id="clip"><circle cx="120" cy="120" r="104"/></clipPath>
   </defs>
-  <circle cx="120" cy="120" r="116" fill="#fdecef"/>
-  <circle cx="120" cy="120" r="106" fill="none" stroke="#c8102e" stroke-width="3"/>
-
-  <!-- court in perspective -->
-  <path d="M56 64 L184 64 L200 196 L40 196 Z" fill="#1e5aa8" stroke="#0e3566" stroke-width="3"/>
-  <path d="M56 64 L184 64 L200 196 L40 196 Z" fill="none" stroke="#fff" stroke-width="3" transform="translate(0 0)"/>
-  <path d="M120 64 L120 196" stroke="#fff" stroke-width="2.5"/>
-  <path d="M52 92 L188 92 M44 166 L196 166" stroke="#fff" stroke-width="2.5"/>
-
-  <!-- the thorny vine is the net -->
-  <path d="M30 128 C66 116 98 138 120 126 C142 114 174 138 210 124" fill="none" stroke="#14451a" stroke-width="16" stroke-linecap="round"/>
-  <path d="M30 128 C66 116 98 138 120 126 C142 114 174 138 210 124" fill="none" stroke="#2f7d32" stroke-width="10" stroke-linecap="round"/>
-  <g fill="#111111" stroke="#7a4a1e" stroke-width="2.5" stroke-linejoin="round">
-    <polygon points="44,122 48,94 58,120"/>
-    <polygon points="66,124 62,152 76,128"/>
-    <polygon points="88,128 94,100 102,128"/>
-    <polygon points="112,128 108,156 122,128"/>
-    <polygon points="132,120 138,92 146,120"/>
-    <polygon points="156,124 152,152 166,126"/>
-    <polygon points="176,128 182,100 190,128"/>
-    <polygon points="198,124 194,150 206,124"/>
+  <circle cx="120" cy="120" r="116" fill="#2a0810"/>
+  <g clip-path="url(#clip)">
+    <rect x="0" y="176" width="240" height="64" fill="#1e5aa8"/>
+    <path d="M0 176 L240 176" stroke="#f6e7ea" stroke-width="2.5"/>
+    <!-- thorny racket -->
+    <g transform="translate(64 75) scale(.8)">
+      <use href="#t" transform="rotate(0) translate(0 -41)"/><use href="#t" transform="rotate(30) translate(0 -40)"/><use href="#t" transform="rotate(60) translate(0 -37)"/><use href="#t" transform="rotate(90) translate(0 -35)"/><use href="#t" transform="rotate(120) translate(0 -37)"/><use href="#t" transform="rotate(-30) translate(0 -40)"/><use href="#t" transform="rotate(-60) translate(0 -37)"/><use href="#t" transform="rotate(-90) translate(0 -35)"/><use href="#t" transform="rotate(-120) translate(0 -37)"/>
+      <ellipse rx="34" ry="40" fill="#f6e7ea" stroke="#14451a" stroke-width="5"/><g fill="#2a0810" transform="scale(1.05)"><use href="#h"/></g>
+      <path d="M-12 38 L12 38 L7 50 L-7 50 Z" fill="#2f7d32" stroke="#14451a" stroke-width="3"/><rect x="-7" y="48" width="14" height="58" rx="5" fill="#2f7d32" stroke="#14451a" stroke-width="3"/>
+      <use href="#t" transform="translate(7 62) rotate(90)"/><use href="#t" transform="translate(-7 76) rotate(-90)"/><use href="#t" transform="translate(7 90) rotate(90)"/><use href="#t" transform="translate(-7 100) rotate(-90)"/>
+    </g>
+    <!-- rose ball -->
+    <g transform="translate(154 112)">
+      <circle r="22" fill="#c8102e" stroke="#4a0510" stroke-width="3"/>
+      <path d="M-16 -2 C-10 -19 10 -19 16 -2 C6 -10 -6 -10 -16 -2Z" fill="#8e0b20"/><path d="M-17 7 C-8 18 8 18 17 7 C8 12 -8 12 -17 7Z" fill="#8e0b20"/>
+      <circle cy="1" r="8" fill="#8e0b20"/><path d="M-4 -1 C0 -6 5 -4 4 1" fill="none" stroke="#f06b8a" stroke-width="2.4" stroke-linecap="round"/>
+      <path d="M-20 -6 C-7 2 7 2 20 -6 M-20 8 C-7 0 7 0 20 8" fill="none" stroke="#f6e7ea" stroke-width="2.4" opacity=".8"/>
+    </g>
   </g>
-  <use href="#leaf" transform="translate(70 120) rotate(-30)"/>
-  <use href="#leaf" transform="translate(150 124) rotate(150)"/>
-
-  <!-- roses at the net posts -->
-  <use href="#rose" transform="translate(30 128)"/>
-  <use href="#rose" transform="translate(210 124)"/>
-
-  <!-- padel ball -->
-  <circle cx="86" cy="176" r="15" fill="#d7f34a" stroke="#0e3566" stroke-width="2.5"/>
-  <path d="M73 170 C81 176 91 176 99 170 M73 182 C81 176 91 176 99 182" fill="none" stroke="#fff" stroke-width="2.5"/>
-
-  <!-- name -->
-  <text x="120" y="50" text-anchor="middle" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="30" letter-spacing="4" fill="#c8102e">KWP</text>
-  <text x="120" y="222" text-anchor="middle" font-family="Arial, sans-serif" font-weight="700" font-size="10.5" letter-spacing="1.5" fill="#8e0b20">KAANTAY WALAY PHOOL</text>
+  <circle cx="120" cy="120" r="106" fill="none" stroke="#e8456b" stroke-width="3"/>
+  <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="22" letter-spacing="4" fill="#f6e7ea"><textPath href="#arc" startOffset="50%" text-anchor="middle">KWP</textPath></text>
 </svg>

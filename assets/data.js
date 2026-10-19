@@ -46,11 +46,12 @@ const LEAGUE = {
 
   // ----------------------------------------------------------
   //  TEAM LOGOS – by team name (exactly as registered), files in /img/logos
+  //  src = still logo, anim = animated version played on hover / tap
   // ----------------------------------------------------------
   logos: {
-    "Sting Smashers": "img/logos/sting-smashers.svg?v=2",
-    "Vibora Vipers": "img/logos/vibora-vipers.svg?v=2",
-    "Kaantay Walay Phool": "img/logos/kwp.svg",
+    "Sting Smashers": { src: "img/logos/sting-smashers.svg?v=2", anim: "img/logos/sting-smashers-anim.svg?v=1" },
+    "Vibora Vipers": { src: "img/logos/vibora-vipers.svg?v=2", anim: "img/logos/vibora-vipers-anim.svg?v=1" },
+    "Kaantay Walay Phool": { src: "img/logos/kwp.svg?v=2", anim: "img/logos/kwp-anim.svg?v=1" },
   },
 
   // ----------------------------------------------------------

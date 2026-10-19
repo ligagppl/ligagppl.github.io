@@ -188,6 +188,7 @@ td.pts { font-weight: 700; }
 .part-num { flex: none; width: 128px; height: 128px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
   background: var(--green); color: #fff; font-size: 2.2rem; font-weight: 800; }
 .part-logo { flex: none; width: 128px; height: 128px; }
+.part-card.has-anim { cursor: pointer; }
 .part-seed { font-size: .8rem; font-weight: 800; color: var(--green-2); }
 .part-loading { flex: none; width: 128px; height: 128px; border-radius: 50%; border: 3px dashed var(--line); display: flex; align-items: center; justify-content: center; }
 .part-loading span { width: 44px; height: 44px; border-radius: 50%; background: #d7f34a; box-shadow: inset -4px -4px 0 rgba(0,0,0,.08);

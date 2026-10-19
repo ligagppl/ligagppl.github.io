@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Sting Smashers logo, animated">
+  <style>
+    .r{transform-box:fill-box;transform-origin:50% 100%;animation:r 1.8s cubic-bezier(.5,0,.2,1) infinite}
+    @keyframes r{0%{transform:rotate(0)}52%{transform:rotate(-30deg)}58%{transform:rotate(22deg)}66%{transform:rotate(12deg)}100%{transform:rotate(0)}}
+    .bolt{animation:bolt 1.8s linear infinite}
+    @keyframes bolt{0%,56%{opacity:.12}59%,70%{opacity:1}86%,100%{opacity:.12}}
+    .b{transform-box:fill-box;transform-origin:50% 50%;animation:b 1.8s linear infinite}
+    @keyframes b{0%{transform:translate(-62px,-96px);opacity:0}8%{opacity:1;transform:translate(-62px,-104px)}52%{transform:translate(-62px,-92px)}57%{transform:translate(-62px,-92px)}63%{transform:translate(0,0) scale(1.25,.7)}66%{transform:translate(8px,-30px) scale(1)}74%{transform:translate(26px,-120px) scale(.75);opacity:1}82%{transform:translate(38px,-200px) scale(.45);opacity:.5}86%,100%{transform:translate(42px,-230px) scale(.3);opacity:0}}
+    .imp{animation:imp 1.8s linear infinite}
+    @keyframes imp{0%,62%{opacity:0}64%{opacity:1}80%,100%{opacity:0}}
+    .st{animation:st 1.8s linear infinite;opacity:0}
+    @keyframes st{0%,64%{opacity:0}70%{opacity:.8}84%,100%{opacity:0}}
+    @media (prefers-reduced-motion: reduce){*{animation:none!important}.st{opacity:0}.bolt{opacity:1}}
+  </style>
+  <defs>
+    <g id="h"><circle cx="-16" cy="-24" r="4.4"/><circle cx="0" cy="-24" r="4.4"/><circle cx="16" cy="-24" r="4.4"/><circle cx="-24" cy="-8" r="4.4"/><circle cx="-8" cy="-8" r="4.4"/><circle cx="8" cy="-8" r="4.4"/><circle cx="24" cy="-8" r="4.4"/><circle cx="-16" cy="8" r="4.4"/><circle cx="0" cy="8" r="4.4"/><circle cx="16" cy="8" r="4.4"/><circle cx="-8" cy="24" r="4.4"/><circle cx="8" cy="24" r="4.4"/></g>
+    <path id="arc" d="M34 120 A86 86 0 0 0 206 120" fill="none"/>
+    <clipPath id="clip"><circle cx="120" cy="120" r="104"/></clipPath>
+  </defs>
+  <circle cx="120" cy="120" r="116" fill="#1b1b1b"/>
+  <g clip-path="url(#clip)"><g transform="translate(30 16) scale(0.75)">
+    <g stroke="#f5c400" stroke-width="3.5" stroke-linecap="round" opacity=".55" fill="none"><path d="M38 96 C40 70 52 50 70 38"/><path d="M50 104 C52 82 62 64 78 54"/></g>
+    <g class="r"><g transform="rotate(-35 86 82)">
+      <ellipse cx="86" cy="66" rx="34" ry="40" fill="#f5c400" stroke="#0d0d0d" stroke-width="3"/>
+      <ellipse cx="86" cy="66" rx="27" ry="33" fill="none" stroke="#c99f00" stroke-width="2"/>
+      <g fill="#1b1b1b" transform="translate(86 66) scale(1.05)"><use href="#h"/></g>
+      <path d="M74 104 L98 104 L93 116 L79 116 Z" fill="#f5c400" stroke="#0d0d0d" stroke-width="3"/>
+      <rect x="79" y="114" width="14" height="46" rx="5" fill="#f5c400" stroke="#0d0d0d" stroke-width="3"/>
+      <path d="M79 126 L93 132 M79 138 L93 144 M79 150 L93 156" stroke="#1b1b1b" stroke-width="2.5"/>
+    </g></g>
+    <polygon class="bolt" points="134,58 108,114 130,114 112,170 168,96 142,96 160,58" fill="#fff" stroke="#f5c400" stroke-width="4" stroke-linejoin="round"/>
+    <g class="st" stroke="#d7f34a" stroke-width="3" stroke-linecap="round" stroke-dasharray="5 7" fill="none"><path d="M172 140 C176 100 190 40 200 0"/><path d="M186 146 C192 106 204 50 214 10"/></g>
+    <g transform="translate(170 150)"><g class="b">
+      <circle r="19" fill="#d7f34a" stroke="#0d0d0d" stroke-width="3"/>
+      <path d="M-17 -7 C-6 1 6 1 17 -7 M-17 7 C-6 -1 6 -1 17 7" fill="none" stroke="#fff" stroke-width="3"/>
+    </g></g>
+    <g class="imp" stroke="#f5c400" stroke-width="4" stroke-linecap="round"><path d="M150 178 L140 186"/><path d="M164 182 L160 194"/><path d="M180 182 L184 194"/><path d="M192 176 L202 184"/></g>
+  </g></g>
+  <circle cx="120" cy="120" r="106" fill="none" stroke="#f5c400" stroke-width="3"/>
+  <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="16" letter-spacing="3" fill="#dcdcdc"><textPath href="#arc" startOffset="50%" text-anchor="middle">STING SMASHERS</textPath></text>
+</svg>
