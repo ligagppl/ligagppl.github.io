@@ -46,5 +46,29 @@
       "Muhammad Jazib Khan",
       "Mystery Partner"
     ]
+  },
+  {
+    "id": 7,
+    "name": "Mavericks",
+    "players": [
+      "Mohsin Ali",
+      "Aman Tariq"
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Bandeja Bandits",
+    "players": [
+      "Soban Khalid",
+      "Ahmed Asad"
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Racket Scientists",
+    "players": [
+      "Muhammad Sohaib Iqbal",
+      "Mystery Partner"
+    ]
   }
 ]
