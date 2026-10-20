@@ -70,5 +70,13 @@
       "Muhammad Sohaib Iqbal",
       "Mystery Partner"
     ]
+  },
+  {
+    "id": 10,
+    "name": "Patience & Placement",
+    "players": [
+      "Muhammad Tanzeel Iqbal",
+      "Umair Khalid"
+    ]
   }
 ]
