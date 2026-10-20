@@ -86,5 +86,13 @@
       "Muhammad Asad Usman Khan",
       "Syed Amier Haider Shah"
     ]
+  },
+  {
+    "id": 12,
+    "name": "Smashistan",
+    "players": [
+      "Awais Ilyas",
+      "Partner"
+    ]
   }
 ]
