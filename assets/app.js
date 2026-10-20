@@ -241,7 +241,7 @@ function renderParticipants() {
   el.innerHTML = count + toggle + `<div class="part-grid${always ? " anim-on" : ""}">` + pairs.map(p => `<div class="card part-card${logos[p.name] && logo(p.name).anim && !always ? " has-anim" : ""}">
       ${badge(p)}
       <div class="part-info">${label(p)}<b class="part-team">${esc(p.name)}</b>
-        <span class="part-players">${p.players.map((n, i) => !n ? "" : (p.links && p.links[i] && /^https:\/\/app\.playtomic\.com\//.test(p.links[i]) ? `<a href="${esc(p.links[i])}" target="_blank" rel="noopener" title="Playtomic profile">${esc(n)}</a>` : esc(n))).filter(Boolean).join(" &amp; ")}</span></div></div>`).join("") + `</div>`;
+        <span class="part-players">${p.players.map((n, i) => !n ? "" : `<span class="pl">` + (p.links && p.links[i] && /^https:\/\/app\.playtomic\.com\//.test(p.links[i]) ? `<a href="${esc(p.links[i])}" target="_blank" rel="noopener" title="Playtomic profile">${esc(n)}</a>` : esc(n)) + `</span>`).filter(Boolean).join("")}</span></div></div>`).join("") + `</div>`;
 }
 
 // team logos play their animation while hovered (desktop) or after a tap (phone)
