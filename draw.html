@@ -195,6 +195,8 @@
     const shuffleHtml = id => logoSrc(id) ? `<img class="blogo" src="${esc(logoSrc(id))}" alt="">` : `<span class="bmystery">🎾</span>`;
     // picked: the logo first, then (after LOGO_HOLD) the number, team name and players
     const LOGO_HOLD = 2500;
+    const vsHtml = (a, b) => `<span class="bstack"><span class="bvs blogos">${teamMark(a, "blogo-sm")}<span class="bnum">vs</span>${teamMark(b, "blogo-sm")}</span>` +
+      `<span class="binfo"><span class="bname bname-sm">${esc(name(a))}</span><span class="bnum" style="margin:4px 0">vs</span><span class="bname bname-sm">${esc(name(b))}</span></span></span>`;
     function ballHtml(id) {
       const t = team(id);
       return `<span class="bstack">` +
@@ -370,9 +372,21 @@
               : `🎟️ ${name(pick)} gets a bye!`;
             renderBowl();
             renderResult(drawn.length - 1);
-            busy = false;
-            if (drawn.length >= P.total) finish();
-            else if (!autoRevealRest()) $("btn-next").disabled = false;
+            const done = () => {
+              busy = false;
+              if (drawn.length >= P.total) finish();
+              else if (!autoRevealRest()) $("btn-next").disabled = false;
+            };
+            if (slot.type === "match" && slot.side === 1) {
+              // match complete: show both opponents on the ball, like the last match
+              const a = drawn[drawn.length - 2];
+              setTimeout(() => {
+                ball.classList.remove("reveal", "show-players", "show-info");
+                void ball.offsetWidth;
+                ball.classList.add("reveal");
+                revealTeam(ball, vsHtml(a, pick), !!(logoSrc(a) || logoSrc(pick)), done);
+              }, 1600);
+            } else done();
           });
         }
       }, 90);
