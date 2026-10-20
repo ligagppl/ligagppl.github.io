@@ -78,5 +78,13 @@
       "Muhammad Tanzeel Iqbal",
       "Umair Khalid"
     ]
+  },
+  {
+    "id": 11,
+    "name": "Sheesha Torr",
+    "players": [
+      "Muhammad Asad Usman Khan",
+      "Syed Amier Haider Shah"
+    ]
   }
 ]

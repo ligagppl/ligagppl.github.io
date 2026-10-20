@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Sheesha Torr logo, animated"><style>.crk{transform-box:view-box;animation:crk 3.2s cubic-bezier(.2,1,.3,1) infinite;opacity:0}
+.sh{transform-box:fill-box;transform-origin:50% 50%;animation:sh 3.2s ease-out infinite;opacity:0}
+@keyframes sh{0%,40%{opacity:0;transform:translate(0,0) rotate(0)}42%{opacity:1}58%{opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--r))}100%{opacity:0}}
+.fl{animation:fl 3.2s linear infinite;opacity:0}@keyframes fl{0%,40%{opacity:0}41.5%{opacity:1}48%,100%{opacity:0}}
+.spin{transform-box:fill-box;transform-origin:50% 50%;animation:spin .5s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion: reduce){*{animation:none!important}.sh,.fl{opacity:0}.crk{opacity:1}}
+.crk{transform-origin:120px 92px}
+@keyframes crk{0%,40%{opacity:0;transform:scale(.1)}42%{opacity:1}50%,88%{opacity:1;transform:scale(1)}96%,100%{opacity:0;transform:scale(1)}}
+.r{transform-box:view-box;transform-origin:58px 160px;animation:r 3.2s cubic-bezier(.5,0,.3,1) infinite}
+@keyframes r{0%,14%{transform:rotate(0)}22%{transform:rotate(-26deg)}27%{transform:rotate(30deg)}34%{transform:rotate(16deg)}50%,100%{transform:rotate(0)}}
+.ball{animation:ball 3.2s linear infinite}
+@keyframes ball{0%,4%{transform:translate(124px,110px) scale(.5);opacity:0}8%{opacity:1;transform:translate(118px,96px) scale(.6)}16%{transform:translate(98px,58px) scale(.95)}26%{transform:translate(64px,112px) scale(1.4)}40%{transform:translate(120px,92px) scale(.55)}41%{transform:translate(120px,92px) scale(.62,.45)}52%{transform:translate(118px,138px) scale(.55)}56%{transform:translate(116px,128px) scale(.55)}60%{transform:translate(114px,138px) scale(.55);opacity:1}70%,100%{transform:translate(112px,138px) scale(.55);opacity:0}}
+</style><defs><g id="h"><circle cx="-16" cy="-24" r="4.3"/><circle cx="0" cy="-24" r="4.3"/><circle cx="16" cy="-24" r="4.3"/><circle cx="-24" cy="-8" r="4.3"/><circle cx="-8" cy="-8" r="4.3"/><circle cx="8" cy="-8" r="4.3"/><circle cx="24" cy="-8" r="4.3"/><circle cx="-16" cy="8" r="4.3"/><circle cx="0" cy="8" r="4.3"/><circle cx="16" cy="8" r="4.3"/><circle cx="-8" cy="24" r="4.3"/><circle cx="8" cy="24" r="4.3"/></g>
+<path id="arc" d="M30 120 A90 90 0 0 0 210 120" fill="none"/><clipPath id="clip"><circle cx="120" cy="120" r="104"/></clipPath>
+<g id="ball"><circle r="12" fill="#d7f34a" stroke="#111" stroke-width="2"/><path d="M-11 -5 C-4 1 4 1 11 -5 M-11 5 C-4 -1 4 -1 11 5" fill="none" stroke="#fff" stroke-width="2"/></g>
+<g id="crack" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M0 0 L-38 -30 L-52 -26 M0 0 L-10 -46 L-6 -60 M0 0 L30 -38 L44 -42 M0 0 L46 -2 L60 6 M0 0 L32 34 L36 50 M0 0 L-8 44 M0 0 L-44 20 L-58 30"/><path d="M-20 -16 L-6 -24 L14 -20 L24 -4 L18 16 L-4 22 L-22 10Z" stroke-width="1.5"/><path d="M-34 -27 L-9 -40 L26 -33 L40 -2 L28 30 L-7 38 L-38 17Z" stroke-width="1.2" opacity=".8"/></g>
+<g id="racket"><ellipse rx="22" ry="27" fill="#e53935" stroke="#000" stroke-width="2.5"/><g fill="#1a1a1a" transform="scale(.75)"><use href="#h"/></g><rect x="-5" y="26" width="10" height="28" rx="3" fill="#e9edf1" stroke="#000" stroke-width="2"/></g>
+</defs><circle cx="120" cy="120" r="116" fill="#01411c"/><g clip-path="url(#clip)">
+<path d="M0 140 L240 140 L240 240 L0 240Z" fill="#1e5aa8"/><path d="M20 176 L220 176" stroke="#e9f6fb" stroke-width="2" opacity=".6"/><path d="M120 140 L120 176" stroke="#e9f6fb" stroke-width="2" opacity=".6"/>
+<path d="M0 40 L60 50 L60 140 L0 160Z M240 40 L180 50 L180 140 L240 160Z" fill="#2c3e50"/><path d="M8 60 L52 66 M8 80 L52 84 M8 100 L52 102 M8 120 L52 120 M232 60 L188 66 M232 80 L188 84 M232 100 L188 102 M232 120 L188 120" stroke="#5d7488" stroke-width="1.5"/>
+<rect x="60" y="50" width="120" height="90" fill="#9fd3ea" fill-opacity=".3" stroke="#cfeaf5" stroke-width="3"/>
+
+<g class="crk"><use href="#crack" transform="translate(120 92) scale(.8)"/></g>
+<circle class="fl" cx="120" cy="92" r="16" fill="none" stroke="#ffd54f" stroke-width="4"/>
+<g fill="#cfeaf5" stroke="#fff" stroke-width="1"><polygon class="sh" style="--x:-40px;--y:-30px;--r:-200deg" points="114,86 122,82 118,94"/><polygon class="sh" style="--x:44px;--y:-26px;--r:220deg" points="124,84 132,88 126,96"/><polygon class="sh" style="--x:-36px;--y:40px;--r:-160deg" points="112,96 120,100 110,104"/><polygon class="sh" style="--x:40px;--y:44px;--r:180deg" points="126,98 134,102 124,106"/></g>
+<path d="M40 156 L200 156" stroke="#e9f6fb" stroke-width="3"/><path d="M40 156 L40 166 M200 156 L200 166" stroke="#9aa3ad" stroke-width="4"/>
+<g class="ball"><g class="spin"><use href="#ball"/></g></g>
+<g class="r"><g transform="translate(58 134) rotate(-20) scale(.75)"><use href="#racket"/></g></g>
+</g><circle cx="120" cy="120" r="106" fill="none" stroke="#9fd3ea" stroke-width="3"/><text font-family="Noto Nastaliq Urdu, Geeza Pro, Arial, sans-serif" font-size="24" fill="#e9f6fb"><textPath href="#arc" startOffset="50%" text-anchor="middle">شیشہ توڑ</textPath></text></svg>
