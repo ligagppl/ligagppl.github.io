@@ -72,6 +72,8 @@
     .drawn .slot { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
     .drawn .slot.new { border-color: var(--ball); box-shadow: 0 0 0 2px var(--ball); }
     .drawn .vs { color: var(--muted); }
+    #setup-dlg { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; margin: auto; border: 1px solid var(--line); color: var(--text); background: var(--card); }
+    #setup-dlg::backdrop { background: rgba(0, 0, 0, .55); }
     .setup label { display: flex; gap: 8px; align-items: center; padding: 4px 0; }
     .setup select, .setup input[type=number] { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; }
     .setup select { width: 100%; }
@@ -102,6 +104,7 @@
       <div class="controls">
         <button class="btn" id="btn-next" disabled>Draw next ball</button>
         <button class="btn ghost" id="btn-auto" disabled>Auto-draw</button>
+        <button class="btn ghost" id="btn-setup">⚙ Setup</button>
         <button class="btn ghost" id="btn-full">⛶ Fullscreen</button>
       </div>
       <div class="bowl" id="bowl"></div>
@@ -113,8 +116,9 @@
         <div id="result"><p class="muted">Nothing drawn yet.</p></div>
       </div>
 
-      <div class="card setup">
-        <h3 style="margin-top:0">Setup</h3>
+      <dialog id="setup-dlg" class="card setup">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">⚙ Setup</h3>
+          <button type="button" class="btn ghost" id="btn-setup-close" aria-label="Close setup" style="color:var(--text);border-color:var(--line);padding:4px 12px">✕</button></div>
         <div class="next-stage" id="next-stage">Loading the cup…</div>
         <!-- format choice – only for round 1 -->
         <label id="format-wrap" style="display:none;margin-top:10px">Round 1 format
@@ -143,7 +147,10 @@
         <div class="controls" style="justify-content:flex-start">
           <button class="btn" id="btn-start" style="background:var(--green);color:#fff">Fill the bowl &amp; start</button>
         </div>
-        <h3>Save &amp; share</h3>
+      </dialog>
+
+      <div class="card share">
+        <h3 style="margin-top:0">Save &amp; share</h3>
         <div class="controls" style="justify-content:flex-start">
           <button class="btn" id="btn-save" style="background:var(--green);color:#fff" disabled>💾 Save draw to the cup</button>
         </div>
@@ -511,7 +518,15 @@
       renderResult();
       applySeed();
       if (!seeded) $("seed").focus();
+      else dlg.close();
     });
+
+    // setup lives in a popup: opens on the setup button (and when the page loads), closes once the bowl is filled
+    const dlg = $("setup-dlg");
+    const openSetup = () => { if (!dlg.open) dlg.showModal(); };
+    $("btn-setup").addEventListener("click", openSetup);
+    $("btn-setup-close").addEventListener("click", () => dlg.close());
+    window.addEventListener("load", () => { if (!drawStarted) openSetup(); });
 
     $("btn-next").addEventListener("click", drawNext);
 
