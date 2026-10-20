@@ -67,8 +67,7 @@
     .controls .btn:disabled { opacity: .45; cursor: default; }
     .bowl { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 18px; }
     .bowl span { background: rgba(255,255,255,.15); padding: 4px 10px; border-radius: 999px; font-size: .85rem; }
-    .layout { display: grid; gap: 16px; grid-template-columns: 1.4fr 1fr; margin-top: 16px; }
-    @media (max-width: 760px) { .layout { grid-template-columns: 1fr; } }
+    .layout { display: grid; gap: 16px; grid-template-columns: 1fr; margin-top: 16px; }
     .drawn .slot { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
     .drawn .slot.new { border-color: var(--ball); box-shadow: 0 0 0 2px var(--ball); }
     .drawn .vs { color: var(--muted); }
@@ -149,7 +148,7 @@
         </div>
       </dialog>
 
-      <div class="card share">
+      <div class="card share" id="share-card" hidden>
         <h3 style="margin-top:0">Save &amp; share</h3>
         <div class="controls" style="justify-content:flex-start">
           <button class="btn" id="btn-save" style="background:var(--green);color:#fff" disabled>💾 Save draw to the cup</button>
@@ -468,6 +467,7 @@
       renderResult(drawn.length - 1);
       $("share").value = shareText();
       $("btn-save").disabled = false;
+      $("share-card").hidden = false; // Save & share appears once the draw is complete
     }
 
     let seeded = null; // { clean, seed, entrants, order }
@@ -512,6 +512,7 @@
       clearTimeout(infoTimer); $("ball").classList.remove("show-players", "show-info");
       $("ball").textContent = P.lucky ? "🍀" : "🎾";
       $("share").value = "";
+      $("share-card").hidden = true;
       $("btn-save").disabled = true;
       $("save-msg").textContent = "";
       renderBowl();
