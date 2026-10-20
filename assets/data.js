@@ -52,6 +52,7 @@ const LEAGUE = {
     "Sting Smashers": { src: "img/logos/sting-smashers.svg?v=2", anim: "img/logos/sting-smashers-anim.svg?v=8" },
     "Vibora Vipers": { src: "img/logos/vibora-vipers.svg?v=2", anim: "img/logos/vibora-vipers-anim.svg?v=1" },
     "Kaantay Walay Phool": { src: "img/logos/kwp.svg?v=2", anim: "img/logos/kwp-anim.svg?v=6" },
+    "Bandeja Bandits": { src: "img/logos/bandeja-bandits.svg?v=1", anim: "img/logos/bandeja-bandits-anim.svg?v=1" },
     "Padel to the Metal": { src: "img/logos/padel-to-the-metal.svg?v=1", anim: "img/logos/padel-to-the-metal-anim.svg?v=1" },
   },
 
