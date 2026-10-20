@@ -164,7 +164,7 @@ const GPPL = (() => {
   const M32 = 4294967296; // 2^32
 
   // keep a–z and single spaces: "Mango  Lahore Padel!" → "mango lahore padel"
-  const cleanWords = text => text.toLowerCase().replace(/[^a-z ]/g, "").split(" ").filter(Boolean).join(" ");
+  const cleanWords = text => text.toLowerCase().replace(/[^a-z0-9 ]/g, "").split(" ").filter(Boolean).join(" ");
 
   // seed = (seed × 31 + ASCII code) mod 2^32, character by character
   function wordsToSeed(text) {

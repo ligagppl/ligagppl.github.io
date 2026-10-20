@@ -71,6 +71,13 @@
     .drawn .slot { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
     .drawn .slot.new { border-color: var(--ball); box-shadow: 0 0 0 2px var(--ball); }
     .drawn .vs { color: var(--muted); }
+    /* match rows: left team left-aligned, "vs" in the middle, right team right-aligned */
+    .drawn .slot.match { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; column-gap: 12px; row-gap: 2px; }
+    .drawn .slot.match .mno { grid-column: 1 / -1; font-weight: 700; font-size: .85rem; color: var(--muted); }
+    .drawn .slot.match .ta { text-align: left; }
+    .drawn .slot.match .vs { text-align: center; }
+    .drawn .slot.match .tb { text-align: right; }
+    .drawn .slot.match .tb .slot-logo { margin: 0 0 0 6px; }
     #setup-dlg { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; margin: auto; border: 1px solid var(--line); color: var(--text); background: var(--card); }
     #setup-dlg::backdrop { background: rgba(0, 0, 0, .55); }
     .setup label { display: flex; gap: 8px; align-items: center; padding: 4px 0; }
@@ -102,7 +109,7 @@
       <div class="ball" id="ball">🎾</div>
       <div class="controls">
         <button class="btn" id="btn-next" disabled>Draw next ball</button>
-        <button class="btn ghost" id="btn-auto" disabled>Auto-draw</button>
+        <button class="btn ghost" id="btn-auto" disabled>Auto-draw next match</button>
         <button class="btn ghost" id="btn-setup">⚙ Setup</button>
         <button class="btn ghost" id="btn-full">⛶ Fullscreen</button>
       </div>
@@ -143,6 +150,10 @@
           <span id="lucky-wrap"><input type="number" id="lucky-count" min="1" value="2"></span>
           <div id="pair-list"></div>
         </div>
+        <p style="margin:14px 0 4px"><b>⏱ Timing</b></p>
+        <label>Each drawn team stays for <input type="number" id="t-team" min="1" max="30" step="0.5" value="3" style="width:76px"> seconds</label>
+        <label>The match card (A vs B) stays for <input type="number" id="t-vs" min="2" max="60" step="0.5" value="6" style="width:76px"> seconds</label>
+        <p class="note" style="margin-top:2px">The logo shows first, then the name and players. “Auto-draw next match” draws both teams of a match, shows the match card and then waits for you.</p>
         <div class="controls" style="justify-content:flex-start">
           <button class="btn" id="btn-start" style="background:var(--green);color:#fff">Fill the bowl &amp; start</button>
         </div>
@@ -164,7 +175,7 @@
 
   <script src="assets/data.js?v=23"></script>
   <script src="assets/pairs-loader.js?v=2"></script>
-  <script src="assets/league.js?v=2"></script>
+  <script src="assets/league.js?v=3"></script>
   <script src="assets/store.js"></script>
   <script src="assets/lock.js?v=2"></script>
   <script>
@@ -201,6 +212,14 @@
     const shuffleHtml = id => logoSrc(id) ? `<img class="blogo" src="${esc(logoSrc(id))}" alt="">` : `<span class="bmystery">🎾</span>`;
     // picked: the logo first, then (after LOGO_HOLD) the number, team name and players
     const LOGO_HOLD = 2500;
+    const secs = (id, def, min) => { const v = parseFloat($(id).value); return Math.max(min, isFinite(v) ? v : def) * 1000; };
+    const teamTime = () => secs("t-team", 3, 1);
+    const vsTime = () => secs("t-vs", 6, 2);
+    let vsTimer = null;
+    try { const t = JSON.parse(localStorage.getItem("gppl-draw-times") || "{}"); if (t.team) $("t-team").value = t.team; if (t.vs) $("t-vs").value = t.vs; } catch {}
+    ["t-team", "t-vs"].forEach(id => $(id).addEventListener("change", () => {
+      try { localStorage.setItem("gppl-draw-times", JSON.stringify({ team: $("t-team").value, vs: $("t-vs").value })); } catch {}
+    }));
     const vsHtml = (a, b) => `<span class="bstack"><span class="bvs blogos">${teamMark(a, "blogo-sm")}<span class="bnum">vs</span>${teamMark(b, "blogo-sm")}</span>` +
       `<span class="binfo"><span class="bname bname-sm">${esc(name(a))}</span><span class="bnum" style="margin:4px 0">vs</span><span class="bname bname-sm">${esc(name(b))}</span></span></span>`;
     function ballHtml(id) {
@@ -317,8 +336,8 @@
         const a = drawn[m * 2], b = drawn[m * 2 + 1];
         if (a === undefined) break;
         const isNew = newIdx === m * 2 || newIdx === m * 2 + 1;
-        html += `<div class="slot ${isNew ? "new" : ""}"><span><b>Match ${m + 1}:</b> ${smallLogo(a)}${name(a)}</span>
-          <span class="vs">vs</span><span>${b !== undefined ? smallLogo(b) + name(b) : "…"}</span></div>`;
+        html += `<div class="slot match ${isNew ? "new" : ""}"><span class="mno">Match ${m + 1}</span><span class="ta">${smallLogo(a)}${name(a)}</span>
+          <span class="vs">vs</span><span class="tb">${b !== undefined ? name(b) + smallLogo(b) : "…"}</span></div>`;
       }
       const byes = drawn.slice(P.matches * 2);
       if (byes.length) {
@@ -350,6 +369,7 @@
       $("btn-next").disabled = true;
       const ball = $("ball");
       clearTimeout(infoTimer);
+      clearTimeout(vsTimer);
       ball.classList.remove("reveal", "show-players", "show-info");
       ball.classList.add("spin");
       const slot = slotLabel(drawn.length);
@@ -378,20 +398,34 @@
               : `🎟️ ${name(pick)} gets a bye!`;
             renderBowl();
             renderResult(drawn.length - 1);
+            const stopAuto = () => { autoTimer = null; $("btn-auto").textContent = "Auto-draw next match"; };
             const done = () => {
               busy = false;
-              if (drawn.length >= P.total) finish();
-              else if (!autoRevealRest()) $("btn-next").disabled = false;
+              if (drawn.length >= P.total) { stopAuto(); finish(); return; }
+              if (autoRevealRest()) return;
+              $("btn-next").disabled = false;
+              // auto-draw: keep going until the current match is complete
+              if (autoTimer && slot.type === "match" && slot.side === 0) autoTimer = setTimeout(drawNext, teamTime());
+              else stopAuto();
             };
             if (slot.type === "match" && slot.side === 1) {
-              // match complete: show both opponents on the ball, like the last match
+              // match complete: after the team's own time, show both opponents on the ball
               const a = drawn[drawn.length - 2];
               setTimeout(() => {
                 ball.classList.remove("reveal", "show-players", "show-info");
                 void ball.offsetWidth;
                 ball.classList.add("reveal");
                 revealTeam(ball, vsHtml(a, pick), !!(logoSrc(a) || logoSrc(pick)), done);
-              }, 1600);
+                // the match card stays for its own time, then the ball is ready for the next match
+                clearTimeout(vsTimer);
+                vsTimer = setTimeout(() => {
+                  if (busy || drawn.length >= P.total) return;
+                  clearTimeout(infoTimer);
+                  ball.classList.remove("reveal", "show-players", "show-info");
+                  ball.textContent = "🎾";
+                  $("status").textContent = `Ready for match ${slot.n + 1}`;
+                }, vsTime());
+              }, teamTime());
             } else done();
           });
         }
@@ -462,7 +496,7 @@
       autoTimer = null;
       $("btn-next").disabled = true;
       $("btn-auto").disabled = true;
-      $("btn-auto").textContent = "Auto-draw";
+      $("btn-auto").textContent = "Auto-draw next match";
       $("status").textContent = P.lucky ? "✅ Lucky loser draw complete! 🍀" : "✅ Draw complete – good luck everyone!";
       renderResult(drawn.length - 1);
       $("share").value = shareText();
@@ -473,15 +507,18 @@
     let seeded = null; // { clean, seed, entrants, order }
 
     // (Re)calculate the draw order from the seed words. Allowed until the first ball is drawn.
+    // seed words: at least one word each from 3 people
+    const MIN_WORDS = 3;
+    const wordCount = clean => clean ? clean.split(" ").length : 0;
     function applySeed() {
       if (!P || drawn.length) return;
       const { clean, seed } = GPPL.wordsToSeed($("seed").value);
-      const ready = clean.length > 0;
+      const ready = wordCount(clean) >= MIN_WORDS;
       seeded = ready ? { clean, seed, ...(({ start, order }) => ({ entrants: start, order }))(GPPL.seededShuffle(seed, bowl)) } : null;
       $("btn-next").disabled = !ready;
       $("btn-auto").disabled = !ready;
       $("status").textContent = !ready
-        ? "🔐 Enter the seed words."
+        ? (clean ? `🔐 At least ${MIN_WORDS} seed words needed (${wordCount(clean)} so far).` : "🔐 Enter the seed words.")
         : `🔐 Seed words: “${clean}” – ` + (P.lucky
           ? `${plural(bowl.length, "loser")} in the bowl, ${P.lucky} get${P.lucky === 1 ? "s" : ""} a second chance. Ready!`
           : `${bowl.length} pairs in the bowl, ${plural(P.matches, "match")}` + (P.byes ? `, ${plural(P.byes, "bye")}` : "") + ". Ready!");
@@ -493,10 +530,10 @@
     let stageReady = false;
     let drawStarted = false; // true from the first ball until the draw is saved – no restarting a draw
     function updateStartButton() {
-      const hasWords = GPPL.wordsToSeed($("seed").value).clean.length > 0;
+      const hasWords = wordCount(GPPL.wordsToSeed($("seed").value).clean) >= MIN_WORDS;
       $("btn-start").disabled = drawStarted || !(stageReady && hasWords);
       $("btn-start").title = drawStarted ? "Draw in progress – save it to start the next one"
-        : !stageReady ? "No draw due right now" : hasWords ? "" : "Enter the seed words first";
+        : !stageReady ? "No draw due right now" : hasWords ? "" : `Enter at least ${MIN_WORDS} seed words first`;
     }
 
     $("btn-start").addEventListener("click", () => {
@@ -535,12 +572,13 @@
       if (autoTimer) {
         clearInterval(autoTimer);
         autoTimer = null;
-        $("btn-auto").textContent = "Auto-draw";
+        $("btn-auto").textContent = "Auto-draw next match";
         return;
       }
       $("btn-auto").textContent = "Pause";
+      clearTimeout(vsTimer);
       drawNext();
-      autoTimer = setInterval(drawNext, 6000);
+      autoTimer = true; // drawNext keeps going until the match is complete (see done())
     });
 
     $("btn-full").addEventListener("click", () => {

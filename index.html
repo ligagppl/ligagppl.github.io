@@ -447,7 +447,7 @@
       <div class="card">
         <h3 style="margin-top:0">Check it with your own program</h3>
         <ol class="rules">
-          <li><b>Clean the words:</b> lowercase, keep only the letters a–z and spaces, single spaces between words.
+          <li><b>Clean the words:</b> lowercase, keep only the letters a–z, the digits 0–9 and spaces, single spaces between words.
             <span class="note">"Mango  Lahore Padel!" → "mango lahore padel"</span></li>
           <li><b>Seed:</b> start with 0. For each character: <code>seed = (seed × 31 + ASCII code) mod 4294967296</code>
             <span class="note">(a = 97 … z = 122, space = 32)</span></li>
@@ -462,7 +462,7 @@
 <pre><code>import re
 
 def gppc_draw(words, pair_ids):
-    text = " ".join(re.sub(r"[^a-z ]", "", words.lower()).split())
+    text = " ".join(re.sub(r"[^a-z0-9 ]", "", words.lower()).split())
     seed = 0
     for c in text:
         seed = (seed * 31 + ord(c)) % 2**32
@@ -476,7 +476,7 @@ def gppc_draw(words, pair_ids):
 print(gppc_draw("mango lahore padel", range(1, 11)))</code></pre>
         <h3>JavaScript</h3>
 <pre><code>function gppcDraw(words, pairIds) {
-  const text = words.toLowerCase().replace(/[^a-z ]/g, "").split(" ").filter(Boolean).join(" ");
+  const text = words.toLowerCase().replace(/[^a-z0-9 ]/g, "").split(" ").filter(Boolean).join(" ");
   let seed = 0;
   for (const c of text) seed = (seed * 31 + c.charCodeAt(0)) % 4294967296;
   const order = [...pairIds].sort((a, b) => a - b);
@@ -515,7 +515,7 @@ print(gppc_draw("mango lahore padel", range(1, 11)))</code></pre>
 
   <script src="assets/data.js?v=23"></script>
   <script src="assets/pairs-loader.js?v=2"></script>
-  <script src="assets/league.js?v=2"></script>
+  <script src="assets/league.js?v=3"></script>
   <script src="assets/store.js"></script>
   <script src="assets/app.js?v=22"></script>
 </body>
