@@ -27,6 +27,9 @@
     .ball .bnum { font-size: .7em; opacity: .7; }
     .ball .bname { position: relative; z-index: 1; }
     .ball .blogo { position: relative; z-index: 1; width: 84%; height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)); }
+    .ball .sstack { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; }
+    .ball .sstack > * { grid-area: 1 / 1; visibility: hidden; }
+    .ball .sstack > .on { visibility: visible; }
     .ball .bmystery { position: relative; z-index: 1; font-size: 2.4em; }
     /* picked ball: logo and info stacked on top of each other; the info replaces the logo after a moment */
     .ball .bstack { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; }
@@ -153,7 +156,7 @@
     </div>
   </main>
 
-  <script src="assets/data.js?v=22"></script>
+  <script src="assets/data.js?v=23"></script>
   <script src="assets/pairs-loader.js?v=2"></script>
   <script src="assets/league.js?v=2"></script>
   <script src="assets/store.js"></script>
@@ -176,6 +179,19 @@
     const smallLogo = id => logoSrc(id) ? `<img class="slot-logo" src="${esc(logoSrc(id))}" alt="">` : "";
     window.addEventListener("load", () => pairs.forEach(p => { const src = logoSrc(p.id); if (src) new Image().src = src; }));
     // shuffling: only the logo (a padel ball for teams without one) – no number, no name
+    // all logos sit in the ball at once while shuffling – only the visible one changes, so the ball is never empty
+    function showShuffle(ball, id) {
+      let stack = ball.querySelector(".sstack");
+      if (!stack) {
+        ball.innerHTML = `<span class="sstack">` + pairs.map(p => logoSrc(p.id)
+          ? `<img class="blogo" data-id="${p.id}" src="${esc(logoSrc(p.id))}" alt="">`
+          : `<span class="bmystery" data-id="${p.id}">🎾</span>`).join("") + `</span>`;
+        stack = ball.querySelector(".sstack");
+      }
+      stack.querySelectorAll(".on").forEach(el => el.classList.remove("on"));
+      const el = stack.querySelector(`[data-id="${id}"]`);
+      if (el) el.classList.add("on");
+    }
     const shuffleHtml = id => logoSrc(id) ? `<img class="blogo" src="${esc(logoSrc(id))}" alt="">` : `<span class="bmystery">🎾</span>`;
     // picked: the logo first, then (after LOGO_HOLD) the number, team name and players
     const LOGO_HOLD = 2500;
@@ -336,7 +352,7 @@
       // suspense: flicker through names in the bowl
       let ticks = 0;
       const flicker = setInterval(() => {
-        ball.innerHTML = shuffleHtml(bowl[randInt(bowl.length)]);
+        showShuffle(ball, bowl[randInt(bowl.length)]);
         if (++ticks > 18) {
           clearInterval(flicker);
           // the order is fixed by the seed words (see the Verify draw tab)
