@@ -55,7 +55,7 @@ const LEAGUE = {
     "Mavericks": { src: "img/logos/mavericks.svg?v=1", anim: "img/logos/mavericks-anim.svg?v=1" },
     "Racket Scientists": { src: "img/logos/racket-scientists.svg?v=1", anim: "img/logos/racket-scientists-anim.svg?v=1" },
     "Bandeja Bandits": { src: "img/logos/bandeja-bandits.svg?v=1", anim: "img/logos/bandeja-bandits-anim.svg?v=1" },
-    "Patience & Placement": { src: "img/logos/patience-placement.svg?v=1", anim: "img/logos/patience-placement-anim.svg?v=1" },
+    "Patience & Placement": { src: "img/logos/patience-placement.svg?v=1", anim: "img/logos/patience-placement-anim.svg?v=2" },
     "Padel to the Metal": { src: "img/logos/padel-to-the-metal.svg?v=1", anim: "img/logos/padel-to-the-metal-anim.svg?v=1" },
   },
 
