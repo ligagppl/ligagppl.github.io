@@ -606,7 +606,7 @@
       const H = 380 + 90 + rows.length * (ROW + 16) + (byes.length ? 110 : 0) + 150;
       const c = document.createElement("canvas"); c.width = W; c.height = H;
       const ctx = c.getContext("2d");
-      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#dfe7e0"; ctx.fillRect(0, 0, W, H); // light green-grey so the white parts stand out
       const banner = await loadImg("img/gppl-banner.svg");
       if (banner) ctx.drawImage(banner, 60, 40, 960, 320);
       ctx.fillStyle = "#01411c"; ctx.textAlign = "center";
@@ -620,7 +620,7 @@
       };
       let y = 470;
       rows.forEach((pair, i) => {
-        ctx.fillStyle = "#f3f6f3"; roundRect(ctx, 40, y, W - 80, ROW, 22); ctx.fill();
+        ctx.fillStyle = "#ffffff"; roundRect(ctx, 40, y, W - 80, ROW, 22); ctx.fill();
         ctx.fillStyle = "#6b776e"; ctx.textAlign = "left"; ctx.font = "700 22px Arial, sans-serif";
         ctx.fillText(P.lucky ? `LUCKY LOSER ${i + 1}` : `MATCH ${i + 1}`, 70, y + 32);
         const [a, b] = pair, s = 84, ly = y + 44;
@@ -636,13 +636,13 @@
         y += ROW + 16;
       });
       if (byes.length) {
-        ctx.fillStyle = "#fff8d6"; roundRect(ctx, 40, y, W - 80, 90, 22); ctx.fill();
+        ctx.fillStyle = "#fff3c2"; roundRect(ctx, 40, y, W - 80, 90, 22); ctx.fill();
         ctx.fillStyle = "#14201a"; ctx.textAlign = "left";
         fitText(ctx, `🎟️ Bye: ${byes.map(plainName).join(", ")}`, W - 140, 32, 700);
         ctx.fillText(`🎟️ Bye: ${byes.map(plainName).join(", ")}`, 70, y + 56);
         y += 110;
       }
-      ctx.fillStyle = "#6b776e"; ctx.textAlign = "center";
+      ctx.fillStyle = "#4c5a50"; ctx.textAlign = "center";
       fitText(ctx, `🔐 Seed words: “${seeded.clean}”`, W - 120, 28, 600); ctx.fillText(`🔐 Seed words: “${seeded.clean}”`, W / 2, y + 50);
       ctx.font = "600 24px Arial, sans-serif"; ctx.fillText("Check the draw yourself: ligagppl.github.io → ✅ Verify draw", W / 2, y + 90);
       // flag stripe at the bottom
