@@ -16,37 +16,32 @@ const LEAGUE = {
   visibleTabs: ["register", "rules", "participants", "schedule", "team"],
 
   // Member area gatekeeper (Cloudflare Worker) – empty = member area closed
-  // Venues suggested first when teams set a match (My team → Set date). Format: "Name, street, postcode city"
+  // Venues suggested first when teams set a match (My team → Set Date / Venue). Format: "Name, street, postcode city".
+  // All are on Playtomic, except the PadelCity venues (they book through their own app).
   venues: [
     "PadelCity Tucherpark, Am Eisbach 5, 80538 München",
     "PadelCity Frankfurter Ring, Taunusstraße 40, 80807 München",
     "PadelCity Erding, Schollbach 17, 85435 Erding",
+    "PadelCity Neufahrn (Alpha Club), Auweg 100, 85375 Neufahrn bei Freising",
     "Casa Padel Pineapple Park, Arnulfstraße 195, 80634 München",
     "Casa Padel Johanneskirchen, Musenbergstraße 40, 81929 München",
     "Lucky Star Padel @ Das Anders, Moosacher Straße 70, 80809 München",
     "Padel Seasons, Paul-Ehrlich-Weg 6, 80999 München",
-    "PATO Pickleball & Padel Werksviertel, Am Kartoffelgarten, 81671 München",
     "PadelPit, Heiglhofstraße 25, 81377 München",
     "Münchner Sportclub e.V., Eberwurzstraße 28, 80935 München",
     "ESV Sportfreunde Neuaubing, Centa-Hafenbrädl-Straße 8, 81249 München",
-    "Padelclub München e.V., Am Bavariapark 2, 80339 München",
-    "ISPO Munich Padel Village, Am Messesee 2, 81829 München",
     "Scheck Club Padel + Pickleball, Münchner Straße 15, 85774 Unterföhring",
     "TC Unterföhring, Jahnstraße 7, 85774 Unterföhring",
     "Padelon München, Verdistraße 45, 85591 Vaterstetten",
     "Padel Factoría, Zeppelinstraße 4, 85748 Garching",
     "STK Padel Campus, Am See 3, 85748 Garching",
     "Casa Padel Agrob Campus, Münchener Straße 101, 85737 Ismaning",
-    "Racket-Park TSV Haar, Höglweg 7, 85540 Haar",
-    "Sport-Insel Taufkirchen, Birkenstraße 169, 82024 Taufkirchen",
-    "Tennis Raschke, Ahornring 74, 82024 Taufkirchen",
-    "Sporttraum Indoorsportarena, Hürderstraße 2a, 85551 Kirchheim bei München",
-    "Padel Starnberg, Gautinger Straße 39, 82319 Starnberg",
+    "Sport Raschke, Ahornring 74, 82024 Taufkirchen",
     "Padel Garden TC Puchheim, Bürgermeister-Ertl-Straße 3, 82178 Puchheim",
     "Padel Cube (SV Ampermoching), Alternstraße 33, 85241 Hebertshausen",
-    "TC Neufinsing, Am Steinfeld 3, 85464 Finsing",
+    "Padel Finsing bei BattleKart, Am Steinfeld 3, 85464 Finsing",
     "TC Blau-Weiß Neufahrn, Am Sportplatz 18, 85375 Neufahrn bei Freising",
-    "Alpha Club Sportanlagen, Auweg 100, 85375 Neufahrn bei Freising",
+    "Padel Neufahrn, Käthe-Winkelmann-Platz 1, 85375 Neufahrn bei Freising",
   ],
 
   memberApi: "https://gppl-members-staging.gppl-members.workers.dev",
