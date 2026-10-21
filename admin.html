@@ -54,7 +54,8 @@
     .dp-board input { width: 100%; text-align: center; font-size: 1.05rem; padding: 7px 4px; }
     #due-list .dp-card, .md-editor .dp-card { margin: 10px 0 0; }
     .md-day { border-top: 1px solid var(--line); padding: 8px 0; }
-    .md-day summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+    .md-day summary { cursor: pointer; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .md-img-btn { margin-left: auto; }
     .md-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); }
     .md-pair { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; }
     .md-a, .md-b { display: flex; align-items: center; gap: 8px; min-width: 0; }
@@ -146,7 +147,11 @@
         <div id="ms-view"></div>
       </div>
       <div class="card">
-        <h3 style="margin-top:0">📋 Matches per matchday</h3>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <h3 style="margin:0">📋 Matches per matchday</h3>
+          <button class="btn ghost small" id="md-images-all">🖼️ Download all matchday images</button></div>
+        <p class="note">Each matchday can be saved as an image for WhatsApp – with the teams, results so far and the dates set.</p>
+        <div class="msg" id="md-img-msg"></div>
         <div id="md-view"></div>
       </div>
       <details class="card">
@@ -372,6 +377,7 @@
   <script src="assets/store.js?v=3"></script>
   <script src="assets/lock.js?v=2"></script>
   <script src="assets/members-admin.js?v=5" defer></script>
+  <script src="assets/share-image.js?v=1"></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;
@@ -570,7 +576,8 @@
             <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p ? "View" : "Enter result"}</button></div>`;
         }).join("");
         return `<details class="md-day" data-md="${md}" ${md === (mdOpen || cur) ? "open" : ""}><summary><b>Matchday ${md}</b>
-          <span class="note">${done}/${games.length} played${disputed ? ` · ❗ ${disputed} disputed` : ""}${md === cur ? " · current" : ""}</span></summary>${rows}<div class="md-editor"></div></details>`;
+          <span class="note">${done}/${games.length} played${disputed ? ` · ❗ ${disputed} disputed` : ""}${md === cur ? " · current" : ""}</span>
+          <button class="btn ghost small md-img-btn" data-md-image="${md}">🖼️ Image</button></summary>${rows}<div class="md-editor"></div></details>`;
       }).join("") || '<p class="muted">No pairs yet.</p>';
     }
 
@@ -592,6 +599,41 @@
           <span class="ms-chip">${MS_LABEL[status]}</span></div>`;
       }).join("");
     }
+
+    // ---------- matchday images (WhatsApp) ----------
+    function matchdayImage(md) {
+      const games = fixtureList[md - 1] || [], { from, to } = GPPL.matchdayWindow(md);
+      const rows = games.map(([a, b], i) => {
+        const r = GPPL.findResult(results, a, b), e = schedule[lkey(a, b)] || {};
+        const sub = r ? "" : e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + e.time : ""}${e.court ? " · 📍 " + e.court.split(",")[0] : ""}` : "";
+        return { label: `MATCH ${i + 1}`, a, b, center: r ? GPPL.scoreText(r, a) : "vs", sub, winner: r ? GPPL.evaluate(r).winner : null };
+      });
+      return GPPLImage.render({
+        title: `📅 GPPL – Matchday ${md}`,
+        subtitle: LEAGUE.datesConfirmed !== false ? `${GPPL.fmt(from)} – ${GPPL.fmt(to)}` : "",
+        rows, footer: "Schedule, table & results: ligagppl.github.io",
+      });
+    }
+    const mdFile = md => `GPPL Matchday ${String(md).padStart(2, "0")}.png`;
+    document.getElementById("panel-league").addEventListener("click", async e => {
+      const one = e.target.closest("[data-md-image]");
+      if (one) {
+        e.preventDefault(); // don't open/close the matchday
+        one.disabled = true;
+        GPPLImage.download(await matchdayImage(+one.dataset.mdImage), mdFile(+one.dataset.mdImage));
+        one.disabled = false;
+      }
+      if (e.target.id === "md-images-all") {
+        e.target.disabled = true;
+        for (let md = 1; md <= fixtureList.length; md++) {
+          flash("md-img-msg", `Making matchday ${md} of ${fixtureList.length}…`);
+          GPPLImage.download(await matchdayImage(md), mdFile(md));
+          await new Promise(r => setTimeout(r, 400)); // browsers ignore downloads fired too quickly
+        }
+        flash("md-img-msg", `✅ ${fixtureList.length} images downloaded (your browser may ask once to allow several downloads).`);
+        e.target.disabled = false;
+      }
+    });
 
     function renderLeagueViews() { renderDue(); renderMilestones(); renderMatchdays(); }
 
