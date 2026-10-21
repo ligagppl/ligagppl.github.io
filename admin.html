@@ -494,18 +494,22 @@
     function editorCard(a, b, md) {
       const e = schedule[lkey(a, b)] || {}, p = e.pending, r = GPPL.findResult(results, a, b);
       const pre = r && r.sets ? scoreFor(r.sets, r.a, a) : p ? scoreFor(p.sets, p.a, a) : [];
-      const input = (i, side) => `<input type="number" min="0" max="${i === 2 ? 99 : 7}" data-s="${i}${side}" value="${pre[i] ? pre[i][side] : ""}" style="grid-row:${side + 2};grid-column:${i + 2}" aria-label="Set ${i + 1} ${escA(name(side ? b : a))}">`;
+      // a team entered the score and the opponent hasn't reacted yet → nothing to do here (shown read-only)
+      const waiting = !r && p && p.status !== "disputed";
+      const input = (i, side) => `<input type="number" min="0" max="${i === 2 ? 99 : 7}" data-s="${i}${side}" value="${pre[i] ? pre[i][side] : ""}" style="grid-row:${side + 2};grid-column:${i + 2}" aria-label="Set ${i + 1} ${escA(name(side ? b : a))}"${waiting ? " disabled" : ""}>`;
       return `<div class="card dp-card ${p && p.status === "disputed" ? "dp-disputed" : p ? "dp-waiting" : ""}" data-edit-a="${a}" data-edit-b="${b}">
         <div class="dp-head"><span class="note">Matchday ${md}</span><span class="note">${whenText(e) || "No date set"}</span></div>
-        ${p ? `<p class="note">${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting for confirmation"} – ${escA(name(p.by))} entered ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}. Saving here makes your score official.</p>` : ""}
+        ${p && !r ? `<p class="note">${p.status === "disputed" ? `❗ Disputed – ${escA(name(p.by))} entered ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}. Saving here makes your score official.`
+          : `⏳ ${escA(name(p.by))} entered this score – waiting for ${escA(name(p.by === p.a ? p.b : p.a))} to confirm. It counts automatically 48 hours after it was entered.`}</p>` : ""}
         <div class="dp-board" style="--sets:3">${["Set 1", "Set 2", "Tie-break"].map((l, i) => `<span class="dp-bh" style="grid-row:1;grid-column:${i + 2}">${l}</span>`).join("")}
           <span style="grid-row:2;grid-column:1">${teamHtml(a)}</span><span style="grid-row:3;grid-column:1">${teamHtml(b)}</span>
           ${[0, 1, 2].map(i => input(i, 0) + input(i, 1)).join("")}</div>
+        ${waiting ? `<div class="dp-btns"><button class="btn ghost small" data-goto-disputes>Open ❗ Disputes to accept it early</button></div></div>` : `
         <div class="form-row"><label>Walkover</label><select data-wo>
           <option value="">No walkover</option><option value="${a}">${escA(name(a))} wins by walkover</option><option value="${b}">${escA(name(b))} wins by walkover</option>
           <option value="both">Both pairs at fault / no photo – −1 each</option></select></div>
         <div class="form-row"><label>Playtomic link</label><input type="url" data-link placeholder="optional – https://app.playtomic.io/…" value="${escA((r && r.link) || (p && p.link) || "")}"></div>
-        <div class="dp-btns"><button class="btn" data-save-league>${r ? "Update result" : "Save result"}</button><span class="msg"></span></div></div>`;
+        <div class="dp-btns"><button class="btn" data-save-league>${r ? "Update result" : "Save result"}</button><span class="msg"></span></div></div>`}`;
     }
 
     function renderDue() {
@@ -529,7 +533,7 @@
             : e.date ? (isPast(e) ? "⏰ Result due · " : "") + whenText(e) : '<span class="muted">Not scheduled yet</span>';
           return `<div class="md-row ${r ? "is-done" : ""}"><span class="md-teams">${teamLogo(a)}<b>${escA(name(a))}</b><span class="muted">–</span><b>${escA(name(b))}</b>${teamLogo(b)}</span>
             <span class="md-state">${state}</span>
-            <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : "Enter result"}</button></div>`;
+            <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p && p.status !== "disputed" ? "View" : "Enter result"}</button></div>`;
         }).join("");
         return `<details class="md-day" data-md="${md}" ${md === (mdOpen || cur) ? "open" : ""}><summary><b>Matchday ${md}</b>
           <span class="note">${done}/${games.length} played${disputed ? ` · ❗ ${disputed} disputed` : ""}${md === cur ? " · current" : ""}</span></summary>${rows}<div class="md-editor"></div></details>`;
@@ -548,6 +552,7 @@
         box.dataset.for = box.innerHTML ? ab : "";
         return;
       }
+      if (e.target.closest("[data-goto-disputes]")) { document.querySelector('.subnav button[data-panel="disputes"]').click(); return; }
       const save = e.target.closest("[data-save-league]");
       if (!save) return;
       const card = save.closest("[data-edit-a]"), a = +card.dataset.editA, b = +card.dataset.editB, msg = save.nextElementSibling;
