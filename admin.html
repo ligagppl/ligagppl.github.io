@@ -343,7 +343,7 @@
   <script src="assets/league.js?v=3"></script>
   <script src="assets/store.js?v=2"></script>
   <script src="assets/lock.js?v=2"></script>
-  <script src="assets/members-admin.js?v=4" defer></script>
+  <script src="assets/members-admin.js?v=5" defer></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;
@@ -494,14 +494,14 @@
     function editorCard(a, b, md) {
       const e = schedule[lkey(a, b)] || {}, p = e.pending, r = GPPL.findResult(results, a, b);
       const pre = r && r.sets ? scoreFor(r.sets, r.a, a) : p ? scoreFor(p.sets, p.a, a) : [];
-      // a team entered the score and the opponent hasn't reacted yet → nothing to do here (shown read-only)
-      const waiting = !r && p && p.status !== "disputed";
+      // a team entered the score: waiting for the opponent or disputed (decided in ❗ Disputes) → read-only here
+      const waiting = !r && !!p;
       const input = (i, side) => waiting
         ? `<span class="dp-g ${pre[i] && pre[i][side] > pre[i][1 - side] ? "win" : ""}" style="grid-row:${side + 2};grid-column:${i + 2}">${pre[i] ? pre[i][side] : ""}</span>`
         : `<input type="number" min="0" max="${i === 2 ? 99 : 7}" data-s="${i}${side}" value="${pre[i] ? pre[i][side] : ""}" style="grid-row:${side + 2};grid-column:${i + 2}" aria-label="Set ${i + 1} ${escA(name(side ? b : a))}">`;
       return `<div class="card dp-card ${p && p.status === "disputed" ? "dp-disputed" : p ? "dp-waiting" : ""}" data-edit-a="${a}" data-edit-b="${b}">
         <div class="dp-head"><span class="note">Matchday ${md}</span><span class="note">${whenText(e) || "No date set"}</span></div>
-        ${p && !r ? `<p class="note">${p.status === "disputed" ? `❗ Disputed – ${escA(name(p.by))} entered ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}. Saving here makes your score official.`
+        ${p && !r ? `<p class="note">${p.status === "disputed" ? `❗ ${escA(name(p.by))} entered this score and ${escA(name(p.disputedBy))} disputed it – decide or correct it in the ❗ Disputes tab.`
           : `⏳ ${escA(name(p.by))} entered this score – waiting for ${escA(name(p.by === p.a ? p.b : p.a))} to confirm. It counts automatically 48 hours after it was entered.`}</p>` : ""}
         <div class="dp-board" style="--sets:3">${["Set 1", "Set 2", "Tie-break"].map((l, i) => `<span class="dp-bh" style="grid-row:1;grid-column:${i + 2}">${l}</span>`).join("")}
           <span style="grid-row:2;grid-column:1">${teamHtml(a)}</span><span style="grid-row:3;grid-column:1">${teamHtml(b)}</span>
@@ -535,7 +535,7 @@
             : e.date ? (isPast(e) ? "⏰ Result due · " : "") + whenText(e) : '<span class="muted">Not scheduled yet</span>';
           return `<div class="md-row ${r ? "is-done" : ""}"><span class="md-teams">${teamLogo(a)}<b>${escA(name(a))}</b><span class="muted">–</span><b>${escA(name(b))}</b>${teamLogo(b)}</span>
             <span class="md-state">${state}</span>
-            <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p && p.status !== "disputed" ? "View" : "Enter result"}</button></div>`;
+            <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p ? "View" : "Enter result"}</button></div>`;
         }).join("");
         return `<details class="md-day" data-md="${md}" ${md === (mdOpen || cur) ? "open" : ""}><summary><b>Matchday ${md}</b>
           <span class="note">${done}/${games.length} played${disputed ? ` · ❗ ${disputed} disputed` : ""}${md === cur ? " · current" : ""}</span></summary>${rows}<div class="md-editor"></div></details>`;

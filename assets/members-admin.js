@@ -104,6 +104,13 @@
       o.sets.map(s => `<span class="dp-g ${s[side] > s[1 - side] ? "win" : ""}">${s[side]}</span>`).join("");
     return `<div class="dp-board" style="--sets:${labels.length}"><span></span>${labels.map(l => `<span class="dp-bh">${l}</span>`).join("")}${row(o.a, 0)}${row(o.b, 1)}</div>`;
   }
+  // editable copy of the score (sets from pair a's view) – tab key goes set by set
+  function editBoard(o, fullSets) {
+    const labels = ["Set 1", "Set 2", fullSets ? "Set 3" : "Tie-break"], at = (r, c) => `style="grid-row:${r};grid-column:${c}"`;
+    return `<div class="dp-board" style="--sets:3">${labels.map((l, i) => `<span class="dp-bh" ${at(1, i + 2)}>${l}</span>`).join("")}
+      <span ${at(2, 1)}><b>${esc(name(o.a))}</b></span><span ${at(3, 1)}><b>${esc(name(o.b))}</b></span>
+      ${[0, 1, 2].map(i => [0, 1].map(s => `<input type="number" min="0" max="${i === 2 && !fullSets ? 99 : 7}" data-s="${i}${s}" value="${o.sets[i] ? o.sets[i][s] : ""}" ${at(s + 2, i + 2)}>`).join("")).join("")}</div>`;
+  }
   const who = id => `<b>${esc(name(id))}</b>`;
   function openCard(o, cup) {
     const disputed = o.status === "disputed", other = o.by === o.a ? o.b : o.a;
@@ -117,8 +124,11 @@
           <div class="dp-note">${o.note ? `“${esc(o.note)}”` : '<span class="note">No comment given.</span>'}</div>`
           : `<div class="note">Counts automatically 48 hours after it was entered, unless ${esc(name(other))} disputes it.</div>`}
       </div>
+      ${disputed ? `<div class="dp-edit" hidden>${editBoard(o, fullSetsOf(o.key, cup))}
+        <div class="dp-btns"><button class="btn" data-save-edit="${o.key}">💾 Save this score as official</button></div></div>` : ""}
       <div class="dp-btns">
         <button class="btn" data-resolve="accept" data-key="${o.key}">✅ Accept result</button>
+        ${disputed ? `<button class="btn ghost" data-toggle-edit>✏️ Edit score</button>` : ""}
         <button class="btn ghost" data-resolve="reject" data-key="${o.key}">✖ Reject – teams enter it again</button>
         <button class="btn ghost small" data-photo="${o.key}">📷 Photo</button>
         ${o.link ? `<a class="btn ghost small" href="${esc(o.link)}" target="_blank" rel="noopener">Playtomic ↗</a>` : ""}
@@ -148,6 +158,16 @@
   $("panel-disputes").addEventListener("click", async e => {
     const b = e.target.closest("button");
     if (!b) return;
+    if ("toggleEdit" in b.dataset) { const ed = b.closest(".dp-card").querySelector(".dp-edit"); ed.hidden = !ed.hidden; return; }
+    if (b.dataset.saveEdit) {
+      const card = b.closest(".dp-card"), v = k => { const el = card.querySelector(`[data-s="${k}"]`); return el.value === "" ? null : +el.value; };
+      const sets = [0, 1, 2].map(i => [v(`${i}0`), v(`${i}1`)]).filter(s => s[0] !== null || s[1] !== null);
+      if (sets.some(s => s.includes(null))) return show("dp-msg", "❌ A set is incomplete.", false);
+      if (!confirm("Make this corrected score official?")) return;
+      try { await call("/admin/resolve", { key: b.dataset.saveEdit, action: "accept", sets }); show("dp-msg", "✅ Corrected score is official."); loadDisputes(); }
+      catch (err) { show("dp-msg", "❌ " + err.message, false); }
+      return;
+    }
     if (b.dataset.resolve) {
       const accept = b.dataset.resolve === "accept";
       if (!confirm(accept ? "Make this result official?" : "Reject this result? It's removed and the teams can enter it again.")) return;

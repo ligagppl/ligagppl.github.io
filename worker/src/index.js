@@ -303,12 +303,14 @@ function checkSets(sets, fullSets) {
     if (!Array.isArray(s) || s.length !== 2 || !s.every(n => Number.isInteger(n) && n >= 0 && n <= 99)) throw httpError(400, "Scores must be whole numbers.");
   });
   const [s1, s2, s3] = sets;
-  if (!validSet(s1) || !validSet(s2)) throw httpError(400, "A set must end 6–0…6–4, 7–5 or 7–6.");
+  const fin = (s, label) => { if (!validSet(s)) throw httpError(400, `${label}: ${s[0]}-${s[1]} is not a finished set – a set ends 6-0 … 6-4, 7-5 or 7-6.`); };
+  fin(s1, "Set 1"); fin(s2, "Set 2");
   const split = (s1[0] > s1[1]) !== (s2[0] > s2[1]);
-  if (split && !s3) throw httpError(400, fullSets ? "Sets are 1–1 – enter set 3." : "Sets are 1–1 – enter the match tie-break.");
-  if (!split && s3) throw httpError(400, "The match was over after 2 sets – remove the third one.");
-  if (s3 && fullSets && !validSet(s3)) throw httpError(400, "Set 3 must end 6–0…6–4, 7–5 or 7–6.");
-  if (s3 && !fullSets && !validTieBreak(s3)) throw httpError(400, "Match tie-break: first to 10, win by 2 (e.g. 10–8, 12–10).");
+  const third = fullSets ? "set 3" : "the match tie-break";
+  if (split && !s3) throw httpError(400, `Sets are 1-1 – enter ${third}.`);
+  if (!split && s3) throw httpError(400, `The match was over after 2 sets – clear ${third}.`);
+  if (s3 && fullSets) fin(s3, "Set 3");
+  if (s3 && !fullSets && !validTieBreak(s3)) throw httpError(400, `Tie-break: ${s3[0]}-${s3[1]} isn't possible – first to 10, win by 2 (e.g. 10-7, 12-10).`);
 }
 
 // ---------------------------------------------------------------- team actions
@@ -521,12 +523,13 @@ async function adminResolve(env, body) {
     const info = matchInfo(body.key, files);
     const m = files.matches[info.key];
     if (!m || !m.pending) throw httpError(400, "Nothing open for this match.");
-    if (accept) makeOfficial(info, files, m.pending);
+    if (accept && body.sets) { checkSets(body.sets, info.fullSets); makeOfficial(info, files, { ...m.pending, sets: body.sets }); } // corrected by the admin
+    else if (accept) makeOfficial(info, files, m.pending);
     else { delete m.pending; if (!Object.keys(m).length) delete files.matches[info.key]; }
   }, `${accept ? "accept" : "reject"} ${body.key} (admin)`);
   await env.KV.delete(`note:${body.key}`);
   if (!accept) await env.KV.delete(`photo:${body.key}`);
-  await addLog(env, { action: accept ? "accepted by admin" : "rejected by admin", key: body.key, by: "admin" });
+  await addLog(env, { action: accept ? (body.sets ? "corrected by admin" : "accepted by admin") : "rejected by admin", key: body.key, by: "admin", ...(body.sets ? { detail: setsText(body.sets) } : {}) });
   return json({ ok: true });
 }
 
