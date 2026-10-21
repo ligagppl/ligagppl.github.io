@@ -183,7 +183,7 @@
           <button class="btn small" type="submit">Send to the organizers</button></form>` : "");
     } else {
       const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(entry.time) : ""}${entry.court ? ` · 📍 <a href="${mapsUrl(entry.court)}" target="_blank" rel="noopener">${esc(entry.court)}</a>` : ""}</p>` : "";
-      body = when + `<div class="tm-btns"><button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change date" : "Set date"}</button>
+      body = when + `<div class="tm-btns"><button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>
         ${entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule`) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
         <label>Date &amp; time<input type="datetime-local" name="when" step="900" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
@@ -340,7 +340,9 @@
         const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=de&bbox=5.8,47.2,15.1,55.1&lat=48.137&lon=11.575`); // results near Munich first
         const data = await res.json();
         if (req !== venueReq || input.value.trim() !== q) return;
-        const found = data.features.map(({ properties: p }) => [p.name, [p.street, p.housenumber].filter(Boolean).join(" "), [p.postcode, p.city || p.town || p.village].filter(Boolean).join(" ")]
+        // only places you can play at (clubs, sports centres, buildings with a house number) – no streets or stations
+        const playable = ({ properties: p }) => ["leisure", "amenity", "club", "building", "sport"].includes(p.osm_key) || !!p.housenumber;
+        const found = data.features.filter(playable).map(({ properties: p }) => [p.name, [p.street, p.housenumber].filter(Boolean).join(" "), [p.postcode, p.city || p.town || p.village].filter(Boolean).join(" ")]
           .filter((x, i, a) => x && a.indexOf(x) === i).join(", ")).filter(Boolean);
         showVenues(box, [...new Set(known.concat(found))].slice(0, 8), q);
       } catch {}

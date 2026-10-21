@@ -45,7 +45,6 @@ const LEAGUE = {
     "Padel Garden TC Puchheim, Bürgermeister-Ertl-Straße 3, 82178 Puchheim",
     "Padel Cube (SV Ampermoching), Alternstraße 33, 85241 Hebertshausen",
     "TC Neufinsing, Am Steinfeld 9, 85464 Finsing",
-    "Freizeitpark Neufahrn, Käthe-Winkelmann-Platz 1, 85375 Neufahrn bei Freising",
     "TC Blau-Weiß Neufahrn, Am Sportplatz 18, 85375 Neufahrn bei Freising",
     "Alpha Club Sportanlagen, Auweg 100, 85375 Neufahrn bei Freising",
   ],
