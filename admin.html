@@ -60,6 +60,8 @@
     .md-teams { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
     .md-teams .dp-logo { width: 32px; height: 32px; }
     .md-state { font-size: .88rem; }
+    .md-match { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .md-when { font-size: .85rem; color: var(--muted); padding-left: 2px; }
     .md-row .btn { justify-self: start; }
     @media (max-width: 640px) { .md-row { grid-template-columns: 1fr; } }
     .ms-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(120px, 1fr) minmax(0, 1.4fr) auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
@@ -546,8 +548,9 @@
           const r = GPPL.findResult(results, a, b), e = schedule[lkey(a, b)] || {}, p = e.pending;
           const state = r ? `✅ <b>${GPPL.scoreText(r, a)}</b>`
             : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}`
-            : e.date ? (isPast(e) ? "⏰ Result due · " : "") + whenText(e) : '<span class="muted">Not scheduled yet</span>';
-          return `<div class="md-row ${r ? "is-done" : ""}"><span class="md-teams">${teamLogo(a)}<b>${escA(name(a))}</b><span class="muted">–</span><b>${escA(name(b))}</b>${teamLogo(b)}</span>
+            : e.date ? (isPast(e) ? "⏰ Result due" : "📅 Scheduled") : '<span class="muted">Not scheduled yet</span>';
+          return `<div class="md-row ${r ? "is-done" : ""}"><span class="md-match"><span class="md-teams">${teamLogo(a)}<b>${escA(name(a))}</b><span class="muted">vs</span><b>${escA(name(b))}</b>${teamLogo(b)}</span>
+            ${e.date && !r ? `<span class="md-when">${whenText(e)}</span>` : ""}</span>
             <span class="md-state">${state}</span>
             <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p ? "View" : "Enter result"}</button></div>`;
         }).join("");
@@ -665,8 +668,9 @@
             const e = schedule[`C:${ri}:${mi}`] || {}, p = e.pending, has = m.sets || m.walkover;
             const state = has ? (m.walkover === "both" ? "✅ Both out (walkover)" : m.walkover ? `✅ ${escA(name(m.walkover))} by walkover` : `✅ <b>${GPPL.scoreText(m, m.a, !GPPL.cupFullSets(r))}</b>`)
               : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, m.a, !GPPL.cupFullSets(r))}`
-              : e.date ? (isPast(e) ? "⏰ Result due · " : "") + whenText(e) : '<span class="muted">Not scheduled yet</span>';
-            return `<div class="md-row ${has ? "is-done" : ""}"><span class="md-teams">${teamLogo(m.a)}<b>${escA(name(m.a))}</b><span class="muted">–</span><b>${escA(name(m.b))}</b>${teamLogo(m.b)}</span>
+              : e.date ? (isPast(e) ? "⏰ Result due" : "📅 Scheduled") : '<span class="muted">Not scheduled yet</span>';
+            return `<div class="md-row ${has ? "is-done" : ""}"><span class="md-match"><span class="md-teams">${teamLogo(m.a)}<b>${escA(name(m.a))}</b><span class="muted">vs</span><b>${escA(name(m.b))}</b>${teamLogo(m.b)}</span>
+              ${e.date && !has ? `<span class="md-when">${whenText(e)}</span>` : ""}</span>
               <span class="md-state">${state}</span>
               <button class="btn ghost small" data-open-cup="${ri}:${mi}">${has ? "Edit" : p ? "View" : "Enter result"}</button></div>
               <div class="md-editor" data-cup-editor="${ri}:${mi}"></div>`;
