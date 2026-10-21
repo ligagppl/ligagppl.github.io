@@ -578,7 +578,8 @@ const siteLogo = (() => {
 // once registration is closed, Register and Participants leave the menu (the pages still open from links)
 function updateMenu() {
   const reg = { ...LEAGUE.registration, ...(settings.registration || {}) };
-  const closed = (reg.status || (reg.open ? "open" : "soon")) === "closed";
+  // …also once the league start date is set (the season is on)
+  const closed = (reg.status || (reg.open ? "open" : "soon")) === "closed" || LEAGUE.scheduleVisible;
   ["register", "participants"].forEach(id => {
     const a = document.querySelector(`#nav a[href="#${id}"]`);
     if (a) a.hidden = closed;
