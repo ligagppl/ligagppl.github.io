@@ -609,7 +609,7 @@
         return { label: `MATCH ${i + 1}`, a, b, center: r ? GPPL.scoreText(r, a) : "vs", sub, winner: r ? GPPL.evaluate(r).winner : null };
       });
       return GPPLImage.render({
-        title: `📅 GPPL – Matchday ${md}`,
+        title: `📅 Matchday ${md}`,
         subtitle: LEAGUE.datesConfirmed !== false ? `${GPPL.fmt(from)} – ${GPPL.fmt(to)}` : "",
         rows, footer: "Schedule, table & results: ligagppl.github.io",
       });
