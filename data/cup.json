@@ -1,3 +1,65 @@
 {
-  "rounds": []
+  "rounds": [
+    {
+      "name": "Round 1",
+      "type": "matches",
+      "matches": [
+        {
+          "a": 2,
+          "b": 7
+        },
+        {
+          "a": 5,
+          "b": 8
+        },
+        {
+          "a": 4,
+          "b": 11
+        },
+        {
+          "a": 6,
+          "b": 10
+        },
+        {
+          "a": 12,
+          "b": 9
+        },
+        {
+          "a": 1,
+          "b": 3
+        }
+      ],
+      "byes": [],
+      "words": "mango padel lahore",
+      "seed": 4154744435,
+      "entrants": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ],
+      "labels": {
+        "1": "Sting Smashers",
+        "2": "Kaantay Walay Phool",
+        "3": "Unforced Terrors",
+        "4": "Vibora Vipers",
+        "5": "Padel to the Metal",
+        "6": "Another TBD",
+        "7": "Mavericks",
+        "8": "Bandeja Bandits",
+        "9": "Racket Scientists",
+        "10": "Patience & Placement",
+        "11": "Sheesha Torr",
+        "12": "Smashistan"
+      }
+    }
+  ]
 }
