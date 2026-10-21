@@ -522,7 +522,7 @@ document.documentElement.classList.add("tabs-ready"); // the menu is hidden unti
 
 function showTab() {
   let id = (location.hash || "#" + (visibleTabs ? visibleTabs[0] : "home")).slice(1);
-  if (!tabAllowed(id) || !document.getElementById(id)) {
+  if (!tabAllowed(id) || !document.getElementById(id) || (id === "register" && registrationOver())) {
     id = visibleTabs ? visibleTabs[0] : "home";
     history.replaceState(null, "", "#" + id);
   }
@@ -576,10 +576,14 @@ const siteLogo = (() => {
 })();
 
 // once registration is closed, Register and Participants leave the menu (the pages still open from links)
-function updateMenu() {
+function registrationOver() {
   const reg = { ...LEAGUE.registration, ...(settings.registration || {}) };
   // …also once the league start date is set (the season is on)
-  const closed = (reg.status || (reg.open ? "open" : "soon")) === "closed" || LEAGUE.scheduleVisible;
+  return (reg.status || (reg.open ? "open" : "soon")) === "closed" || !!LEAGUE.scheduleVisible;
+}
+function updateMenu() {
+  const closed = registrationOver();
+  if (closed && location.hash === "#register") location.hash = "#home"; // Register is gone – Participants still opens from Home
   ["register", "participants"].forEach(id => {
     const a = document.querySelector(`#nav a[href="#${id}"]`);
     if (a) a.hidden = closed;
