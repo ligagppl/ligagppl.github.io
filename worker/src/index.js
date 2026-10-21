@@ -318,16 +318,13 @@ function checkSets(sets, fullSets) {
 
 async function me(env, team) {
   const { files } = await readAll(env, ["pairs", "results", "cup", "matches"]);
-  // WhatsApp numbers of the other pairs (all are opponents in the league) – to arrange matches
-  const all = await getPhones(env), phones = {};
-  Object.entries(all).forEach(([id, list]) => { if (+id !== team) phones[id] = list; });
   const notes = {};
   for (const [key, m] of Object.entries(files.matches)) {
     if (m.pending && m.pending.status === "disputed" && key.includes(String(team))) {
       notes[key] = await env.KV.get(`note:${key}`);
     }
   }
-  return json({ team, ...files, notes, phones });
+  return json({ team, ...files, notes });
 }
 
 const cleanDate = d => (d === "" || /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null);

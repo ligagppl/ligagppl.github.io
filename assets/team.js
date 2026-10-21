@@ -114,7 +114,7 @@
     if (!state && !loading) {
       el.innerHTML = `<div class="card tm-login">
         <p>Log in with the <b>team code</b> the organizers sent you on WhatsApp. Both players of a team use the same code.</p>
-        <p class="note">The member area shows private data of other members. By logging in you accept the <a href="#rules">member area terms</a> (Rules §12) – don't share your code.</p>
+        <p class="note">By logging in you accept the <a href="#rules">member area terms</a> (Rules §12) – don't share your code.</p>
         <form id="tm-login"><input id="tm-code" autocomplete="off" autocapitalize="characters" placeholder="e.g. K7PM-Q2XD" maxlength="12">
         <button class="btn" type="submit">Log in</button></form>
         ${msgHtml("top")}</div>`;
@@ -257,16 +257,8 @@
     if (photos[m.key]) body += `<img class="tm-photo" src="${photos[m.key]}" alt="Matchday photo">`;
     return `<div class="card tm-match st-${st.cls}">
       <div class="tm-head"><span class="tm-label">${esc(m.label)}</span><span class="tm-chip">${st.text}</span></div>
-      <div class="tm-vs">${logo(m.opp)}<div><b>${esc(teamName(m.opp))}</b><span class="tm-players">${players(m.opp)}</span>${m.official ? "" : contactHtml(m)}</div></div>
+      <div class="tm-vs">${logo(m.opp)}<div><b>${esc(teamName(m.opp))}</b><span class="tm-players">${players(m.opp)}</span></div></div>
       ${body}${msgHtml(m.key)}</div>`;
-  }
-
-  // WhatsApp the opponent players (numbers from the organizers, see Rules §12)
-  function contactHtml(m) {
-    const nums = (state.phones || {})[m.opp] || [], pl = pairOf(m.opp).players || [];
-    const text = `Hi! 🎾 GPPL ${m.label.split(" · ")[0]}: ${teamName(state.team)} vs ${teamName(m.opp)} – when would you like to play?`;
-    const links = [0, 1].filter(i => nums[i]).map(i => `<a class="tm-wa" href="https://wa.me/${nums[i]}?text=${encodeURIComponent(text)}" target="_blank" rel="noopener">📲 ${esc((pl[i] || "Player").split(" ")[0])}</a>`);
-    return links.length ? `<span class="tm-contact">${links.join("")}</span>` : "";
   }
 
   function photoBtn(key) { return `<button class="btn ghost small" data-act="photo" data-key="${key}">📷 Photo</button>`; }

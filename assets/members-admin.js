@@ -33,6 +33,13 @@
     return src ? `<img class="mb-logo" src="${esc(src)}" alt="">` : `<span class="mb-logo ph" aria-hidden="true">🎾</span>`;
   }
 
+  // one WhatsApp button per team: WhatsApp links open one chat at a time, so with two numbers
+  // the button opens the first player's chat and then offers the partner ("Next: …")
+  function sendButton(msg, steps) {
+    if (!steps.length) return `<a class="btn small" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">📲 Send via WhatsApp</a>`;
+    return `<button class="btn small" data-wa="${encodeURIComponent(JSON.stringify(steps))}" data-step="0">📲 Send to ${steps.map(s => esc(s.name)).join(" & ")}</button>`;
+  }
+
   async function call(path, body, raw) {
     const res = await fetch(api() + path, {
       method: body ? "POST" : "GET",
@@ -72,8 +79,7 @@
           <span class="mb-team-state">${t.hasCode ? `✅ Code since ${when(t.created)}` : "No code yet"}</span>
           ${msg ? `<span class="mb-newcode"><code class="mb-code">${lastCode.code}</code>
             <button class="btn ghost small" data-copy="${lastCode.code}">Copy</button>
-            ${[0, 1].map(i => nums[i] ? `<a class="btn small" href="https://wa.me/${nums[i]}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">📲 ${esc((pl[i] || `Player ${i + 1}`).split(" ")[0])}</a>` : "").join("")}
-            <a class="btn ghost small" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">📲 Choose chat</a>
+            ${sendButton(msg, [0, 1].filter(i => nums[i]).map(i => ({ name: (pl[i] || `Player ${i + 1}`).split(" ")[0], url: `https://wa.me/${nums[i]}?text=${encodeURIComponent(msg)}` })))}
             <span class="note">Shown only now – send it privately to both players.</span></span>` : ""}
           ${[0, 1].filter(i => pl[i] && !nums[i]).map(i => `<span class="mb-nophone">⚠️ No WhatsApp number for ${esc(pl[i])}</span>`).join("")}
           <button class="btn ${t.hasCode ? "ghost " : ""}small" data-code="${t.id}">${t.hasCode ? "Reset code" : "Create code"}</button></div></div>`;
@@ -100,6 +106,14 @@
         $("mb-code").textContent = "";
         loadAll();
       } catch (err) { show("mb-code", "❌ " + err.message, false); }
+    }
+    if (b.dataset.wa) {
+      const steps = JSON.parse(decodeURIComponent(b.dataset.wa)), i = +b.dataset.step % steps.length;
+      window.open(steps[i].url, "_blank", "noopener");
+      const next = i + 1;
+      b.dataset.step = next;
+      b.textContent = next < steps.length ? `📲 Next: ${steps[next].name}` : `✅ Sent to ${steps.map(s => s.name).join(" & ")} – again?`;
+      return;
     }
     if (b.dataset.copy) { navigator.clipboard.writeText(b.dataset.copy).then(() => (b.textContent = "Copied ✓")); }
     if (b.id === "ph-save-all") {
