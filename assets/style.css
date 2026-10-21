@@ -456,6 +456,15 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tm-ask { margin: 10px 0 4px; padding: 14px 16px; border-radius: 12px; background: color-mix(in srgb, var(--ball) 28%, var(--card)); border: 2px solid var(--ball); }
 .tm-ask p { margin: 0 0 12px; font-size: 1.08rem; line-height: 1.45; }
 .tm-players { display: block; font-size: .85rem; color: var(--muted); }
+.tm-progress p { margin: 6px 0; }
+.tm-progress-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.tm-bar { height: 10px; border-radius: 999px; background: color-mix(in srgb, var(--line) 60%, transparent); overflow: hidden; margin: 8px 0; }
+.tm-bar span { display: block; height: 100%; background: var(--green-2); border-radius: 999px; }
+.tm-ms-behind { border-left: 5px solid #e0a100; }
+.tm-ms-missed { border-left: 5px solid #c62828; }
+.tm-ms-on-track, .tm-ms-reached { border-left: 5px solid var(--win); }
+.tm-ms { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.tm-ms-dot { font-size: .78rem; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line); }
 /* score table like in Admin: rows = teams, columns = sets */
 .tm-board { display: grid; grid-template-columns: minmax(0, 1fr) repeat(var(--sets, 3), 58px); gap: 6px 8px; align-items: center; max-width: 460px; margin: 8px 0; }
 .tm-board > span { min-width: 0; }

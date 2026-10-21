@@ -62,6 +62,15 @@
     .md-state { font-size: .88rem; }
     .md-row .btn { justify-self: start; }
     @media (max-width: 640px) { .md-row { grid-template-columns: 1fr; } }
+    .ms-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(120px, 1fr) minmax(0, 1.4fr) auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+    .ms-bar { position: relative; height: 22px; border-radius: 999px; background: color-mix(in srgb, var(--line) 60%, transparent); overflow: hidden; }
+    .ms-fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--green-2) 55%, transparent); border-radius: 999px; }
+    .ms-num { position: relative; display: block; text-align: center; font-size: .78rem; font-weight: 700; line-height: 22px; }
+    .ms-next { display: flex; flex-direction: column; font-size: .88rem; }
+    .ms-chip { font-weight: 700; font-size: .88rem; white-space: nowrap; }
+    .ms-missed .ms-fill { background: color-mix(in srgb, var(--loss) 50%, transparent); }
+    .ms-behind .ms-fill { background: color-mix(in srgb, #e0a100 55%, transparent); }
+    @media (max-width: 640px) { .ms-row { grid-template-columns: 1fr auto; } .ms-bar, .ms-next { grid-column: 1 / -1; } }
     .mb-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
     .mb-team { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
     .mb-team.has-code { border-color: color-mix(in srgb, var(--win) 45%, var(--line)); }
@@ -116,6 +125,11 @@
         <p class="note">Matches whose date has passed and that have no official result yet. Results the teams entered themselves are in <b>❗ Disputes</b> until they're confirmed.</p>
         <div class="msg" id="due-msg"></div>
         <div id="due-list"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">🏁 Milestone progress</h3>
+        <p class="note">League matches played per pair against the milestones (Rules §2). “On track” counts results waiting for confirmation and matches already scheduled before the deadline.</p>
+        <div id="ms-view"></div>
       </div>
       <div class="card">
         <h3 style="margin-top:0">📋 Matches per matchday</h3>
@@ -340,7 +354,7 @@
 
   <script src="assets/data.js?v=28"></script>
   <script src="assets/pairs-loader.js?v=2"></script>
-  <script src="assets/league.js?v=3"></script>
+  <script src="assets/league.js?v=4"></script>
   <script src="assets/store.js?v=2"></script>
   <script src="assets/lock.js?v=2"></script>
   <script src="assets/members-admin.js?v=5" defer></script>
@@ -542,7 +556,26 @@
       }).join("") || '<p class="muted">No pairs yet.</p>';
     }
 
-    function renderLeagueViews() { renderDue(); renderMatchdays(); }
+    const MS_LABEL = { reached: "✅ Reached", "on-track": "🟢 On track", open: "⚪ To plan", behind: "🟠 Behind", missed: "🔴 Missed", upcoming: "Later" };
+    const dayShort = t => new Date(t).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+    function renderMilestones() {
+      const rows = LEAGUE.pairs.map(p => ({ p, pr: GPPL.milestoneProgress(results, schedule, p.id) }));
+      if (!rows.length || !rows[0].pr.milestones.length) { $("ms-view").innerHTML = '<p class="muted">No milestones for this number of pairs.</p>'; return; }
+      // pairs that need attention first
+      const rank = pr => { const m = pr.next || pr.milestones[pr.milestones.length - 1]; return ({ missed: 0, behind: 1, open: 2, "on-track": 3, upcoming: 4, reached: 5 })[pr.milestones.some(x => x.status === "missed") ? "missed" : m.status]; };
+      rows.sort((x, y) => rank(x.pr) - rank(y.pr) || x.pr.played - y.pr.played);
+      $("ms-view").innerHTML = rows.map(({ p, pr }) => {
+        const m = pr.next, missed = pr.milestones.filter(x => x.status === "missed");
+        const status = missed.length ? "missed" : m ? m.status : "reached";
+        return `<div class="ms-row ms-${status}"><span class="md-teams">${teamLogo(p.id)}<b>${escA(p.name)}</b></span>
+          <span class="ms-bar"><span class="ms-fill" style="width:${pr.total ? (100 * pr.played / pr.total).toFixed(0) : 0}%"></span><span class="ms-num">${pr.played}/${pr.total} played</span></span>
+          <span class="ms-next">${m ? `Milestone ${m.n}: ${m.all ? "all" : m.required} by ${dayShort(m.deadline)}${m.missing ? ` · <b>${m.missing} to go</b>` : ""}` : "All milestones passed"}
+            <span class="note">${[pr.waiting ? `⏳ ${pr.waiting} waiting` : "", pr.scheduled ? `📅 ${pr.scheduled} scheduled` : "", ...pr.milestones.filter(x => x.status === "reached" && x !== m).map(x => `✅ milestone ${x.n} reached`), ...missed.map(x => `🔴 missed milestone ${x.n} (${x.missing} short)`)].filter(Boolean).join(" · ")}</span></span>
+          <span class="ms-chip">${MS_LABEL[status]}</span></div>`;
+      }).join("");
+    }
+
+    function renderLeagueViews() { renderDue(); renderMilestones(); renderMatchdays(); }
 
     document.getElementById("panel-league").addEventListener("click", async e => {
       const open = e.target.closest("[data-open-editor]");

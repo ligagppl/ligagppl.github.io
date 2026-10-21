@@ -126,11 +126,36 @@
     el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team">${esc(pair.name)}</b>
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
+      ${progressHtml()}
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
       <h3>🏆 GPPC Cup</h3>${matches.filter(m => m.group === "cup" && !todo.includes(m)).map(card).join("") || `<div class="card muted">No cup match for you right now.</div>`}
       <h3>📅 League</h3>${matches.filter(m => m.group === "league" && !todo.includes(m)).map(card).join("") || `<div class="card muted">The league schedule appears here after the draw.</div>`}
       <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`;
+  }
+
+  // league milestones (Rules §2): how many matches my team has played and what's due next
+  function progressHtml() {
+    const pr = GPPL.milestoneProgress(state.results, state.matches, state.team);
+    if (!pr.total || !pr.milestones.length) return "";
+    const day = t => new Date(t).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+    const missed = pr.milestones.filter(m => m.status === "missed"), m = pr.next;
+    const status = missed.length ? "missed" : m ? m.status : "reached";
+    const text = {
+      reached: m ? `✅ Milestone ${m.n} reached – well done!` : "✅ All milestones reached – well done!",
+      "on-track": `🟢 On track – with the results waiting and the matches you've scheduled, you'll reach it.`,
+      open: `⚪ Plenty of time – set dates with your opponents to stay on track.`,
+      behind: `🟠 Behind – schedule ${m && m.missing - pr.waiting > 0 ? m.missing - pr.waiting : ""} more match${m && m.missing - pr.waiting === 1 ? "" : "es"} before the deadline.`,
+      missed: `🔴 Milestone ${missed.map(x => x.n).join(", ")} missed – missing matches count as walkovers (Rules §2).`,
+      upcoming: "",
+    }[status];
+    return `<div class="card tm-progress tm-ms-${status}">
+      <div class="tm-progress-head"><b>🏁 League progress</b><span>${pr.played} of ${pr.total} matches played</span></div>
+      <div class="tm-bar"><span style="width:${(100 * pr.played / pr.total).toFixed(0)}%"></span></div>
+      ${m ? `<p><b>Next: milestone ${m.n}</b> – ${m.all ? "all matches" : `at least ${m.required} matches`} by <b>${day(m.deadline)}</b>${m.missing ? ` · <b>${m.missing} to go</b>` : ""}</p>` : ""}
+      <p class="note">${text}${pr.waiting ? ` ⏳ ${pr.waiting} waiting for confirmation.` : ""}${pr.scheduled ? ` 📅 ${pr.scheduled} scheduled.` : ""}</p>
+      <div class="tm-ms">${pr.milestones.map(x => `<span class="tm-ms-dot ms-${x.status}">${x.status === "reached" ? "✅" : x.status === "missed" ? "🔴" : x === m ? "🏁" : "○"} M${x.n}: ${x.all ? "all" : x.required} by ${day(x.deadline)}</span>`).join("")}</div>
+    </div>`;
   }
 
   function msgHtml(key) {
