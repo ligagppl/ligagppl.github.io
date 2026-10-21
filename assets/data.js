@@ -13,7 +13,7 @@ const LEAGUE = {
   // Pre-season: only registration and rules. During the season, use e.g.:
   // ["home", "rules", "schedule", "table", "cup", "participants", "gallery", "register", "verify", "admin"]
   // Tabs not listed are hidden; #admin always stays reachable by its link.
-  visibleTabs: ["register", "rules", "participants", "schedule", "team"],
+  visibleTabs: ["home", "rules", "schedule", "table", "cup", "team", "participants", "gallery", "register", "verify", "admin"],
 
   // Member area gatekeeper (Cloudflare Worker) – empty = member area closed
   // Venues suggested first when teams set a match (My team → Set Date / Venue). Format: "Name, street, postcode city".
