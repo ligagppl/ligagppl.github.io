@@ -551,7 +551,9 @@
       $("md-view").innerHTML = fixtureList.map((games, i) => {
         const md = i + 1, done = games.filter(([a, b]) => GPPL.findResult(results, a, b)).length;
         const disputed = games.filter(([a, b]) => ((schedule[lkey(a, b)] || {}).pending || {}).status === "disputed").length;
-        const rows = games.map(([a, b]) => {
+        // played matches at the end of the matchday
+        const ordered = games.filter(([a, b]) => !GPPL.findResult(results, a, b)).concat(games.filter(([a, b]) => GPPL.findResult(results, a, b)));
+        const rows = ordered.map(([a, b]) => {
           const r = GPPL.findResult(results, a, b), e = schedule[lkey(a, b)] || {}, p = e.pending;
           const state = r ? `✅ <b>${GPPL.scoreText(r, a)}</b>`
             : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}`
@@ -670,7 +672,7 @@
         }
         const done = r.matches.filter(m => GPPL.cupWinner(m) || m.walkover === "both").length;
         return `<div class="card"><h3 style="margin-top:0">${r.name}${badge(ri)} <span class="note">${done}/${r.matches.length} played</span></h3>` +
-          r.matches.map((m, mi) => {
+          r.matches.map((m, mi) => [m, mi]).sort(([x], [y]) => !!(x.sets || x.walkover) - !!(y.sets || y.walkover)).map(([m, mi]) => {
             const e = schedule[`C:${ri}:${mi}`] || {}, p = e.pending, has = m.sets || m.walkover;
             const state = has ? (m.walkover === "both" ? "✅ Both out (walkover)" : m.walkover ? `✅ ${escA(name(m.walkover))} by walkover` : `✅ <b>${GPPL.scoreText(m, m.a, !GPPL.cupFullSets(r))}</b>`)
               : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, m.a, !GPPL.cupFullSets(r))}`

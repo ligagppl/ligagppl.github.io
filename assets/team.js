@@ -130,8 +130,8 @@
       ${progressHtml()}
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
-      <h3>🏆 GPPC Cup</h3>${matches.filter(m => m.group === "cup" && !todo.includes(m)).map(card).join("") || `<div class="card muted">No cup match for you right now.</div>`}
-      <h3>📅 League</h3>${matches.filter(m => m.group === "league" && !todo.includes(m)).map(card).join("") || `<div class="card muted">The league schedule appears here after the draw.</div>`}
+      <h3>🏆 GPPC Cup</h3>${playedLast(matches.filter(m => m.group === "cup" && !todo.includes(m))).map(card).join("") || `<div class="card muted">No cup match for you right now.</div>`}
+      <h3>📅 League</h3>${playedLast(matches.filter(m => m.group === "league" && !todo.includes(m))).map(card).join("") || `<div class="card muted">The league schedule appears here after the draw.</div>`}
       <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`;
   }
 
@@ -144,7 +144,16 @@
     return `<div class="card tm-stat"><span class="tm-stat-label">🏆 League</span>
       <span class="tm-stat-big">${r.p ? `${medal} ${i + 1}.` : "–"} <small>of ${rows.length}</small></span>
       <span class="tm-stat-line"><b>${r.pts} pts</b> · ${r.p} played · ${r.w} W · ${r.l} L</span>
-      <span class="note">Sets ${sign(r.sf - r.sa)} · Games ${sign(r.gf - r.ga)}${r.p ? "" : " · no results yet"}</span></div>`;
+      <span class="note">Sets ${sign(r.sf - r.sa)} · Games ${sign(r.gf - r.ga)}${r.p ? "" : " · no results yet"}</span>${gamesInHand(rows, i)}</div>`;
+  }
+
+  // the table can mislead while pairs have played different numbers of matches – say so
+  function gamesInHand(rows, i) {
+    const r = rows[i], above = rows[i - 1], below = rows[i + 1], n = k => `${k} match${k === 1 ? "" : "es"}`;
+    const notes = [];
+    if (above && above.p > r.p) notes.push(`You've played ${n(above.p - r.p)} fewer than <b>${esc(teamName(above.id))}</b> (above you) – you have games in hand.`);
+    if (below && below.p < r.p) notes.push(`<b>${esc(teamName(below.id))}</b> (below you) has played ${n(r.p - below.p)} fewer – they have games in hand.`);
+    return notes.map(t => `<span class="tm-hand">📌 ${t}</span>`).join("");
   }
 
   // where my team is in the GPPC Cup
@@ -197,6 +206,9 @@
       <div class="tm-ms">${pr.milestones.map(x => `<span class="tm-ms-dot ms-${x.status}">${x.status === "reached" ? "✅" : x.status === "missed" ? "🔴" : x === m ? "🏁" : "○"} M${x.n}: ${x.all ? "all" : x.required} by ${day(x.deadline)}</span>`).join("")}</div>
     </div>`;
   }
+
+  // matches with an official result go to the end of their section (otherwise schedule order)
+  const playedLast = list => list.filter(m => !m.official).concat(list.filter(m => m.official));
 
   function msgHtml(key) {
     return msg && msg.key === key ? `<div class="msg ${msg.ok ? "" : "err"}">${msg.ok ? "✅ " : "❌ "}${esc(msg.text)}</div>` : "";
