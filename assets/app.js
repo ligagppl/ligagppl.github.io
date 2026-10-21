@@ -37,8 +37,15 @@ function matchRow(a, b) {
     const w = GPPL.evaluate(r).winner; // null when both pairs were at fault
     if (w === a) wa = "w"; else if (w === b) wb = "w";
   }
-  return `<div class="match"><span class="a ${wa}">${pairName(a)}</span>
-    <span class="score">${score}</span><span class="${wb}">${pairName(b)}</span></div>`;
+  return `<div class="match"><span class="a ${wa}">${teamLogo(a)}<span class="tn">${pairName(a)}</span></span>
+    <span class="score">${score}</span><span class="b ${wb}"><span class="tn">${pairName(b)}</span>${teamLogo(b)}</span></div>`;
+}
+
+// small still logo next to a team name (a ball for teams without one yet)
+function teamLogo(id) {
+  const l = (LEAGUE.logos || {})[pairName(id)];
+  const src = l && (typeof l === "string" ? l : l.src);
+  return src ? `<img class="mlogo" src="${src}" alt="" loading="lazy">` : `<span class="mlogo ph" aria-hidden="true">🎾</span>`;
 }
 
 function renderSchedule() {
