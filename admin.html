@@ -31,6 +31,16 @@
     .reslist .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--line); flex-wrap: wrap; }
     .reslist .row:last-child { border-bottom: 0; }
     .small { padding: 5px 10px; font-size: .85rem; }
+    .mb-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+    .mb-team { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+    .mb-team.has-code { border-color: color-mix(in srgb, var(--win) 45%, var(--line)); }
+    .mb-logo { width: 64px; height: 64px; flex: none; object-fit: contain; }
+    .mb-logo.ph { display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; border-radius: 50%; background: color-mix(in srgb, var(--line) 50%, transparent); }
+    .mb-team-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .mb-team-info .btn { align-self: flex-start; margin-top: 6px; }
+    .mb-team-state { font-size: .82rem; font-weight: 600; }
+    .mb-newcode { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; padding: 8px; border-radius: 8px; background: color-mix(in srgb, var(--ball) 25%, var(--card)); }
+    .mb-code { font-size: 1.1rem; font-weight: 800; letter-spacing: .08em; }
     .cupmatch-edit { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
     .done { color: var(--win); font-weight: 700; }
     .pairs-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
@@ -231,17 +241,17 @@
         <div class="msg" id="mb-msg"></div>
       </div>
       <div class="card">
-        <h3 style="margin-top:0">Team codes</h3>
-        <p class="note">Create a code per team and send it privately (e.g. WhatsApp) to both players. A code is shown only once – “Reset” makes a new one and logs out every phone that used the old code.</p>
-        <div id="mb-teams" class="muted reslist">Enter the admin key above.</div>
-        <div id="mb-code" class="msg"></div>
-      </div>
-      <div class="card">
-        <h3 style="margin-top:0">Results waiting &amp; disputes</h3>
+        <h3 style="margin-top:0">❗ Disputes &amp; results waiting</h3>
         <p class="note">Results count once the opponent confirms them, or automatically after 48 hours. Disputed results wait for you.</p>
         <div id="mb-open" class="muted reslist">–</div>
         <button class="btn ghost small" id="mb-auto" style="margin-top:8px">Run 48-hour auto-confirm now</button>
         <div class="msg" id="mb-open-msg"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Team codes</h3>
+        <p class="note">Create a code per team and send it privately (e.g. WhatsApp) to both players. A code is shown only once – “Reset” makes a new one and logs out every phone that used the old code.</p>
+        <div id="mb-teams" class="muted reslist">Enter the admin key above.</div>
+        <div id="mb-code" class="msg"></div>
       </div>
       <div class="card">
         <h3 style="margin-top:0">Activity</h3>
@@ -289,7 +299,7 @@
   <script src="assets/league.js?v=3"></script>
   <script src="assets/store.js"></script>
   <script src="assets/lock.js?v=2"></script>
-  <script src="assets/members-admin.js?v=1" defer></script>
+  <script src="assets/members-admin.js?v=3" defer></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;

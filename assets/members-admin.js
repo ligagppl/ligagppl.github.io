@@ -12,6 +12,14 @@
   const show = (id, text, ok = true) => { $(id).textContent = text; $(id).className = "msg " + (ok ? "ok" : "err"); };
   const when = iso => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
+  let lastCode = null; // the code just created – shown once in its team's card
+  const players = id => (GPPL.pairById[id] ? GPPL.pairById[id].players.filter(Boolean).map(esc).join(" & ") : "");
+  function logo(teamName) {
+    const l = (LEAGUE.logos || {})[teamName];
+    const src = l && (typeof l === "string" ? l : l.src);
+    return src ? `<img class="mb-logo" src="${esc(src)}" alt="">` : `<span class="mb-logo ph" aria-hidden="true">🎾</span>`;
+  }
+
   async function call(path, body, raw) {
     const res = await fetch(api() + path, {
       method: body ? "POST" : "GET",
@@ -40,11 +48,16 @@
     try {
       const [{ teams }, { open }, { log }] = await Promise.all([call("/admin/teams"), call("/admin/open"), call("/admin/log")]);
       const cup = await STORE.load("cup", { rounds: [] });
-      $("mb-teams").className = "reslist";
-      $("mb-teams").innerHTML = teams.length ? teams.map(t => `<div class="row"><span>#${t.id} <b>${esc(t.name)}</b></span>
-        <span>${t.hasCode ? `<span class="note">code since ${when(t.created)}</span> ` : ""}
-        <button class="btn ${t.hasCode ? "ghost " : ""}small" data-code="${t.id}">${t.hasCode ? "Reset code" : "Create code"}</button></span></div>`).join("")
+      $("mb-teams").className = "mb-teams";
+      $("mb-teams").innerHTML = teams.length ? teams.map(t => `<div class="mb-team ${t.hasCode ? "has-code" : ""}">
+          ${logo(t.name)}<div class="mb-team-info"><span class="note">#${t.id}</span><b>${esc(t.name)}</b>
+          <span class="note">${players(t.id)}</span>
+          <span class="mb-team-state">${t.hasCode ? `✅ Code since ${when(t.created)}` : "No code yet"}</span>
+          ${lastCode && lastCode.team === t.id ? `<span class="mb-newcode"><code class="mb-code">${lastCode.code}</code>
+            <button class="btn ghost small" data-copy="${lastCode.code}">Copy</button><span class="note">Shown only now – send it privately to both players.</span></span>` : ""}
+          <button class="btn ${t.hasCode ? "ghost " : ""}small" data-code="${t.id}">${t.hasCode ? "Reset code" : "Create code"}</button></div></div>`).join("")
         : "No teams yet.";
+      updateBadge(open);
       $("mb-open").className = "reslist";
       $("mb-open").innerHTML = open.length ? open.map(o => `<div class="row mb-open-row"><span>${o.status === "disputed" ? "❗" : "⏳"} ${esc(matchName(o.key, cup))}<br>
           <span class="note">${esc(name(o.a))} ${score(o.sets)} ${esc(name(o.b))} · entered by ${esc(name(o.by))} ${when(o.at)}${o.note ? ` · dispute: “${esc(o.note)}”` : ""}</span></span>
@@ -52,7 +65,7 @@
           <button class="btn small" data-resolve="accept" data-key="${o.key}">Accept</button>
           <button class="btn ghost small" data-resolve="reject" data-key="${o.key}">Reject</button></span></div>
           <div class="mb-photo" id="ph-${o.key.replace(/:/g, "_")}"></div>`).join("")
-        : "Nothing waiting.";
+        : "Nothing waiting – no disputes.";
       $("mb-log").className = "reslist";
       $("mb-log").innerHTML = log.length ? log.slice(0, 60).map(l => `<div class="row"><span class="note">${when(l.at)}</span>
         <span>${l.team ? esc(name(l.team)) : l.by === "admin" ? "Admin" : "System"} · ${esc(l.action)}${l.key ? " · " + esc(matchName(l.key, cup)) : ""}${l.detail ? " · " + esc(l.detail) : ""}</span></div>`).join("")
@@ -76,9 +89,8 @@
       if (b.textContent.startsWith("Reset") && !confirm(`Make a new code for ${name(id)}? Their old code stops working and their phones are logged out.`)) return;
       try {
         const r = await call("/admin/code", { team: id });
-        $("mb-code").className = "msg ok";
-        $("mb-code").innerHTML = `Code for <b>${esc(name(id))}</b>: <code class="mb-code">${r.code}</code> <button class="btn ghost small" data-copy="${r.code}">Copy</button>
-          <span class="note">– shown only now. Send it privately to both players.</span>`;
+        lastCode = { team: id, code: r.code };
+        $("mb-code").textContent = "";
         loadAll();
       } catch (err) { show("mb-code", "❌ " + err.message, false); }
     }
@@ -97,5 +109,15 @@
     }
   });
 
-  document.querySelector('.subnav button[data-panel="members"]').addEventListener("click", loadAll);
+  // the menu button shows how many results wait for the admin (disputes) – so they're never missed
+  const navBtn = document.querySelector('.subnav button[data-panel="members"]');
+  async function updateBadge(open) {
+    try {
+      if (!open) open = (await call("/admin/open")).open;
+      const disputes = open.filter(o => o.status === "disputed").length;
+      navBtn.textContent = "👥 Member area" + (disputes ? ` · ❗ ${disputes} dispute${disputes === 1 ? "" : "s"}` : "");
+    } catch {}
+  }
+  navBtn.addEventListener("click", loadAll);
+  if (api() && get(KEY)) updateBadge();
 })();
