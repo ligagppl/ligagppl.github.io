@@ -140,9 +140,13 @@
     const rows = GPPL.rankStandings(state.results), i = rows.findIndex(r => r.id === state.team);
     if (i < 0) return "";
     const r = rows[i], sign = n => (n > 0 ? "+" + n : String(n));
+    // before the first result there's no table yet – show the seeding (registration) position
+    if (!rows.some(x => x.p)) return `<div class="card tm-stat"><span class="tm-stat-label">🏆 League</span>
+      <span class="tm-stat-big">Seed #${state.team} <small>of ${rows.length}</small></span>
+      <span class="note">No results yet – the table starts with the first result.</span></div>`;
     const medal = r.p ? ["🥇", "🥈", "🥉"][i] || "" : "";
     return `<div class="card tm-stat"><span class="tm-stat-label">🏆 League</span>
-      <span class="tm-stat-big">${r.p ? `${medal} ${i + 1}.` : "–"} <small>of ${rows.length}</small></span>
+      <span class="tm-stat-big">${medal} ${i + 1}. <small>of ${rows.length}</small></span>
       <span class="tm-stat-line"><b>${r.pts} pts</b> · ${r.p} played · ${r.w} W · ${r.l} L</span>
       <span class="note">Sets ${sign(r.sf - r.sa)} · Games ${sign(r.gf - r.ga)}${r.p ? "" : " · no results yet"}</span>${gamesInHand(rows, i)}</div>`;
   }
