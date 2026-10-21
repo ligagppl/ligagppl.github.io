@@ -459,7 +459,22 @@ async function loadData() {
   settings = await pick("settings", {});
 }
 
+// GPPL logo in the header: still by default, animates on hover / tap
+// (Admin → Pairs → GPPL logo can switch it to "always")
+const siteLogo = (() => {
+  const img = document.getElementById("site-logo");
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let always = false, playing = false;
+  const set = on => { playing = on; img.src = on || always ? img.dataset.anim : img.dataset.still; };
+  img.addEventListener("mouseenter", () => !reduce && set(true));
+  img.addEventListener("mouseleave", () => set(false));
+  img.addEventListener("click", () => !reduce && set(!playing));
+  window.addEventListener("load", () => { new Image().src = img.dataset.anim; });
+  return { apply() { always = settings.siteLogoAnimation === "always" && !reduce; set(playing); } };
+})();
+
 function renderData() {
+  siteLogo.apply();
   renderHome();
   renderSchedule();
   renderStandings();

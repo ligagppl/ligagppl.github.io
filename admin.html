@@ -202,6 +202,17 @@
       </div>
 
       <div class="card">
+        <h3 style="margin-top:0">GPPL logo</h3>
+        <p class="note">How the GPPL crest in the website header moves.</p>
+        <div class="reg-status" role="radiogroup" aria-label="GPPL logo animation">
+          <label><input type="radio" name="site-logo-anim" value="hover"> <span><b>Animate on hover only</b>The logo stays still until someone points at or taps it</span></label>
+          <label><input type="radio" name="site-logo-anim" value="always"> <span><b>Always</b>The logo plays its animation all the time</span></label>
+        </div>
+        <button class="btn" id="site-logo-anim-save" style="margin-top:10px">Save</button>
+        <div class="msg" id="site-logo-anim-msg"></div>
+      </div>
+
+      <div class="card">
         <h3 style="margin-top:0">Reset</h3>
         <p class="note">Remove all pairs (clean slate).</p>
         <button class="btn ghost" id="pairs-reset">Remove all pairs</button>
@@ -621,10 +632,20 @@
       const next = { ...siteSettings, logoAnimation: mode };
       if (await persist("settings", next, `logo animations: ${mode}`, "logo-anim-msg")) siteSettings = next;
     });
+    function fillSiteLogoAnim() {
+      const mode = siteSettings.siteLogoAnimation === "always" ? "always" : "hover";
+      document.querySelectorAll('input[name="site-logo-anim"]').forEach(r => (r.checked = r.value === mode));
+    }
+    $("site-logo-anim-save").addEventListener("click", async () => {
+      const mode = (document.querySelector('input[name="site-logo-anim"]:checked') || {}).value || "hover";
+      const next = { ...siteSettings, siteLogoAnimation: mode };
+      if (await persist("settings", next, `GPPL logo animation: ${mode}`, "site-logo-anim-msg")) siteSettings = next;
+    });
 
     function renderCurrentPairs() {
       renderManual();
       fillLogoAnim();
+      fillSiteLogoAnim();
       const draft = getDraft(), list = workingPairs(), pub = LEAGUE.pairs;
       const changed = !!draft && (draft.length !== pub.length || draft.some((p, i) => !sameTeam(p, pub[i])));
       if (draft && !changed) { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
