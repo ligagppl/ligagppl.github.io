@@ -74,7 +74,8 @@ function renderHome() {
   const ranked = GPPL.rankStandings(results), started = ranked.filter(r => r.p > 0).length;
   const top = ranked.length && started === ranked.length ? ranked.slice(0, 3) : [];
   document.getElementById("home-stats").innerHTML = `
-    <div class="card"><div class="note">Pairs</div><div style="font-size:1.8rem;font-weight:700">${LEAGUE.pairs.length}</div></div>
+    <div class="card"><div class="note">Pairs</div><div style="font-size:1.8rem;font-weight:700">${LEAGUE.pairs.length}</div>
+      ${tabAllowed("participants") ? `<a href="#participants">👥 See all teams →</a>` : ""}</div>
     <div class="card"><div class="note">Matches played</div><div style="font-size:1.8rem;font-weight:700">${results.length} / ${total}</div></div>
     <div class="card"><div class="note">Season</div><div style="font-size:1.1rem;font-weight:700">${datesOn ? `${fmt(start)} – ${fmt(last)}` : "Dates follow"}</div></div>
     <div class="card top3-card"><div class="note">Top 3</div>
@@ -574,8 +575,19 @@ const siteLogo = (() => {
   return { apply() { always = settings.siteLogoAnimation === "always" && !reduce; set(playing); } };
 })();
 
+// once registration is closed, Register and Participants leave the menu (the pages still open from links)
+function updateMenu() {
+  const reg = { ...LEAGUE.registration, ...(settings.registration || {}) };
+  const closed = (reg.status || (reg.open ? "open" : "soon")) === "closed";
+  ["register", "participants"].forEach(id => {
+    const a = document.querySelector(`#nav a[href="#${id}"]`);
+    if (a) a.hidden = closed;
+  });
+}
+
 function renderData() {
   siteLogo.apply();
+  updateMenu();
   renderHome();
   renderSchedule();
   renderStandings();
