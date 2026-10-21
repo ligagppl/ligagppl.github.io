@@ -1,0 +1,40 @@
+# GPPL member area – gatekeeper
+# Secrets (set with `npx wrangler secret put NAME --env staging`, never in this file):
+#   GITHUB_TOKEN   fine-grained token: this repository only, Contents read & write
+#   SESSION_SECRET long random text (signs logins, salts team codes)
+#   ADMIN_KEY      long random text (entered once in Admin → Member area)
+
+name = "gppl-members"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+GH_OWNER = "ligagppl"
+GH_REPO = "ligagppl.github.io"
+GH_BRANCH = "main"
+ALLOWED_ORIGINS = "https://ligagppl.github.io"
+
+[triggers]
+crons = ["17 * * * *"]
+
+# KV namespace id is filled in after `npx wrangler kv namespace create KV`
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_PROD_KV_ID"
+
+# ---------------------------------------------------------------- staging
+[env.staging]
+name = "gppl-members-staging"
+
+[env.staging.vars]
+GH_OWNER = "ligagppl"
+GH_REPO = "ligagppl.github.io"
+GH_BRANCH = "staging"
+ALLOWED_ORIGINS = "https://gppl-staging.pages.dev,http://localhost:8765"
+
+[env.staging.triggers]
+crons = ["17 * * * *"]
+
+[[env.staging.kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_STAGING_KV_ID"

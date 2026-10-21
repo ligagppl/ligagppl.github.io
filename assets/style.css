@@ -435,3 +435,36 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
   .match .a { text-align: center; }
 }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- My team (member area) ---------- */
+#team h3 { margin: 22px 0 10px; }
+.tm-login form { display: flex; gap: 8px; flex-wrap: wrap; }
+.tm-login input { flex: 1 1 180px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; font-size: 1.1rem; letter-spacing: .12em; text-transform: uppercase; }
+.tm-me { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.tm-me > div:first-child { display: flex; flex-direction: column; }
+.tm-team { font-size: 1.2rem; }
+.tm-me-btns, .tm-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+.tm-match { border-left: 5px solid var(--line); }
+.tm-match.st-action { border-left-color: var(--ball); }
+.tm-match.st-waiting, .tm-match.st-scheduled { border-left-color: var(--green-2); }
+.tm-match.st-done { border-left-color: var(--win); opacity: .85; }
+.tm-match.st-disputed { border-left-color: #c62828; }
+.tm-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: .85rem; color: var(--muted); }
+.tm-chip { font-weight: 700; color: var(--text); }
+.tm-vs { font-size: 1.1rem; margin: 4px 0 6px; }
+.tm-match p { margin: 6px 0; }
+.tm-score b { font-size: 1.1rem; }
+.tm-form { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); }
+.tm-form label { display: flex; flex-direction: column; gap: 4px; font-size: .9rem; font-weight: 600; }
+.tm-form input, .tm-form textarea { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; }
+.tm-form textarea { min-height: 70px; }
+.tm-form .btn { align-self: flex-start; }
+.tm-row { display: flex; gap: 10px; flex-wrap: wrap; }
+.tm-row label { flex: 1 1 140px; }
+.tm-set { display: grid; grid-template-columns: 76px 1fr 12px 1fr; align-items: center; gap: 6px; max-width: 380px; }
+.tm-set input { width: 100%; text-align: center; font-size: 1.1rem; }
+.tm-set-head { font-size: .8rem; color: var(--muted); text-align: center; }
+.tm-photo { display: block; max-width: 100%; max-height: 360px; margin-top: 10px; border-radius: 10px; }
+#team .btn.small { padding: 6px 12px; font-size: .9rem; }
+#team .msg { margin-top: 8px; font-size: .92rem; font-weight: 600; color: var(--win); }
+#team .msg.err { color: #c62828; }

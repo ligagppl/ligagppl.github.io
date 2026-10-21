@@ -1,0 +1,12 @@
+{
+  "name": "gppl-members",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler dev --env staging --test-scheduled",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:prod": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.0"
+  }
+}

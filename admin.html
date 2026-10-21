@@ -62,6 +62,7 @@
       <button data-panel="draw">🎱 Live draw</button>
       <button data-panel="registration">Registration</button>
       <button data-panel="pairs">Pairs</button>
+      <button data-panel="members">👥 Member area</button>
       <button data-panel="settings">Settings</button>
     </div>
     <div id="banner" class="banner"></div>
@@ -220,6 +221,34 @@
     </div>
 
     <!-- SETTINGS -->
+    <!-- MEMBER AREA -->
+    <div class="panel" id="panel-members">
+      <div class="card">
+        <h3 style="margin-top:0">Connection</h3>
+        <p class="note">Teams log in on the <b>🎾 My team</b> tab with their team code. Changes go through the GPPL gatekeeper: <code id="mb-api"></code></p>
+        <div class="form-row"><label for="mb-key">Admin key</label><input id="mb-key" type="password" autocomplete="off" placeholder="from the gatekeeper setup"></div>
+        <button class="btn" id="mb-connect">Save &amp; load</button>
+        <div class="msg" id="mb-msg"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Team codes</h3>
+        <p class="note">Create a code per team and send it privately (e.g. WhatsApp) to both players. A code is shown only once – “Reset” makes a new one and logs out every phone that used the old code.</p>
+        <div id="mb-teams" class="muted reslist">Enter the admin key above.</div>
+        <div id="mb-code" class="msg"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Results waiting &amp; disputes</h3>
+        <p class="note">Results count once the opponent confirms them, or automatically after 48 hours. Disputed results wait for you.</p>
+        <div id="mb-open" class="muted reslist">–</div>
+        <button class="btn ghost small" id="mb-auto" style="margin-top:8px">Run 48-hour auto-confirm now</button>
+        <div class="msg" id="mb-open-msg"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Activity</h3>
+        <div id="mb-log" class="muted reslist">–</div>
+      </div>
+    </div>
+
     <div class="panel" id="panel-settings">
       <div class="card">
         <h3 style="margin-top:0">Save to GitHub</h3>
@@ -260,6 +289,7 @@
   <script src="assets/league.js?v=3"></script>
   <script src="assets/store.js"></script>
   <script src="assets/lock.js?v=2"></script>
+  <script src="assets/members-admin.js?v=1" defer></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;
