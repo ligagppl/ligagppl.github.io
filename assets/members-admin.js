@@ -75,9 +75,7 @@
             ${[0, 1].map(i => nums[i] ? `<a class="btn small" href="https://wa.me/${nums[i]}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">📲 ${esc((pl[i] || `Player ${i + 1}`).split(" ")[0])}</a>` : "").join("")}
             <a class="btn ghost small" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">📲 Choose chat</a>
             <span class="note">Shown only now – send it privately to both players.</span></span>` : ""}
-          <details class="mb-phones"><summary class="note">📞 WhatsApp numbers ${nums.filter(Boolean).length ? `(${nums.filter(Boolean).length})` : "– none yet"}</summary>
-            ${[0, 1].map(i => `<label>${esc(pl[i] || `Player ${i + 1}`)}<input type="tel" data-phone="${t.id}:${i}" value="${nums[i] ? "+" + nums[i] : ""}" placeholder="+49 176 …"></label>`).join("")}
-            <button class="btn ghost small" data-save-phones="${t.id}">Save numbers</button></details>
+          ${[0, 1].filter(i => pl[i] && !nums[i]).map(i => `<span class="mb-nophone">⚠️ No WhatsApp number for ${esc(pl[i])}</span>`).join("")}
           <button class="btn ${t.hasCode ? "ghost " : ""}small" data-code="${t.id}">${t.hasCode ? "Reset code" : "Create code"}</button></div></div>`;
       }).join("") : "No teams yet.";
       $("mb-log").className = "reslist";
@@ -104,11 +102,6 @@
       } catch (err) { show("mb-code", "❌ " + err.message, false); }
     }
     if (b.dataset.copy) { navigator.clipboard.writeText(b.dataset.copy).then(() => (b.textContent = "Copied ✓")); }
-    if (b.dataset.savePhones) {
-      const id = b.dataset.savePhones, list = [0, 1].map(i => normPhone(document.querySelector(`[data-phone="${id}:${i}"]`).value));
-      try { await call("/admin/phones", { team: id, phones: list }); show("mb-code", `✅ Numbers saved for ${name(+id)}.`); loadAll(); }
-      catch (err) { show("mb-code", "❌ " + err.message, false); }
-    }
     if (b.id === "ph-save-all") {
       try { await call("/admin/phones", { all: { ...phones, ...phImport } }); show("ph-msg", `✅ Numbers saved for ${Object.keys(phImport).length} teams.`); $("ph-preview").innerHTML = ""; loadAll(); }
       catch (err) { show("ph-msg", "❌ " + err.message, false); }
@@ -142,7 +135,7 @@
         const formOrder = names.length === 2 && norm(pair.players[0]) === names[1] ? [nums[1], nums[0]] : nums;
         phImport[pair.id] = formOrder.map(x => x || "");
       }
-      return `<div class="row"><span>${pair ? `✅ <b>${esc(pair.name)}</b>` : `⚠️ <b>${esc(r[cTeam])}</b> – no matching team`}</span><span class="note">${nums.map(n => "+" + n).join(" · ") || "no number"}</span></div>`;
+      return `<div class="row"><span>${pair ? `✅ <b>${esc(pair.name)}</b>` : `⚠️ <b>${esc(r[cTeam])}</b> – no matching team`}</span><span class="note">${nums.length ? `${nums.length} number${nums.length === 1 ? "" : "s"}` : "no number"}</span></div>`;
     });
     $("ph-preview").innerHTML = lines.join("") + (Object.keys(phImport).length ? `<button class="btn" id="ph-save-all" style="margin-top:10px">Save numbers for ${Object.keys(phImport).length} team${Object.keys(phImport).length === 1 ? "" : "s"}</button>` : "");
     show("ph-msg", "Check the list, then save. Numbers are stored only in the gatekeeper – never on the website.");

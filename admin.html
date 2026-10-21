@@ -89,10 +89,7 @@
     .mb-team-state { font-size: .82rem; font-weight: 600; }
     .mb-newcode { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; padding: 8px; border-radius: 8px; background: color-mix(in srgb, var(--ball) 25%, var(--card)); }
     .mb-code { font-size: 1.1rem; font-weight: 800; letter-spacing: .08em; }
-    .mb-phones { margin-top: 4px; }
-    .mb-phones summary { cursor: pointer; }
-    .mb-phones label { display: flex; flex-direction: column; gap: 2px; font-size: .8rem; margin: 6px 0; }
-    .mb-phones input { padding: 6px 8px; }
+    .mb-nophone { font-size: .8rem; color: #a05a00; }
     .cupmatch-edit { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
     .done { color: var(--win); font-weight: 700; }
     .pairs-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
@@ -330,7 +327,7 @@
       </div>
       <div class="card">
         <h3 style="margin-top:0">📞 WhatsApp numbers</h3>
-        <p class="note">Used for the 📲 buttons that send a team its code, and shown to the other pairs in 🎾 My team so they can arrange matches. Stored only in the gatekeeper – never on the website or in GitHub. Import them from the registration export (Google Sheet → File → Download → CSV) or enter them on each team card below.</p>
+        <p class="note">Used for the 📲 buttons that send a team its code, and shown to the other pairs in 🎾 My team so they can arrange matches. Stored only in the gatekeeper – never on the website or in GitHub. Import them from the registration export (Google Sheet → File → Download → CSV). The numbers themselves are never shown here – the team cards only say when one is missing.</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="file" id="ph-file" accept=".csv,text/csv">
           <button class="btn ghost small" id="ph-clear">🗑️ Delete all numbers</button></div>
         <div class="msg" id="ph-msg"></div>
@@ -388,7 +385,7 @@
   <script src="assets/league.js?v=6"></script>
   <script src="assets/store.js?v=3"></script>
   <script src="assets/lock.js?v=2"></script>
-  <script src="assets/members-admin.js?v=6" defer></script>
+  <script src="assets/members-admin.js?v=7" defer></script>
   <script src="assets/share-image.js?v=1"></script>
   <script>
     const $ = id => document.getElementById(id);
