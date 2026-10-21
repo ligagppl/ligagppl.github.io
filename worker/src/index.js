@@ -348,8 +348,19 @@ async function schedule(env, team, body) {
 // sets come from the submitting team's point of view: [their games, opponent's games]
 const orient = (sets, team, a) => (team === a ? sets : sets.map(([x, y]) => [y, x]));
 
+// optional link to the match on Playtomic
+function cleanLink(link) {
+  const text = String(link || "").trim();
+  if (!text) return "";
+  let url;
+  try { url = new URL(text); } catch { throw httpError(400, "The Playtomic link is not a valid address."); }
+  if (url.protocol !== "https:" || !/(^|\.)playtomic\.(io|com)$/.test(url.hostname)) throw httpError(400, "Please paste a Playtomic link (https://…playtomic…).");
+  return url.href.slice(0, 300);
+}
+
 async function submitResult(env, team, body) {
   const photoBytes = decodePhoto(body.photo);
+  const link = cleanLink(body.link);
   let photoKey;
   const pending = await update(env, ["pairs", "cup", "results", "matches"], async files => {
     const info = matchInfo(body.key, files);
@@ -360,7 +371,7 @@ async function submitResult(env, team, body) {
     const m = files.matches[info.key] || {};
     if (m.pending && m.pending.by !== team) throw httpError(400, "Your opponent already entered a result – please confirm or dispute it.");
     photoKey = info.key;
-    m.pending = { a: info.a, b: info.b, sets, by: team, at: new Date().toISOString(), status: "pending" };
+    m.pending = { a: info.a, b: info.b, sets, ...(link ? { link } : {}), by: team, at: new Date().toISOString(), status: "pending" };
     files.matches[info.key] = m;
     return m.pending;
   }, `result ${body.key}`);
@@ -424,14 +435,15 @@ async function dispute(env, team, body) {
 
 // write the result into results.json / cup.json and clear it from matches.json
 function makeOfficial(info, files, pending) {
-  const sets = pending.sets;
+  const sets = pending.sets, link = pending.link;
   if (info.type === "league") {
     files.results = files.results.filter(r => !((r.a === info.a && r.b === info.b) || (r.a === info.b && r.b === info.a)));
-    files.results.push({ a: info.a, b: info.b, sets });
+    files.results.push({ a: info.a, b: info.b, sets, ...(link ? { link } : {}) });
   } else {
     const m = info.match;
-    delete m.walkover; delete m.winner;
+    delete m.walkover; delete m.winner; delete m.link;
     m.sets = sets;
+    if (link) m.link = link;
     syncFinal(files.cup);
   }
   const entry = files.matches[info.key];

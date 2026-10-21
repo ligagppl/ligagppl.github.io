@@ -46,7 +46,26 @@
 
   // ---------------------------------------------------------------- helpers
 
-  const teamName = id => { const p = state && state.pairs.find(x => x.id === id); return p ? p.name : `#${id}`; };
+  const pairOf = id => (state && state.pairs.find(x => x.id === id)) || { id, name: `#${id}`, players: [] };
+  const teamName = id => pairOf(id).name;
+  const players = id => (pairOf(id).players || []).filter(Boolean).map(esc).join(" & ");
+  // still logo of a team (a ball for teams without one yet)
+  function logo(id, cls = "tm-logo") {
+    const l = (LEAGUE.logos || {})[teamName(id)];
+    const src = l && (typeof l === "string" ? l : l.src);
+    return src ? `<img class="${cls}" src="${esc(src)}" alt="">` : `<span class="${cls} ph" aria-hidden="true">🎾</span>`;
+  }
+  const teamCell = id => `<span class="tm-tc">${logo(id, "tm-logo-sm")}<span class="tm-tn">${esc(teamName(id))}</span></span>`;
+  // score table like in Admin: one row per team, one column per set (my team first)
+  function board(m, sets) {
+    const labels = ["Set 1", "Set 2", m.fullSets ? "Set 3" : "Tie-break"].slice(0, Math.max(2, sets ? sets.length : 3));
+    const cell = (i, side) => sets ? `<span class="tm-g ${sets[i] && sets[i][side] > sets[i][1 - side] ? "win" : ""}">${sets[i] ? sets[i][side] : ""}</span>`
+      : `<input type="number" inputmode="numeric" min="0" max="${i === 2 && !m.fullSets ? 99 : 7}" name="s${i}${side ? "b" : "a"}" aria-label="${labels[i]} – ${esc(teamName(side ? m.opp : state.team))}">`;
+    return `<div class="tm-board" style="--sets:${labels.length}"><span></span>${labels.map(l => `<span class="tm-bh">${l}</span>`).join("")}
+      ${teamCell(state.team)}${labels.map((_, i) => cell(i, 0)).join("")}
+      ${teamCell(m.opp)}${labels.map((_, i) => cell(i, 1)).join("")}</div>`;
+  }
+  const linkHtml = link => link && /^https:\/\/[^/]*playtomic\.(io|com)\//.test(link) ? ` <a href="${esc(link)}" target="_blank" rel="noopener">Playtomic ↗</a>` : "";
   const dayText = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   // sets as seen by my team: [my games, their games]
   const mine = (sets, a) => (state.team === a ? sets : sets.map(([x, y]) => [y, x]));
@@ -98,8 +117,8 @@
     const pair = state.pairs.find(p => p.id === state.team) || { name: `#${state.team}`, players: [] };
     const matches = myMatches();
     const todo = matches.filter(m => status(m).cls === "action");
-    el.innerHTML = `<div class="card tm-me"><div><b class="tm-team">${esc(pair.name)}</b>
-        <span class="muted">${(pair.players || []).filter(Boolean).map(esc).join(" & ")}</span></div>
+    el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team">${esc(pair.name)}</b>
+        <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
@@ -117,14 +136,15 @@
     let body = "";
     if (m.official) {
       if (m.official.walkover) body = `<p>Decided by walkover (organizers).</p>`;
-      else { const s = mine(m.official.sets, m.official.a); body = `<p class="tm-score">${won(s) ? "Won" : "Lost"} <b>${scoreText(s, m.fullSets)}</b></p>`; }
+      else { const s = mine(m.official.sets, m.official.a); body = board(m, s) + `<p class="tm-score">${won(s) ? "🏆 Won" : "Lost"}${linkHtml(m.official.link)}</p>`; }
     } else if (p) {
       const s = mine(p.sets, p.a), txt = `<b>${scoreText(s, m.fullSets)}</b> (${won(s) ? "your team won" : "your team lost"})`;
-      if (p.status === "disputed") body = `<p>Result ${txt} was disputed. The organizers will decide.</p>` +
+      body = board(m, s) + (p.link ? `<p class="note">${linkHtml(p.link)}</p>` : "");
+      if (p.status === "disputed") body += `<p>This result was disputed. The organizers will decide.</p>` +
         (state.notes && state.notes[m.key] ? `<p class="note">“${esc(state.notes[m.key])}”</p>` : "");
-      else if (p.by === state.team) body = `<p>You entered ${txt}. ${esc(teamName(m.opp))} has 48 hours to confirm – after that it counts automatically.</p>
+      else if (p.by === state.team) body += `<p>You entered ${txt}. ${esc(teamName(m.opp))} has 48 hours to confirm – after that it counts automatically.</p>
         <div class="tm-btns"><button class="btn ghost small" data-act="withdraw" data-key="${m.key}">Withdraw & correct</button>${photoBtn(m.key)}</div>`;
-      else body = `<p>${esc(teamName(m.opp))} entered ${txt}. Is that right?</p>
+      else body += `<p>${esc(teamName(m.opp))} entered ${txt}. Is that right?</p>
         <div class="tm-btns"><button class="btn small" data-act="confirm" data-key="${m.key}">✅ Confirm</button>
         <button class="btn ghost small" data-act="form" data-form="${m.key}|dispute">Dispute</button>${photoBtn(m.key)}</div>` +
         (form === `${m.key}|dispute` ? `<form class="tm-form" data-submit="dispute" data-key="${m.key}">
@@ -144,20 +164,18 @@
     if (photos[m.key]) body += `<img class="tm-photo" src="${photos[m.key]}" alt="Matchday photo">`;
     return `<div class="card tm-match st-${st.cls}">
       <div class="tm-head"><span class="tm-label">${esc(m.label)}</span><span class="tm-chip">${st.text}</span></div>
-      <div class="tm-vs">vs <b>${esc(teamName(m.opp))}</b></div>${body}${msgHtml(m.key)}</div>`;
+      <div class="tm-vs">${logo(m.opp)}<div><span class="muted">vs</span> <b>${esc(teamName(m.opp))}</b><span class="tm-players">${players(m.opp)}</span></div></div>
+      ${body}${msgHtml(m.key)}</div>`;
   }
 
   function photoBtn(key) { return `<button class="btn ghost small" data-act="photo" data-key="${key}">📷 Photo</button>`; }
 
   function resultForm(m) {
-    const row = (i, label) => `<div class="tm-set"><span>${label}</span>
-      <input type="number" inputmode="numeric" min="0" max="99" name="s${i}a" aria-label="${label} – your team">
-      <span>:</span><input type="number" inputmode="numeric" min="0" max="99" name="s${i}b" aria-label="${label} – ${esc(teamName(m.opp))}"></div>`;
     return `<form class="tm-form" data-submit="result" data-key="${m.key}">
-      <div class="tm-set tm-set-head"><span></span><span>Your team</span><span></span><span>${esc(teamName(m.opp))}</span></div>
-      ${row(0, "Set 1")}${row(1, "Set 2")}${row(2, m.fullSets ? "Set 3" : "Tie-break")}
+      <div><b>Score</b>${board(m)}</div>
       <p class="note">${m.fullSets ? "Semi-finals and final: 3 full sets." : "Leave the tie-break empty if the match ended 2–0. Match tie-break: first to 10, win by 2."}</p>
       <label>Matchday photo (all 4 players)<input type="file" name="photo" accept="image/*" required></label>
+      <label>Playtomic link <span class="note">optional – the match on Playtomic</span><input type="url" name="link" inputmode="url" placeholder="https://app.playtomic.io/…"></label>
       <button class="btn small" type="submit">Submit result</button></form>`;
   }
 
@@ -231,7 +249,7 @@
         }
         const file = f.elements.photo.files[0];
         if (!file) throw new Error("Please add the matchday photo.");
-        await call("/result", { key, sets, photo: await compress(file) });
+        await call("/result", { key, sets, link: v("link"), photo: await compress(file) });
       }, "Result sent – your opponent now confirms it.");
     }
   });
