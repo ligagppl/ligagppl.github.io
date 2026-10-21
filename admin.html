@@ -496,7 +496,9 @@
       const pre = r && r.sets ? scoreFor(r.sets, r.a, a) : p ? scoreFor(p.sets, p.a, a) : [];
       // a team entered the score and the opponent hasn't reacted yet → nothing to do here (shown read-only)
       const waiting = !r && p && p.status !== "disputed";
-      const input = (i, side) => `<input type="number" min="0" max="${i === 2 ? 99 : 7}" data-s="${i}${side}" value="${pre[i] ? pre[i][side] : ""}" style="grid-row:${side + 2};grid-column:${i + 2}" aria-label="Set ${i + 1} ${escA(name(side ? b : a))}"${waiting ? " disabled" : ""}>`;
+      const input = (i, side) => waiting
+        ? `<span class="dp-g ${pre[i] && pre[i][side] > pre[i][1 - side] ? "win" : ""}" style="grid-row:${side + 2};grid-column:${i + 2}">${pre[i] ? pre[i][side] : ""}</span>`
+        : `<input type="number" min="0" max="${i === 2 ? 99 : 7}" data-s="${i}${side}" value="${pre[i] ? pre[i][side] : ""}" style="grid-row:${side + 2};grid-column:${i + 2}" aria-label="Set ${i + 1} ${escA(name(side ? b : a))}">`;
       return `<div class="card dp-card ${p && p.status === "disputed" ? "dp-disputed" : p ? "dp-waiting" : ""}" data-edit-a="${a}" data-edit-b="${b}">
         <div class="dp-head"><span class="note">Matchday ${md}</span><span class="note">${whenText(e) || "No date set"}</span></div>
         ${p && !r ? `<p class="note">${p.status === "disputed" ? `❗ Disputed – ${escA(name(p.by))} entered ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}. Saving here makes your score official.`
@@ -504,7 +506,7 @@
         <div class="dp-board" style="--sets:3">${["Set 1", "Set 2", "Tie-break"].map((l, i) => `<span class="dp-bh" style="grid-row:1;grid-column:${i + 2}">${l}</span>`).join("")}
           <span style="grid-row:2;grid-column:1">${teamHtml(a)}</span><span style="grid-row:3;grid-column:1">${teamHtml(b)}</span>
           ${[0, 1, 2].map(i => input(i, 0) + input(i, 1)).join("")}</div>
-        ${waiting ? `<div class="dp-btns"><button class="btn ghost small" data-goto-disputes>Open ❗ Disputes to accept it early</button></div></div>` : `
+        ${waiting ? `</div>` : `
         <div class="form-row"><label>Walkover</label><select data-wo>
           <option value="">No walkover</option><option value="${a}">${escA(name(a))} wins by walkover</option><option value="${b}">${escA(name(b))} wins by walkover</option>
           <option value="both">Both pairs at fault / no photo – −1 each</option></select></div>
@@ -552,7 +554,6 @@
         box.dataset.for = box.innerHTML ? ab : "";
         return;
       }
-      if (e.target.closest("[data-goto-disputes]")) { document.querySelector('.subnav button[data-panel="disputes"]').click(); return; }
       const save = e.target.closest("[data-save-league]");
       if (!save) return;
       const card = save.closest("[data-edit-a]"), a = +card.dataset.editA, b = +card.dataset.editB, msg = save.nextElementSibling;
