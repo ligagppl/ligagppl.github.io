@@ -85,6 +85,10 @@ const STORE = (() => {
       return "local";
     }
     const c = ghConfig();
+    // the staging copy of the site must never write to the live site's branch
+    if (/gppl-staging/.test(location.hostname) && (c.branch || "main") !== "staging") {
+      throw new Error('This is the staging site – set the GitHub branch to "staging" in Settings.');
+    }
     const path = FILES[key];
     let sha;
     const current = await ghRequest(path);
