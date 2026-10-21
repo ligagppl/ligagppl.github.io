@@ -51,6 +51,17 @@
     .dp-note { margin-top: 2px; padding: 8px 12px; border-radius: 8px; background: color-mix(in srgb, var(--loss) 10%, var(--card)); font-style: italic; }
     .dp-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
     .dp-photo img { max-width: 100%; max-height: 360px; border-radius: 10px; margin-top: 10px; }
+    .dp-board input { width: 100%; text-align: center; font-size: 1.05rem; padding: 7px 4px; }
+    #due-list .dp-card, .md-editor .dp-card { margin: 10px 0 0; }
+    .md-day { border-top: 1px solid var(--line); padding: 8px 0; }
+    .md-day summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+    .md-row { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+    .md-row.is-done { opacity: .75; }
+    .md-teams { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+    .md-teams .dp-logo { width: 32px; height: 32px; }
+    .md-state { font-size: .88rem; }
+    .md-row .btn { justify-self: start; }
+    @media (max-width: 640px) { .md-row { grid-template-columns: 1fr; } }
     .mb-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
     .mb-team { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
     .mb-team.has-code { border-color: color-mix(in srgb, var(--win) 45%, var(--line)); }
@@ -101,7 +112,18 @@
     <!-- LEAGUE -->
     <div class="panel active" id="panel-league">
       <div class="card">
-        <h3 style="margin-top:0">Enter a league result</h3>
+        <h3 style="margin-top:0">⏰ Results due</h3>
+        <p class="note">Matches whose date has passed and that have no official result yet. Results the teams entered themselves are in <b>❗ Disputes</b> until they're confirmed.</p>
+        <div class="msg" id="due-msg"></div>
+        <div id="due-list"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">📋 Matches per matchday</h3>
+        <div id="md-view"></div>
+      </div>
+      <details class="card">
+        <summary><b>Enter any league result (form)</b></summary>
+        <h3>Enter a league result</h3>
         <div class="form-row"><label for="md">Matchday</label><select id="md"></select></div>
         <div class="form-row"><label for="match">Match</label><select id="match"></select></div>
         <div class="form-row"><label>Score</label>
@@ -118,7 +140,7 @@
           <button class="btn ghost" id="delete-result">Delete result</button>
         </div>
         <div class="msg" id="league-msg"></div>
-      </div>
+      </details>
       <div class="card reslist">
         <h3 style="margin-top:0">Entered results</h3>
         <div id="result-list"></div>
@@ -316,10 +338,10 @@
     </div>
   </main>
 
-  <script src="assets/data.js?v=27"></script>
+  <script src="assets/data.js?v=28"></script>
   <script src="assets/pairs-loader.js?v=2"></script>
   <script src="assets/league.js?v=3"></script>
-  <script src="assets/store.js"></script>
+  <script src="assets/store.js?v=2"></script>
   <script src="assets/lock.js?v=2"></script>
   <script src="assets/members-admin.js?v=4" defer></script>
   <script>
@@ -438,10 +460,12 @@
 
     function readLeague() {
       const { a, b } = currentMatch();
-      const link = $("link").value.trim();
-      const wo = $("wo").value;
+      return buildLeague(a, b, [[num($("s1-a")), num($("s1-b"))], [num($("s2-a")), num($("s2-b"))], [num($("tb-a")), num($("tb-b"))]], $("wo").value, $("link").value.trim());
+    }
+
+    // checks a league score (sets from pair a's view) and returns the result to save
+    function buildLeague(a, b, [s1, s2, tb], wo, link) {
       if (wo) return { a, b, walkover: wo === "both" ? "both" : +wo, ...(link ? { link } : {}) };
-      const s1 = [num($("s1-a")), num($("s1-b"))], s2 = [num($("s2-a")), num($("s2-b"))], tb = [num($("tb-a")), num($("tb-b"))];
       if (s1.includes(null) || s2.includes(null)) throw new Error("Enter set 1 and set 2.");
       [s1, s2].forEach((s, i) => { if (!validSet(s)) throw new Error(`Set ${i + 1}: ${s[0]}-${s[1]} is not a finished set – a set ends 6-0 … 6-4, 7-5 or 7-6.`); });
       const split = (s1[0] > s1[1]) !== (s2[0] > s2[1]);
@@ -451,6 +475,93 @@
       if (split && !validTieBreak(tb)) throw new Error(`Tie-break: ${tb[0]}-${tb[1]} isn't possible – first to 10, win by 2 (e.g. 10-7, 12-10).`);
       return { a, b, sets: split ? [s1, s2, tb] : [s1, s2], ...(link ? { link } : {}) };
     }
+
+    // ---------- league: due results + matches per matchday (cards like the members see) ----------
+    let schedule = {}; // data/matches.json – dates, venues and results the teams entered
+    const lkey = (a, b) => `L:${Math.min(a, b)}-${Math.max(a, b)}`;
+    const escA = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    function teamLogo(id) {
+      const l = (LEAGUE.logos || {})[name(id)], src = l && (typeof l === "string" ? l : l.src);
+      return src ? `<img class="dp-logo" src="${escA(src)}" alt="">` : `<span class="dp-logo ph" aria-hidden="true">🎾</span>`;
+    }
+    const playersOf = id => (GPPL.pairById[id] ? GPPL.pairById[id].players.filter(Boolean).map(escA).join(" & ") : "");
+    const teamHtml = id => `<span class="dp-team">${teamLogo(id)}<span><b>${escA(name(id))}</b><span class="note">${playersOf(id)}</span></span></span>`;
+    const whenText = e => e && e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + escA(e.time) : ""}${e.court ? ` · 📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.court)}" target="_blank" rel="noopener">${escA(e.court)}</a>` : ""}` : "";
+    const isPast = e => !!(e && e.date) && new Date(`${e.date}T${e.time || "23:59"}:00`).getTime() < Date.now();
+    const scoreFor = (sets, ra, a) => (ra === a ? sets : sets.map(([x, y]) => [y, x]));
+
+    // editable score card for a league match [a, b] (a = first pair of the fixture)
+    function editorCard(a, b, md) {
+      const e = schedule[lkey(a, b)] || {}, p = e.pending, r = GPPL.findResult(results, a, b);
+      const pre = r && r.sets ? scoreFor(r.sets, r.a, a) : p ? scoreFor(p.sets, p.a, a) : [];
+      const input = (i, side) => `<input type="number" min="0" max="${i === 2 ? 99 : 7}" data-s="${i}${side}" value="${pre[i] ? pre[i][side] : ""}" style="grid-row:${side + 2};grid-column:${i + 2}" aria-label="Set ${i + 1} ${escA(name(side ? b : a))}">`;
+      return `<div class="card dp-card ${p && p.status === "disputed" ? "dp-disputed" : p ? "dp-waiting" : ""}" data-edit-a="${a}" data-edit-b="${b}">
+        <div class="dp-head"><span class="note">Matchday ${md}</span><span class="note">${whenText(e) || "No date set"}</span></div>
+        ${p ? `<p class="note">${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting for confirmation"} – ${escA(name(p.by))} entered ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}. Saving here makes your score official.</p>` : ""}
+        <div class="dp-board" style="--sets:3">${["Set 1", "Set 2", "Tie-break"].map((l, i) => `<span class="dp-bh" style="grid-row:1;grid-column:${i + 2}">${l}</span>`).join("")}
+          <span style="grid-row:2;grid-column:1">${teamHtml(a)}</span><span style="grid-row:3;grid-column:1">${teamHtml(b)}</span>
+          ${[0, 1, 2].map(i => input(i, 0) + input(i, 1)).join("")}</div>
+        <div class="form-row"><label>Walkover</label><select data-wo>
+          <option value="">No walkover</option><option value="${a}">${escA(name(a))} wins by walkover</option><option value="${b}">${escA(name(b))} wins by walkover</option>
+          <option value="both">Both pairs at fault / no photo – −1 each</option></select></div>
+        <div class="form-row"><label>Playtomic link</label><input type="url" data-link placeholder="optional – https://app.playtomic.io/…" value="${escA((r && r.link) || (p && p.link) || "")}"></div>
+        <div class="dp-btns"><button class="btn" data-save-league>${r ? "Update result" : "Save result"}</button><span class="msg"></span></div></div>`;
+    }
+
+    function renderDue() {
+      const due = [];
+      fixtureList.forEach((games, i) => games.forEach(([a, b]) => {
+        if (!GPPL.findResult(results, a, b) && isPast(schedule[lkey(a, b)])) due.push(editorCard(a, b, i + 1));
+      }));
+      $("due-list").innerHTML = due.join("") || '<p class="muted">Nothing due – every match whose date has passed has a result. 🎉</p>';
+    }
+
+    let mdOpen = null; // matchday shown open in the per-matchday view
+    function renderMatchdays() {
+      const cur = defaultMatchday();
+      $("md-view").innerHTML = fixtureList.map((games, i) => {
+        const md = i + 1, done = games.filter(([a, b]) => GPPL.findResult(results, a, b)).length;
+        const disputed = games.filter(([a, b]) => ((schedule[lkey(a, b)] || {}).pending || {}).status === "disputed").length;
+        const rows = games.map(([a, b]) => {
+          const r = GPPL.findResult(results, a, b), e = schedule[lkey(a, b)] || {}, p = e.pending;
+          const state = r ? `✅ <b>${GPPL.scoreText(r, a)}</b>`
+            : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}`
+            : e.date ? (isPast(e) ? "⏰ Result due · " : "") + whenText(e) : '<span class="muted">Not scheduled yet</span>';
+          return `<div class="md-row ${r ? "is-done" : ""}"><span class="md-teams">${teamLogo(a)}<b>${escA(name(a))}</b><span class="muted">–</span><b>${escA(name(b))}</b>${teamLogo(b)}</span>
+            <span class="md-state">${state}</span>
+            <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : "Enter result"}</button></div>`;
+        }).join("");
+        return `<details class="md-day" data-md="${md}" ${md === (mdOpen || cur) ? "open" : ""}><summary><b>Matchday ${md}</b>
+          <span class="note">${done}/${games.length} played${disputed ? ` · ❗ ${disputed} disputed` : ""}${md === cur ? " · current" : ""}</span></summary>${rows}<div class="md-editor"></div></details>`;
+      }).join("") || '<p class="muted">No pairs yet.</p>';
+    }
+
+    function renderLeagueViews() { renderDue(); renderMatchdays(); }
+
+    document.getElementById("panel-league").addEventListener("click", async e => {
+      const open = e.target.closest("[data-open-editor]");
+      if (open) {
+        const [ab, md] = open.dataset.openEditor.split("|"), [a, b] = ab.split("-").map(Number);
+        const box = open.closest(".md-day").querySelector(".md-editor");
+        mdOpen = +md;
+        box.innerHTML = box.dataset.for === ab ? "" : editorCard(a, b, +md);
+        box.dataset.for = box.innerHTML ? ab : "";
+        return;
+      }
+      const save = e.target.closest("[data-save-league]");
+      if (!save) return;
+      const card = save.closest("[data-edit-a]"), a = +card.dataset.editA, b = +card.dataset.editB, msg = save.nextElementSibling;
+      const val = k => { const el = card.querySelector(`[data-s="${k}"]`); return el.value === "" ? null : +el.value; };
+      let r;
+      try { r = buildLeague(a, b, [0, 1, 2].map(i => [val(`${i}0`), val(`${i}1`)]), card.querySelector("[data-wo]").value, card.querySelector("[data-link]").value.trim()); }
+      catch (err) { msg.textContent = "❌ " + err.message; msg.className = "msg err"; return; }
+      const next = results.filter(x => !GPPL.samePair(x, a, b)).concat(r);
+      save.disabled = true;
+      if (await persist("results", next, `result ${name(a)} vs ${name(b)}`, "league-msg")) {
+        results = next; fillMatches(); renderResultList(); renderLeagueViews();
+        flash("due-msg", `✅ ${name(a)} vs ${name(b)} saved – live in about a minute.`);
+      } else { save.disabled = false; msg.textContent = $("league-msg").textContent; msg.className = "msg err"; }
+    });
 
     function renderResultList() {
       if (!results.length) { $("result-list").innerHTML = '<p class="muted">No results yet.</p>'; return; }
@@ -481,7 +592,7 @@
       try { r = readLeague(); } catch (e) { return flash("league-msg", "❌ " + e.message, false); }
       const next = results.filter(x => !GPPL.samePair(x, r.a, r.b)).concat(r);
       if (await persist("results", next, `result ${name(r.a)} vs ${name(r.b)}`, "league-msg")) {
-        const saved = $("league-msg").textContent; results = next; fillMatches(); renderResultList(); flash("league-msg", saved);
+        const saved = $("league-msg").textContent; results = next; fillMatches(); renderResultList(); renderLeagueViews(); flash("league-msg", saved);
       }
     });
     $("delete-result").addEventListener("click", async () => {
@@ -490,7 +601,7 @@
       if (!confirm(`Delete the result ${name(a)} vs ${name(b)}?`)) return;
       const next = results.filter(x => !GPPL.samePair(x, a, b));
       if (await persist("results", next, `delete ${name(a)} vs ${name(b)}`, "league-msg")) {
-        const saved = $("league-msg").textContent; results = next; fillMatches(); renderResultList(); flash("league-msg", saved);
+        const saved = $("league-msg").textContent; results = next; fillMatches(); renderResultList(); renderLeagueViews(); flash("league-msg", saved);
       }
     });
 
@@ -952,7 +1063,8 @@
       // start on the current matchday (only on first load – don't jump while an admin is working)
       if (!matchdayChosen) { $("md").value = defaultMatchday(); matchdayChosen = true; }
       siteSettings = await STORE.load("settings", {});
-      fillMatches(); renderResultList(); renderCup(); fillRegistration(); renderCurrentPairs();
+      schedule = await STORE.load("matches", {});
+      fillMatches(); renderResultList(); renderLeagueViews(); renderCup(); fillRegistration(); renderCurrentPairs();
     }
 
     requireAdmin(async () => {

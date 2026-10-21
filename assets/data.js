@@ -21,11 +21,11 @@ const LEAGUE = {
 
   memberApi: "https://gppl-members-staging.gppl-members.workers.dev",
 
-  startDate: "2026-11-09",
+  startDate: "2026-11-02",
   matchdayLengthDays: 10,
   // false = the start date isn't final yet: the website shows no dates (only "Matchday 1, 2, …").
   // Set to true once the start date is fixed.
-  datesConfirmed: false,
+  datesConfirmed: true,
 
   // Milestones per number of pairs: minimum number of matches each pair must have played
   // by the end of a matchday. min: "all" = every league match (before the finale).

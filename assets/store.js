@@ -5,7 +5,7 @@
 //  - Without a GitHub connection, saves stay in this browser and are downloaded as a file.
 
 const STORE = (() => {
-  const FILES = { results: "data/results.json", cup: "data/cup.json", settings: "data/settings.json", pairs: "data/pairs.json" };
+  const FILES = { results: "data/results.json", cup: "data/cup.json", settings: "data/settings.json", pairs: "data/pairs.json", matches: "data/matches.json" };
   const LOCAL_KEY = key => `gppl-local-${key}`;
 
   function ghConfig() {
@@ -118,7 +118,7 @@ const STORE = (() => {
   // download the current data files (e.g. to upload them to GitHub by hand)
   async function downloadAll() {
     for (const key of Object.keys(FILES)) {
-      const data = await load(key, key === "cup" ? { rounds: [] } : key === "settings" ? {} : []);
+      const data = await load(key, key === "cup" ? { rounds: [] } : key === "settings" || key === "matches" ? {} : []);
       download(FILES[key].split("/").pop(), JSON.stringify(data, null, 2) + "\n");
     }
   }

@@ -411,6 +411,7 @@ async function confirm(env, team, body) {
     const m = files.matches[info.key];
     if (!m || !m.pending) throw httpError(400, "There is no result to confirm.");
     if (m.pending.by === team) throw httpError(400, "Your opponent has to confirm your result.");
+    if (officialResult(info, files)) throw httpError(400, "The organizers already entered the result of this match.");
     return makeOfficial(info, files, m.pending);
   }, `confirm ${body.key}`);
   await addLog(env, { team, action: "result confirmed", key: body.key, detail: setsText(result.sets) });
@@ -489,7 +490,12 @@ async function autoConfirm(env) {
     for (const [key, m] of Object.entries(files.matches)) {
       const p = m.pending;
       if (!p || p.status !== "pending" || Date.now() - Date.parse(p.at) < AUTO_CONFIRM_MS) continue;
-      try { makeOfficial(matchInfo(key, files), files, p); confirmed.push(key); } catch {}
+      try {
+        const info = matchInfo(key, files);
+        // the organizers already entered this match → their result stays, the team's entry is dropped
+        if (officialResult(info, files)) { delete files.matches[key]; continue; }
+        makeOfficial(info, files, p); confirmed.push(key);
+      } catch {}
     }
   }, "auto-confirm after 48 hours");
   for (const key of confirmed) await addLog(env, { action: "auto-confirmed", key });
@@ -499,10 +505,11 @@ async function autoConfirm(env) {
 // ---------------------------------------------------------------- admin
 
 async function adminOpen(env) {
-  const { files } = await readAll(env, ["matches"]);
+  const { files } = await readAll(env, ["pairs", "results", "cup", "matches"]);
   const open = [];
   for (const [key, m] of Object.entries(files.matches)) {
     if (!m.pending) continue;
+    try { if (officialResult(matchInfo(key, files), files)) continue; } catch { continue; } // already entered by the organizers
     open.push({ key, ...m.pending, note: m.pending.status === "disputed" ? await env.KV.get(`note:${key}`) : null });
   }
   return json({ open });
