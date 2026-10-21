@@ -188,7 +188,7 @@
       if (form === `${m.key}|schedule`) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
         <label>Date &amp; time<input type="datetime-local" name="when" step="900" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
         <div class="tm-venue"><label for="court-${m.key}">Court / venue</label>
-          <input id="court-${m.key}" name="court" maxlength="160" autocomplete="off" value="${esc(entry.court || "")}" placeholder="Search a venue or address…">
+          <input id="court-${m.key}" name="court" maxlength="160" autocomplete="off" value="${esc(entry.court || "")}" placeholder="Pick a club or search an address…">
           <div class="tm-sugg" hidden></div></div>
         <div class="tm-btns"><button class="btn small" type="submit">Save</button>
           <button class="btn ghost small" type="button" data-act="form" data-form="${m.key}|schedule">Cancel</button>
@@ -325,13 +325,15 @@
         <span class="note">You can also just keep what you typed – it links to Google Maps.</span></a>` : "");
     box.hidden = !box.innerHTML;
   }
-  el.addEventListener("input", e => {
-    if (e.target.name !== "court") return;
-    const input = e.target, box = input.parentElement.querySelector(".tm-sugg"), q = input.value.trim();
+  // every word typed must appear in the venue ("frankfurter city" finds PadelCity Frankfurter Ring)
+  const matchVenue = (v, q) => q.toLowerCase().split(/\s+/).filter(Boolean).every(w => v.toLowerCase().includes(w));
+  function venueInput(input) {
+    const box = input.parentElement.querySelector(".tm-sugg"), q = input.value.trim();
     clearTimeout(venueTimer);
-    const known = knownVenues().filter(v => v.toLowerCase().includes(q.toLowerCase()) && v !== q).slice(0, 3);
+    const known = knownVenues().filter(v => v !== q && matchVenue(v, q)).slice(0, q ? 8 : 40);
     showVenues(box, known, q);
-    if (q.length < 3) return;
+    // clubs from the list come first; search addresses only when the list has (almost) nothing
+    if (q.length < 3 || known.length >= 3) return;
     venueTimer = setTimeout(async () => {
       const req = ++venueReq;
       try {
@@ -340,10 +342,13 @@
         if (req !== venueReq || input.value.trim() !== q) return;
         const found = data.features.map(({ properties: p }) => [p.name, [p.street, p.housenumber].filter(Boolean).join(" "), [p.postcode, p.city || p.town || p.village].filter(Boolean).join(" ")]
           .filter((x, i, a) => x && a.indexOf(x) === i).join(", ")).filter(Boolean);
-        showVenues(box, [...new Set(known.concat(found))].slice(0, 7), q);
+        showVenues(box, [...new Set(known.concat(found))].slice(0, 8), q);
       } catch {}
     }, 350);
-  });
+  }
+  el.addEventListener("input", e => { if (e.target.name === "court") venueInput(e.target); });
+  // focusing the empty field shows the whole club list
+  el.addEventListener("focusin", e => { if (e.target.name === "court" && !e.target.value.trim()) venueInput(e.target); });
   el.addEventListener("click", e => {
     const b = e.target.closest("[data-venue]");
     if (b) { const input = b.closest(".tm-venue").querySelector("input"); input.value = b.dataset.venue; b.parentElement.hidden = true; input.focus(); return; }

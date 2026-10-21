@@ -470,7 +470,7 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tm-board > span { min-width: 0; }
 .tm-us { font-weight: 600; color: var(--muted); font-size: .85em; }
 .tm-venue { position: relative; display: flex; flex-direction: column; gap: 4px; font-size: .9rem; font-weight: 600; }
-.tm-sugg { position: absolute; top: 100%; left: 0; right: 0; z-index: 5; margin-top: 2px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.15); overflow: hidden; }
+.tm-sugg { position: absolute; top: 100%; left: 0; right: 0; z-index: 5; max-height: 300px; overflow-y: auto; margin-top: 2px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 20px rgba(0,0,0,.15); overflow: hidden; }
 .tm-sugg button { display: block; width: 100%; text-align: left; padding: 9px 12px; border: 0; border-bottom: 1px solid var(--line); background: none; color: var(--text); font: inherit; font-weight: 500; cursor: pointer; }
 .tm-sugg button:last-child { border-bottom: 0; }
 .tm-sugg-maps { display: block; padding: 9px 12px; font-weight: 500; font-size: .88rem; }
