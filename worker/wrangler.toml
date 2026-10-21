@@ -37,4 +37,4 @@ crons = ["17 * * * *"]
 
 [[env.staging.kv_namespaces]]
 binding = "KV"
-id = "REPLACE_WITH_STAGING_KV_ID"
+id = "ab56eec100464561bbab09ef9a4b9567"

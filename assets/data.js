@@ -16,7 +16,7 @@ const LEAGUE = {
   visibleTabs: ["register", "rules", "participants", "team"],
 
   // Member area gatekeeper (Cloudflare Worker) – empty = member area closed
-  memberApi: "",
+  memberApi: "https://gppl-members-staging.gppl-members.workers.dev",
 
   startDate: "2026-11-09",
   matchdayLengthDays: 10,
