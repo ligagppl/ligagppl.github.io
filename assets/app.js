@@ -287,12 +287,43 @@ function renderGallery() {
 let settings = {};
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
+// "Saturday, 24 October 2026, 23:59:59" → that moment in German time (Europe/Berlin)
+function parseDeadline(text) {
+  const months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  const m = String(text || "").toLowerCase().match(/(\d{1,2})\.?\s+([a-z]+)\s+(\d{4})\D+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  const mon = m ? months.findIndex(x => x.startsWith(m[2].slice(0, 3))) : -1;
+  if (mon < 0) return null;
+  const wall = Date.UTC(+m[3], mon, +m[1], +m[4], +m[5], +(m[6] || 0));
+  // Berlin's UTC offset at that time (handles summer/winter time)
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Berlin", hourCycle: "h23",
+    year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" })
+    .formatToParts(new Date(wall)).map(x => [x.type, +x.value]));
+  const offset = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - wall;
+  return new Date(wall - offset);
+}
+
+function countdownHtml(deadline) {
+  const end = parseDeadline(deadline);
+  return end ? `<div class="countdown" data-end="${end.getTime()}" aria-live="off"></div>` : "";
+}
+
+// ticks every second; registration countdowns are re-rendered with the page
+setInterval(function tick() {
+  document.querySelectorAll(".countdown[data-end]").forEach(el => {
+    const left = Math.max(0, +el.dataset.end - Date.now()), s = Math.floor(left / 1000);
+    const parts = [[Math.floor(s / 86400), "days"], [Math.floor(s / 3600) % 24, "hrs"], [Math.floor(s / 60) % 60, "min"], [s % 60, "sec"]];
+    el.innerHTML = left ? parts.map(([n, l]) => `<div><b>${String(n).padStart(2, "0")}</b><small>${l}</small></div>`).join("")
+      : `<b class="cd-over">The registration deadline has passed</b>`;
+  });
+  return tick;
+}(), 1000);
+
 function renderRegister() {
   const reg = { ...LEAGUE.registration, ...(settings.registration || {}) };
   const status = reg.status || (reg.open ? "open" : "soon");
   const banner = {
     soon: `<div class="reg-banner soon"><b>Registration opens soon</b><span>Watch the GPPL WhatsApp group 📲</span></div>`,
-    open: `<div class="reg-banner open"><b>Registration is open</b><span>Deadline: ${esc(reg.deadline)}</span></div>`,
+    open: `<div class="reg-banner open"><b>Registration is open</b><span>Deadline: ${esc(reg.deadline)}</span>${countdownHtml(reg.deadline)}</div>`,
     closed: `<div class="reg-banner closed"><b>Registration is closed</b><span>Thanks to everyone who registered – see you on court!</span></div>`,
   }[status] || "";
   // the fee as a big amount ("€30 per pair" → "€30" + "per pair")

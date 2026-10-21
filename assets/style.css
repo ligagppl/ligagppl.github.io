@@ -171,6 +171,12 @@ td.pts { font-weight: 700; }
 .reg-banner.open { background: color-mix(in srgb, var(--win) 14%, var(--card)); border-color: color-mix(in srgb, var(--win) 45%, var(--line)); }
 .reg-banner.soon { background: color-mix(in srgb, var(--ball) 22%, var(--card)); border-color: color-mix(in srgb, var(--ball) 55%, var(--line)); }
 .reg-banner.closed { background: var(--card); }
+.countdown { display: flex; gap: 8px; margin-top: 10px; }
+.countdown div { display: flex; flex-direction: column; align-items: center; min-width: 58px; padding: 8px 6px;
+  border-radius: 10px; background: var(--green); color: #fff; }
+.countdown div b { font-size: 1.5rem; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.countdown div small { font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; opacity: .85; }
+.countdown .cd-over { font-size: 1rem; color: var(--lose, #c62828); }
 
 .fee-card { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
   border: 2px solid var(--green-2); background: color-mix(in srgb, var(--green) 8%, var(--card)); }
@@ -428,3 +434,4 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
   .match { grid-template-columns: 1fr; text-align: center; }
   .match .a { text-align: center; }
 }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
