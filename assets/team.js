@@ -126,12 +126,52 @@
     el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team">${esc(pair.name)}</b>
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
+      <div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
       <h3>🏆 GPPC Cup</h3>${matches.filter(m => m.group === "cup" && !todo.includes(m)).map(card).join("") || `<div class="card muted">No cup match for you right now.</div>`}
       <h3>📅 League</h3>${matches.filter(m => m.group === "league" && !todo.includes(m)).map(card).join("") || `<div class="card muted">The league schedule appears here after the draw.</div>`}
       <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`;
+  }
+
+  // my place in the league table (same order as the Table tab: points, head-to-head, wins, sets, games)
+  function standingHtml() {
+    const rows = GPPL.rankStandings(state.results), i = rows.findIndex(r => r.id === state.team);
+    if (i < 0) return "";
+    const r = rows[i], sign = n => (n > 0 ? "+" + n : String(n));
+    const medal = r.p ? ["🥇", "🥈", "🥉"][i] || "" : "";
+    return `<div class="card tm-stat"><span class="tm-stat-label">🏆 League</span>
+      <span class="tm-stat-big">${r.p ? `${medal} ${i + 1}.` : "–"} <small>of ${rows.length}</small></span>
+      <span class="tm-stat-line"><b>${r.pts} pts</b> · ${r.p} played · ${r.w} W · ${r.l} L</span>
+      <span class="note">Sets ${sign(r.sf - r.sa)} · Games ${sign(r.gf - r.ga)}${r.p ? "" : " · no results yet"}</span></div>`;
+  }
+
+  // where my team is in the GPPC Cup
+  function cupStatusHtml() {
+    const me = state.team, rounds = state.cup.rounds || [];
+    const opp = m => teamName(m.a === me ? m.b : m.a);
+    let text = "The first cup draw hasn't happened yet.", icon = "⏳";
+    rounds.forEach(r => {
+      if (r.type === "lucky") {
+        if ((r.lucky || []).includes(me)) { text = `Back in as a lucky loser 🍀 – waiting for the next draw.`; icon = "🍀"; }
+        return;
+      }
+      const m = (r.matches || []).find(x => x.a === me || x.b === me);
+      if ((r.byes || []).includes(me)) { text = `Bye in ${r.name} – straight to the next round.`; icon = "🎟️"; return; }
+      if (!m) return;
+      const w = GPPL.cupWinner(m);
+      if (!w && m.walkover !== "both") { text = `${r.name} vs <b>${esc(opp(m))}</b> – still to play.`; icon = "🎾"; }
+      else if (w === me) {
+        text = r.name === "Final" ? "🏆 GPPC Cup champions!" : r.third ? "🥉 3rd place in the GPPC Cup!" : `Won ${r.name} vs ${esc(opp(m))} – waiting for the next round.`;
+        icon = r.name === "Final" ? "🏆" : r.third ? "🥉" : "✅";
+      } else {
+        text = r.name === "Final" ? "🥈 Runner-up in the GPPC Cup!" : r.third ? "4th place in the GPPC Cup." : `Out in ${r.name} (vs ${esc(opp(m))}).`;
+        icon = r.name === "Final" ? "🥈" : "❌";
+      }
+    });
+    return `<div class="card tm-stat"><span class="tm-stat-label">🏆 GPPC Cup</span><span class="tm-stat-big">${icon}</span>
+      <span class="tm-stat-line">${text}</span></div>`;
   }
 
   // league milestones (Rules §2): how many matches my team has played and what's due next
