@@ -251,7 +251,18 @@
       form = null;
       state = await call("/me");
       msg = { key, text: okText, ok: true };
-    } catch (e) { msg = { key, text: e.message, ok: false }; }
+    } catch (e) {
+      // keep everything the player typed (and the chosen photo) – only show the message
+      msg = { key, text: e.message, ok: false };
+      const kept = [...el.querySelectorAll("form[data-key]")].map(f => ({ id: f.dataset.key + "|" + f.dataset.submit,
+        values: [...f.elements].filter(x => x.name).map(x => [x.name, x.type === "file" ? x.files : x.value]) }));
+      render();
+      kept.forEach(({ id, values }) => {
+        const f = [...el.querySelectorAll("form[data-key]")].find(x => x.dataset.key + "|" + x.dataset.submit === id);
+        if (f) values.forEach(([n, v]) => { const input = f.elements[n]; if (!input) return; if (input.type === "file") { if (v && v.length) input.files = v; } else input.value = v; });
+      });
+      return;
+    }
     render();
   }
 
