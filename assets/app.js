@@ -583,10 +583,10 @@ function updateMenu() {
     const a = document.querySelector(`#nav a[href="#${id}"]`);
     if (a) a.hidden = closed;
   });
-  // the Schedule tab is switched on in Admin → League results
+  // the Schedule tab appears once the league start date is set (Admin → League results)
   const sched = document.querySelector('#nav a[href="#schedule"]');
-  if (sched) sched.hidden = settings.showSchedule !== true;
-  if (settings.showSchedule !== true && location.hash === "#schedule") location.hash = "#" + (visibleTabs ? visibleTabs[0] : "home");
+  if (sched) sched.hidden = !LEAGUE.scheduleVisible;
+  if (!LEAGUE.scheduleVisible && location.hash === "#schedule") location.hash = "#" + (visibleTabs ? visibleTabs[0] : "home");
 }
 
 function renderData() {

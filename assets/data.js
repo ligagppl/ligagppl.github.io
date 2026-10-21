@@ -50,9 +50,9 @@ const LEAGUE = {
 
   startDate: "2026-11-02",
   matchdayLengthDays: 10,
-  // false = the start date isn't final yet: the website shows no dates (only "Matchday 1, 2, …").
-  // Set to true once the start date is fixed.
-  datesConfirmed: true,
+  // Dates and the Schedule tab are shown once the start date is set in Admin → League results
+  // (data/settings.json → startDate, which then overrides startDate above).
+  datesConfirmed: false,
 
   // Milestones per number of pairs: minimum number of matches each pair must have played
   // by the end of a matchday. min: "all" = every league match (before the finale).

@@ -165,16 +165,18 @@
           <button class="btn" id="btn-save" style="background:var(--green);color:#fff" disabled>💾 Save draw to the cup</button>
         </div>
         <div class="msg" id="save-msg"></div>
-        <textarea id="share" readonly placeholder="The result appears here when the draw is complete – ready to paste into WhatsApp."></textarea>
+        <textarea id="share" readonly hidden></textarea>
+        <img id="share-img" alt="Draw result as an image" style="display:block;width:100%;max-width:540px;border-radius:12px;border:1px solid var(--line);margin:10px 0">
         <div class="controls" style="justify-content:flex-start">
-          <button class="btn ghost" id="btn-copy" style="color:var(--text);border-color:var(--line)">Copy result</button>
+          <button class="btn" id="btn-share-img" style="background:var(--green);color:#fff" hidden>📤 Share image</button>
+          <button class="btn ghost" id="btn-download-img" style="color:var(--text);border-color:var(--line)">⬇️ Download image</button>
         </div>
       </div>
     </div>
   </main>
 
-  <script src="assets/data.js?v=36"></script>
-  <script src="assets/pairs-loader.js?v=2"></script>
+  <script src="assets/data.js?v=37"></script>
+  <script src="assets/pairs-loader.js?v=3"></script>
   <script src="assets/league.js?v=5"></script>
   <script src="assets/store.js?v=3"></script>
   <script src="assets/lock.js?v=2"></script>
@@ -500,6 +502,7 @@
       $("status").textContent = P.lucky ? "✅ Lucky loser draw complete! 🍀" : "✅ Draw complete – good luck everyone!";
       renderResult(drawn.length - 1);
       $("share").value = shareText();
+      makeDrawImage().catch(e => console.error(e));
       $("btn-save").disabled = false;
       $("share-card").hidden = false; // Save & share appears once the draw is complete
     }
@@ -587,11 +590,78 @@
       else if (el.requestFullscreen) el.requestFullscreen();
     });
 
-    $("btn-copy").addEventListener("click", async () => {
-      if (!$("share").value) return;
-      try { await navigator.clipboard.writeText($("share").value); $("btn-copy").textContent = "Copied ✓"; }
-      catch { $("share").select(); document.execCommand("copy"); $("btn-copy").textContent = "Copied ✓"; }
-      setTimeout(() => ($("btn-copy").textContent = "Copy result"), 2000);
+    // ---------- the draw as an image (for WhatsApp) ----------
+    let drawBlob = null;
+    const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
+    function fitText(ctx, text, maxW, size, weight = 800) {
+      let s = size;
+      do { ctx.font = `${weight} ${s}px Arial, sans-serif`; s -= 2; } while (ctx.measureText(text).width > maxW && s > 16);
+      return text;
+    }
+    function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+    async function makeDrawImage() {
+      const W = 1080, ROW = 140, round = $("round-name").value || "Draw";
+      const rows = P.lucky ? drawn.map(id => [id]) : Array.from({ length: P.matches }, (_, i) => [drawn[i * 2], drawn[i * 2 + 1]]);
+      const byes = P.lucky ? [] : drawn.slice(P.matches * 2);
+      const H = 380 + 90 + rows.length * (ROW + 16) + (byes.length ? 110 : 0) + 150;
+      const c = document.createElement("canvas"); c.width = W; c.height = H;
+      const ctx = c.getContext("2d");
+      ctx.fillStyle = "#ffffff"; ctx.fillRect(0, 0, W, H);
+      const banner = await loadImg("img/gppl-banner.svg");
+      if (banner) ctx.drawImage(banner, 60, 40, 960, 320);
+      ctx.fillStyle = "#01411c"; ctx.textAlign = "center";
+      ctx.font = "800 50px Arial, sans-serif";
+      ctx.fillText(P.lucky ? `🍀 GPPC Cup – ${round}` : `🏆 GPPC Cup – ${round} draw`, W / 2, 425);
+      const logos = {};
+      await Promise.all([...new Set(drawn)].map(async id => { const src = logoSrc(id); logos[id] = src ? await loadImg(src) : null; }));
+      const drawLogo = (id, x, y, s) => {
+        if (logos[id]) ctx.drawImage(logos[id], x, y, s, s);
+        else { ctx.fillStyle = "#d7f23a"; ctx.beginPath(); ctx.arc(x + s / 2, y + s / 2, s / 2.4, 0, 7); ctx.fill(); }
+      };
+      let y = 470;
+      rows.forEach((pair, i) => {
+        ctx.fillStyle = "#f3f6f3"; roundRect(ctx, 40, y, W - 80, ROW, 22); ctx.fill();
+        ctx.fillStyle = "#6b776e"; ctx.textAlign = "left"; ctx.font = "700 22px Arial, sans-serif";
+        ctx.fillText(P.lucky ? `LUCKY LOSER ${i + 1}` : `MATCH ${i + 1}`, 70, y + 32);
+        const [a, b] = pair, s = 84, ly = y + 44;
+        drawLogo(a, 70, ly - 4, s);
+        ctx.fillStyle = "#14201a"; ctx.textAlign = "left";
+        fitText(ctx, plainName(a), b !== undefined ? 330 : 800, 36); ctx.fillText(plainName(a), 70 + s + 18, ly + 52);
+        if (b !== undefined) {
+          ctx.fillStyle = "#0b6b34"; ctx.textAlign = "center"; ctx.font = "800 30px Arial, sans-serif"; ctx.fillText("vs", W / 2, ly + 50);
+          drawLogo(b, W - 70 - s, ly - 4, s);
+          ctx.fillStyle = "#14201a"; ctx.textAlign = "right";
+          fitText(ctx, plainName(b), 330, 36); ctx.fillText(plainName(b), W - 70 - s - 18, ly + 52);
+        }
+        y += ROW + 16;
+      });
+      if (byes.length) {
+        ctx.fillStyle = "#fff8d6"; roundRect(ctx, 40, y, W - 80, 90, 22); ctx.fill();
+        ctx.fillStyle = "#14201a"; ctx.textAlign = "left";
+        fitText(ctx, `🎟️ Bye: ${byes.map(plainName).join(", ")}`, W - 140, 32, 700);
+        ctx.fillText(`🎟️ Bye: ${byes.map(plainName).join(", ")}`, 70, y + 56);
+        y += 110;
+      }
+      ctx.fillStyle = "#6b776e"; ctx.textAlign = "center";
+      fitText(ctx, `🔐 Seed words: “${seeded.clean}”`, W - 120, 28, 600); ctx.fillText(`🔐 Seed words: “${seeded.clean}”`, W / 2, y + 50);
+      ctx.font = "600 24px Arial, sans-serif"; ctx.fillText("Check the draw yourself: ligagppl.github.io → ✅ Verify draw", W / 2, y + 90);
+      // flag stripe at the bottom
+      [["#01411c", 0.25], ["#ffffff", 0.25], ["#111111", 1 / 6], ["#dd0000", 1 / 6], ["#ffce00", 1 / 6]].reduce((x, [col, f]) => {
+        ctx.fillStyle = col; ctx.fillRect(x, H - 16, W * f, 16); return x + W * f; }, 0);
+      drawBlob = await new Promise(r => c.toBlob(r, "image/png"));
+      $("share-img").src = URL.createObjectURL(drawBlob);
+      const file = new File([drawBlob], "gppc-draw.png", { type: "image/png" });
+      $("btn-share-img").hidden = !(navigator.canShare && navigator.canShare({ files: [file] }));
+    }
+    const drawFileName = () => `GPPC Cup – ${($("round-name").value || "draw").replace(/[\\/:*?"<>|]/g, "")}.png`;
+    $("btn-download-img").addEventListener("click", () => {
+      if (!drawBlob) return;
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(drawBlob); a.download = drawFileName(); a.click();
+    });
+    $("btn-share-img").addEventListener("click", async () => {
+      if (!drawBlob) return;
+      try { await navigator.share({ files: [new File([drawBlob], drawFileName(), { type: "image/png" })], text: $("share").value }); } catch {}
     });
 
     // ---------- link with the saved cup ----------
