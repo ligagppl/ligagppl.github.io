@@ -56,6 +56,7 @@ async function route(request, env, ctx) {
     if (path === "/admin/log") return json({ log: await getLog(env) });
     if (path === "/admin/photo") return photo(env, url.searchParams.get("key"));
     if (path === "/admin/auto-confirm" && request.method === "POST") return json({ confirmed: await autoConfirm(env) });
+    if (path === "/admin/phones") return request.method === "POST" ? adminSetPhones(env, body) : json({ phones: await getPhones(env) });
     throw httpError(404, "Not found");
   }
 
@@ -317,13 +318,16 @@ function checkSets(sets, fullSets) {
 
 async function me(env, team) {
   const { files } = await readAll(env, ["pairs", "results", "cup", "matches"]);
+  // WhatsApp numbers of the other pairs (all are opponents in the league) – to arrange matches
+  const all = await getPhones(env), phones = {};
+  Object.entries(all).forEach(([id, list]) => { if (+id !== team) phones[id] = list; });
   const notes = {};
   for (const [key, m] of Object.entries(files.matches)) {
     if (m.pending && m.pending.status === "disputed" && key.includes(String(team))) {
       notes[key] = await env.KV.get(`note:${key}`);
     }
   }
-  return json({ team, ...files, notes });
+  return json({ team, ...files, notes, phones });
 }
 
 const cleanDate = d => (d === "" || /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null);
@@ -538,6 +542,33 @@ async function photo(env, key) {
   const { value, metadata } = await env.KV.getWithMetadata(`photo:${key}`, { type: "arrayBuffer" });
   if (!value) throw httpError(404, "No photo for this match.");
   return new Response(value, { headers: { "Content-Type": "image/jpeg", "Cache-Control": "private, max-age=300", "X-Uploaded-At": (metadata && metadata.at) || "" } });
+}
+
+// ---------------------------------------------------------------- WhatsApp numbers (private, KV "phones")
+// { "<team id>": ["4917612345678", "923001234567"] } – digits with country code, one per player
+
+async function getPhones(env) { return JSON.parse((await env.KV.get("phones")) || "{}"); }
+
+function cleanPhone(p) {
+  const d = String(p || "").replace(/[^\d+]/g, "");
+  if (!d) return "";
+  let digits = d.startsWith("+") ? d.slice(1) : d.startsWith("00") ? d.slice(2)
+    : /^03\d{9}$/.test(d) ? "92" + d.slice(1)   // Pakistani mobile 03xx…
+    : d.startsWith("0") ? "49" + d.slice(1) : d; // German number 0…
+  if (!/^\d{8,15}$/.test(digits)) throw httpError(400, `Phone number not valid: ${p}`);
+  return digits;
+}
+
+// body: { all: { id: [p1, p2] } } replaces everything; { team, phones: [p1, p2] } one team; { clear: true } deletes all
+async function adminSetPhones(env, body) {
+  let phones = await getPhones(env);
+  if (body.clear) phones = {};
+  else if (body.all) phones = Object.fromEntries(Object.entries(body.all).map(([id, l]) => [id, (l || []).map(cleanPhone)]));
+  else if (body.team) phones[body.team] = (body.phones || []).map(cleanPhone);
+  Object.keys(phones).forEach(id => { if (!phones[id].some(Boolean)) delete phones[id]; });
+  await env.KV.put("phones", JSON.stringify(phones));
+  await addLog(env, { action: body.clear ? "phone numbers deleted" : "phone numbers saved", by: "admin" });
+  return json({ phones });
 }
 
 // ---------------------------------------------------------------- activity log (private, last 300 entries)

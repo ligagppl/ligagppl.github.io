@@ -13,6 +13,19 @@
   const when = iso => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
   let lastCode = null; // the code just created – shown once in its team's card
+  let phones = {};      // WhatsApp numbers per team (private, kept by the gatekeeper)
+  const siteUrl = () => new URL("index.html#team", location.href).href.replace("index.html", "");
+  const codeMessage = (team, code) => `Hi ${team}! 🎾\nYour GPPL team code is: ${code}\n\nLog in at ${siteUrl()} (🎾 My team) to set the dates of your matches and enter results.\nBoth of you use the same code – please keep it private.`;
+  // "+49 176 123", "0049…", "0176…" (Germany), "0300…" (Pakistan) → digits with country code
+  function normPhone(p) {
+    let d = String(p || "").replace(/[^\d+]/g, "");
+    if (!d) return "";
+    if (d.startsWith("+")) d = d.slice(1);
+    else if (d.startsWith("00")) d = d.slice(2);
+    else if (/^03\d{9}$/.test(d)) d = "92" + d.slice(1);
+    else if (d.startsWith("0")) d = "49" + d.slice(1);
+    return d;
+  }
   const players = id => (GPPL.pairById[id] ? GPPL.pairById[id].players.filter(Boolean).map(esc).join(" & ") : "");
   function logo(teamName) {
     const l = (LEAGUE.logos || {})[teamName];
@@ -46,17 +59,27 @@
     $("mb-api").textContent = api() || "(not set – LEAGUE.memberApi in data.js)";
     if (!api() || !get(KEY)) return;
     try {
-      const [{ teams }, { log }] = await Promise.all([call("/admin/teams"), call("/admin/log")]);
+      const [{ teams }, { log }, ph] = await Promise.all([call("/admin/teams"), call("/admin/log"), call("/admin/phones")]);
+      phones = ph.phones || {};
       const cup = await STORE.load("cup", { rounds: [] });
       $("mb-teams").className = "mb-teams";
-      $("mb-teams").innerHTML = teams.length ? teams.map(t => `<div class="mb-team ${t.hasCode ? "has-code" : ""}">
+      $("mb-teams").innerHTML = teams.length ? teams.map(t => {
+        const pl = (GPPL.pairById[t.id] || { players: [] }).players, nums = phones[t.id] || [];
+        const msg = lastCode && lastCode.team === t.id ? codeMessage(t.name, lastCode.code) : "";
+        return `<div class="mb-team ${t.hasCode ? "has-code" : ""}">
           ${logo(t.name)}<div class="mb-team-info"><span class="note">#${t.id}</span><b>${esc(t.name)}</b>
           <span class="note">${players(t.id)}</span>
           <span class="mb-team-state">${t.hasCode ? `✅ Code since ${when(t.created)}` : "No code yet"}</span>
-          ${lastCode && lastCode.team === t.id ? `<span class="mb-newcode"><code class="mb-code">${lastCode.code}</code>
-            <button class="btn ghost small" data-copy="${lastCode.code}">Copy</button><span class="note">Shown only now – send it privately to both players.</span></span>` : ""}
-          <button class="btn ${t.hasCode ? "ghost " : ""}small" data-code="${t.id}">${t.hasCode ? "Reset code" : "Create code"}</button></div></div>`).join("")
-        : "No teams yet.";
+          ${msg ? `<span class="mb-newcode"><code class="mb-code">${lastCode.code}</code>
+            <button class="btn ghost small" data-copy="${lastCode.code}">Copy</button>
+            ${[0, 1].map(i => nums[i] ? `<a class="btn small" href="https://wa.me/${nums[i]}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">📲 ${esc((pl[i] || `Player ${i + 1}`).split(" ")[0])}</a>` : "").join("")}
+            <a class="btn ghost small" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">📲 Choose chat</a>
+            <span class="note">Shown only now – send it privately to both players.</span></span>` : ""}
+          <details class="mb-phones"><summary class="note">📞 WhatsApp numbers ${nums.filter(Boolean).length ? `(${nums.filter(Boolean).length})` : "– none yet"}</summary>
+            ${[0, 1].map(i => `<label>${esc(pl[i] || `Player ${i + 1}`)}<input type="tel" data-phone="${t.id}:${i}" value="${nums[i] ? "+" + nums[i] : ""}" placeholder="+49 176 …"></label>`).join("")}
+            <button class="btn ghost small" data-save-phones="${t.id}">Save numbers</button></details>
+          <button class="btn ${t.hasCode ? "ghost " : ""}small" data-code="${t.id}">${t.hasCode ? "Reset code" : "Create code"}</button></div></div>`;
+      }).join("") : "No teams yet.";
       $("mb-log").className = "reslist";
       $("mb-log").innerHTML = log.length ? log.slice(0, 60).map(l => `<div class="row"><span class="note">${when(l.at)}</span>
         <span>${l.team ? esc(name(l.team)) : l.by === "admin" ? "Admin" : "System"} · ${esc(l.action)}${l.key ? " · " + esc(matchName(l.key, cup)) : ""}${l.detail ? " · " + esc(l.detail) : ""}</span></div>`).join("")
@@ -81,6 +104,49 @@
       } catch (err) { show("mb-code", "❌ " + err.message, false); }
     }
     if (b.dataset.copy) { navigator.clipboard.writeText(b.dataset.copy).then(() => (b.textContent = "Copied ✓")); }
+    if (b.dataset.savePhones) {
+      const id = b.dataset.savePhones, list = [0, 1].map(i => normPhone(document.querySelector(`[data-phone="${id}:${i}"]`).value));
+      try { await call("/admin/phones", { team: id, phones: list }); show("mb-code", `✅ Numbers saved for ${name(+id)}.`); loadAll(); }
+      catch (err) { show("mb-code", "❌ " + err.message, false); }
+    }
+    if (b.id === "ph-save-all") {
+      try { await call("/admin/phones", { all: { ...phones, ...phImport } }); show("ph-msg", `✅ Numbers saved for ${Object.keys(phImport).length} teams.`); $("ph-preview").innerHTML = ""; loadAll(); }
+      catch (err) { show("ph-msg", "❌ " + err.message, false); }
+    }
+    if (b.id === "ph-clear") {
+      if (!confirm("Delete ALL WhatsApp numbers from the gatekeeper? (e.g. at the end of the season)")) return;
+      try { await call("/admin/phones", { clear: true }); show("ph-msg", "✅ All numbers deleted."); loadAll(); }
+      catch (err) { show("ph-msg", "❌ " + err.message, false); }
+    }
+  });
+
+  // import the numbers from the registration form export (Google Sheet → CSV)
+  let phImport = {};
+  const norm = s => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]/g, "");
+  $("ph-file").addEventListener("change", async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const { header, rows } = parseCSV(await file.text());
+    const col = re => header.findIndex(h => re.test(h));
+    const cTeam = col(/team/i), cNames = col(/name/i) === cTeam ? -1 : header.findIndex((h, i) => i !== cTeam && /name/i.test(h)), cNum = col(/whatsapp|phone|number|nummer/i);
+    if (cNum < 0) return show("ph-msg", "❌ No WhatsApp / phone column found in this file.", false);
+    phImport = {};
+    const lines = rows.map(r => {
+      const nums = String(r[cNum] || "").split(/\r?\n|,|;|\//).map(normPhone).filter(Boolean).slice(0, 2);
+      const names = String(r[cNames] || "").split(/\r?\n/).map(norm).filter(Boolean);
+      // match by team name, else by a player name
+      const pair = LEAGUE.pairs.find(p => norm(p.name) === norm(r[cTeam])) ||
+        LEAGUE.pairs.find(p => p.players.some(n => n && names.includes(norm(n))));
+      if (pair && nums.length) {
+        // put each number next to the right player when the form lists the players in the other order
+        const formOrder = names.length === 2 && norm(pair.players[0]) === names[1] ? [nums[1], nums[0]] : nums;
+        phImport[pair.id] = formOrder.map(x => x || "");
+      }
+      return `<div class="row"><span>${pair ? `✅ <b>${esc(pair.name)}</b>` : `⚠️ <b>${esc(r[cTeam])}</b> – no matching team`}</span><span class="note">${nums.map(n => "+" + n).join(" · ") || "no number"}</span></div>`;
+    });
+    $("ph-preview").innerHTML = lines.join("") + (Object.keys(phImport).length ? `<button class="btn" id="ph-save-all" style="margin-top:10px">Save numbers for ${Object.keys(phImport).length} team${Object.keys(phImport).length === 1 ? "" : "s"}</button>` : "");
+    show("ph-msg", "Check the list, then save. Numbers are stored only in the gatekeeper – never on the website.");
+    e.target.value = "";
   });
 
   document.querySelector('.subnav button[data-panel="members"]').addEventListener("click", loadAll);

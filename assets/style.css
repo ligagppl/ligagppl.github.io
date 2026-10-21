@@ -551,3 +551,6 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tbl-team { display: flex; align-items: center; gap: 10px; }
 .tbl-team .mlogo { width: 34px; height: 34px; }
 @media (max-width: 560px) { .tbl-team .mlogo { width: 26px; height: 26px; } .tbl-team { gap: 6px; } }
+.tm-contact { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.tm-wa { font-size: .82rem; font-weight: 600; padding: 3px 9px; border-radius: 999px; border: 1px solid #25d366; color: #128c4b; text-decoration: none; }
+.tm-wa:hover { background: color-mix(in srgb, #25d366 15%, transparent); }
