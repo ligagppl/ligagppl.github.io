@@ -1,11 +1,11 @@
 // GPPL website – reads settings from data.js and results/cup from /data/*.json
 
-const { pairById, pairName, fmt, matchdayWindow, fixtures, DAY, start } = GPPL;
+const { pairById, pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
 let results = [], cup = { rounds: [] };
 let schedule = {}; // data/matches.json – dates and venues the teams set in 🎾 My team
 
 const sign = n => (n > 0 ? "+" + n : String(n));
-const datesOn = LEAGUE.datesConfirmed !== false; // dates hidden until the start date is fixed
+let datesOn = LEAGUE.datesConfirmed !== false; // dates hidden until the start date is set (Admin → League results)
 
 // matchday running today (null before the season starts / after it ends)
 function currentMatchday() {
@@ -77,7 +77,7 @@ function renderHome() {
     <div class="card"><div class="note">Pairs</div><div style="font-size:1.8rem;font-weight:700">${LEAGUE.pairs.length}</div>
       ${tabAllowed("participants") ? `<a href="#participants">👥 See all teams →</a>` : ""}</div>
     <div class="card"><div class="note">Matches played</div><div style="font-size:1.8rem;font-weight:700">${results.length} / ${total}</div></div>
-    <div class="card"><div class="note">Season</div><div style="font-size:1.1rem;font-weight:700">${datesOn ? `${fmt(start)} – ${fmt(last)}` : "Dates follow"}</div></div>
+    <div class="card"><div class="note">Season</div><div style="font-size:1.1rem;font-weight:700">${datesOn ? `${fmt(GPPL.start)} – ${fmt(last)}` : "Dates follow"}</div></div>
     <div class="card top3-card"><div class="note">Top 3</div>
       ${top.length ? `<div class="top3">${top.map((r, i) => `<span>${["🥇", "🥈", "🥉"][i]} ${teamLogo(r.id)}<span class="top3-name"><b>${pairName(r.id)}</b>
           <span class="note">${r.p} played · ${r.w} W · ${r.l} L · <b>${r.pts} pts</b></span></span></span>`).join("")}</div>`
@@ -91,7 +91,7 @@ function renderMatchdayCard() {
   const el = document.getElementById("home-md"), cur = currentMatchday();
   if (!datesOn) { el.innerHTML = `<h3 style="margin-top:0">📅 Matchdays</h3><p class="muted">The dates are announced soon.</p>`; return; }
   if (!cur) {
-    const before = Date.now() < start.getTime(), md = before ? 1 : fixtures.length, { from, to } = matchdayWindow(md);
+    const before = Date.now() < GPPL.start.getTime(), md = before ? 1 : fixtures.length, { from, to } = matchdayWindow(md);
     el.innerHTML = before
       ? `<h3 style="margin-top:0">📅 The season starts on ${from.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</h3><p class="muted">Matchday 1 runs ${fmt(from)} – ${fmt(to)}. Agree on dates with your opponents and set them in <a href="#team">🎾 My team</a>.</p>`
       : `<h3 style="margin-top:0">🏁 The league season is over</h3><p class="muted">Thanks for playing – see the final table.</p>`;
@@ -131,7 +131,7 @@ function renderUpcoming() {
   list.sort((x, y) => x.t - y.t);
   const when = t => new Date(t).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   document.getElementById("home-next").innerHTML = `<h3 style="margin-top:0">🎾 Upcoming matches</h3>` + (list.length
-    ? list.slice(0, 8).map(({ t, e, a, b, label }) => `<div class="up-row"><div class="up-when"><b>${when(t)}</b>${e.time ? " · " + e.time : ""} <span class="note">· ${label}</span></div>
+    ? list.slice(0, 8).map(({ t, e, a, b, label }) => `<div class="up-row"><div class="up-when"><b>${when(t)}</b>${e.time ? " · " + GPPL.timeRange(e) : ""} <span class="note">· ${label}</span></div>
         ${matchRow(a, b)}${e.court ? `<div class="up-venue">📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.court)}" target="_blank" rel="noopener">${e.court.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]))}</a></div>` : ""}</div>`).join("")
     : `<p class="muted">No matches scheduled yet – teams set their dates in <a href="#team">🎾 My team</a>.</p>`);
 }
@@ -156,7 +156,7 @@ function renderCup() {
     const foot = m.walkover === "both" ? "Walkover – both pairs out"
       : m.walkover ? `Walkover – ${pairName(m.walkover)} goes through`
       : sets.length ? (full ? "3 full sets" : sets.length === 3 ? "3rd set: match tie-break" : "")
-      : e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + e.time : ""}${e.court ? ` · 📍 ${e.court.split(",")[0]}` : ""}`
+      : e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + GPPL.timeRange(e) : ""}${e.court ? ` · 📍 ${e.court.split(",")[0]}` : ""}`
       : "Not scheduled yet";
     return `<div class="cupboard"><span class="note cb-no">Match ${mi + 1}</span>
       <div class="cb-grid" style="--cols:${cols}">${row(m.a, 0)}${row(m.b, 1)}</div>
@@ -590,6 +590,9 @@ function updateMenu() {
 }
 
 function renderData() {
+  // a start date saved in Admin moves every matchday date at once
+  GPPL.setStartDate(settings.startDate);
+  datesOn = LEAGUE.datesConfirmed;
   siteLogo.apply();
   updateMenu();
   renderHome();

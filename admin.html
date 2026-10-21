@@ -373,7 +373,7 @@
 
   <script src="assets/data.js?v=37"></script>
   <script src="assets/pairs-loader.js?v=3"></script>
-  <script src="assets/league.js?v=5"></script>
+  <script src="assets/league.js?v=6"></script>
   <script src="assets/store.js?v=3"></script>
   <script src="assets/lock.js?v=2"></script>
   <script src="assets/members-admin.js?v=5" defer></script>
@@ -522,7 +522,7 @@
     // row 1 of a match: first pair left, "vs" in the middle, second pair right (like the public schedule)
     const pairLine = (a, b) => `<span class="md-pair"><span class="md-a">${teamLogo(a)}<b>${escA(name(a))}</b></span><span class="muted">vs</span><span class="md-b"><b>${escA(name(b))}</b>${teamLogo(b)}</span></span>`;
     const teamHtml = id => `<span class="dp-team">${teamLogo(id)}<span><b>${escA(name(id))}</b><span class="note">${playersOf(id)}</span></span></span>`;
-    const whenText = e => e && e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + escA(e.time) : ""}${e.court ? ` · 📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.court)}" target="_blank" rel="noopener">${escA(e.court)}</a>` : ""}` : "";
+    const whenText = e => e && e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + escA(GPPL.timeRange(e)) : ""}${e.court ? ` · 📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.court)}" target="_blank" rel="noopener">${escA(e.court)}</a>` : ""}` : "";
     const isPast = e => !!(e && e.date) && new Date(`${e.date}T${e.time || "23:59"}:00`).getTime() < Date.now();
     const scoreFor = (sets, ra, a) => (ra === a ? sets : sets.map(([x, y]) => [y, x]));
 
@@ -605,7 +605,7 @@
       const games = fixtureList[md - 1] || [], { from, to } = GPPL.matchdayWindow(md);
       const rows = games.map(([a, b], i) => {
         const r = GPPL.findResult(results, a, b), e = schedule[lkey(a, b)] || {};
-        const sub = r ? "" : e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + e.time : ""}${e.court ? " · 📍 " + e.court.split(",")[0] : ""}` : "";
+        const sub = r ? "" : e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + GPPL.timeRange(e) : ""}${e.court ? " · 📍 " + e.court.split(",")[0] : ""}` : "";
         return { label: `MATCH ${i + 1}`, a, b, center: r ? GPPL.scoreText(r, a) : "vs", sub, winner: r ? GPPL.evaluate(r).winner : null };
       });
       return GPPLImage.render({
@@ -958,6 +958,9 @@
       if (value) next.startDate = value; else delete next.startDate;
       if (await persist("settings", next, value ? `league start ${value}` : "league start date cleared", "start-date-msg")) {
         siteSettings = next; fillStartDate();
+        // new dates everywhere on this page right away
+        GPPL.setStartDate(value);
+        fillMatchdays(); fillMatches(); renderResultList(); renderLeagueViews(); renderCup();
         flash("start-date-msg", $("start-date-msg").textContent + (value ? " The schedule is now shown." : " The schedule is hidden."));
       }
     }

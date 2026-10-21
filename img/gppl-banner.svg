@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 160">
-<rect x="2" y="2" width="476" height="156" rx="24" fill="#f6f8f6" stroke="#dfe5df" stroke-width="2"/>
+<rect x="2" y="2" width="476" height="156" rx="24" fill="#e6ece7" stroke="#cfd8d0" stroke-width="2"/>
 <svg viewBox="0 0 240 240" x="8" y="4" width="152" height="152">
   <defs>
     <g id="rk"><ellipse rx="25" ry="31" fill="#f4f6f8" stroke="#0d1117" stroke-width="3"/><g fill="#0d1117"><circle cx="-9" cy="-14" r="2.6"/><circle cx="0" cy="-14" r="2.6"/><circle cx="9" cy="-14" r="2.6"/><circle cx="-13" cy="-4" r="2.6"/><circle cx="-4.5" cy="-4" r="2.6"/><circle cx="4.5" cy="-4" r="2.6"/><circle cx="13" cy="-4" r="2.6"/><circle cx="-9" cy="6" r="2.6"/><circle cx="0" cy="6" r="2.6"/><circle cx="9" cy="6" r="2.6"/></g><path d="M-9 29 L9 29 L6 40 L-6 40Z" fill="#f4f6f8" stroke="#0d1117" stroke-width="3"/><rect x="-6" y="38" width="12" height="42" rx="4" fill="#d7f23a" stroke="#0d1117" stroke-width="3"/></g>

@@ -334,17 +334,18 @@ async function schedule(env, team, body) {
   const court = String(body.court ?? "").trim().slice(0, 160);
   if (date === null || time === null) throw httpError(400, "Date or time not valid.");
   if ((date || time || court) && !(date && time && court)) throw httpError(400, "Please give the date, time and venue.");
+  const duration = [60, 90, 120].includes(+body.duration) ? +body.duration : 90; // minutes booked
   const entry = await update(env, ["pairs", "cup", "results", "matches"], files => {
     const info = matchInfo(body.key, files);
     requirePlayer(info, team);
     if (officialResult(info, files)) throw httpError(400, "This match already has a result.");
     const m = files.matches[info.key] || {};
-    if (date || time || court) Object.assign(m, { date, time, court, by: team, at: new Date().toISOString() });
-    else ["date", "time", "court", "by", "at"].forEach(k => delete m[k]);
+    if (date || time || court) Object.assign(m, { date, time, duration, court, by: team, at: new Date().toISOString() });
+    else ["date", "time", "duration", "court", "by", "at"].forEach(k => delete m[k]);
     if (Object.keys(m).length) files.matches[info.key] = m; else delete files.matches[info.key];
     return m;
   }, `schedule ${body.key}`);
-  await addLog(env, { team, action: "schedule", key: body.key, detail: [date, time, court].filter(Boolean).join(" · ") || "cleared" });
+  await addLog(env, { team, action: "schedule", key: body.key, detail: date ? [date, `${time} (${duration} min)`, court].join(" · ") : "cleared" });
   return json({ ok: true, match: entry });
 }
 
@@ -452,7 +453,7 @@ function makeOfficial(info, files, pending) {
   }
   const entry = files.matches[info.key];
   delete entry.pending;
-  ["date", "time", "court", "by", "at"].forEach(k => delete entry[k]);
+  ["date", "time", "duration", "court", "by", "at"].forEach(k => delete entry[k]);
   delete files.matches[info.key];
   return { sets };
 }

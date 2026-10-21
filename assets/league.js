@@ -4,7 +4,13 @@ const GPPL = (() => {
   const DAY = 86400000;
   const pairById = Object.fromEntries(LEAGUE.pairs.map(p => [p.id, p]));
   const pairName = id => (pairById[id] ? pairById[id].name : "?");
-  const start = new Date(LEAGUE.startDate + "T00:00:00");
+  let start = new Date(LEAGUE.startDate + "T00:00:00");
+  // the league start date (Admin → League results): sets every matchday date; none = dates and Schedule hidden
+  function setStartDate(iso) {
+    const ok = /^\d{4}-\d{2}-\d{2}$/.test(iso || "");
+    if (ok) { LEAGUE.startDate = iso; start = new Date(iso + "T00:00:00"); }
+    LEAGUE.datesConfirmed = LEAGUE.scheduleVisible = ok;
+  }
   const fmt = d => d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
   function matchdayWindow(md) {
@@ -106,6 +112,13 @@ const GPPL = (() => {
       y.pts - x.pts || y.h2h - x.h2h || y.w - x.w ||
       (y.sf - y.sa) - (x.sf - x.sa) || (y.gf - y.ga) - (x.gf - x.ga) ||
       x.id - y.id); // finally (and before any result): registration order = seed
+  }
+
+  // "19:00" + 90 minutes → "19:00–20:30" (matches are booked for 60, 90 or 120 minutes; 90 if not set)
+  function timeRange(e) {
+    if (!e || !e.time) return "";
+    const [h, m] = e.time.split(":").map(Number), end = h * 60 + m + (+e.duration || 90);
+    return `${e.time}–${String(Math.floor(end / 60) % 24).padStart(2, "0")}:${String(end % 60).padStart(2, "0")}`;
   }
 
   // ---------- milestones ----------
@@ -255,7 +268,7 @@ const GPPL = (() => {
   }
 
   return {
-    DAY, start, fmt, pairById, pairName, matchdayWindow, fixtures, findResult, samePair, milestoneProgress,
+    DAY, get start() { return start; }, setStartDate, fmt, pairById, pairName, matchdayWindow, fixtures, findResult, samePair, milestoneProgress, timeRange,
     evaluate, scoreText, rankStandings, cupFullSets, cupWinner, cupLoser, cupNextStage, mainRounds, roundName, addFinalIfDue,
     cleanWords, wordsToSeed, seededShuffle, drawFromOrder, verifyRound,
   };

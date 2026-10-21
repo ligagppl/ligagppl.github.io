@@ -238,11 +238,12 @@
           <label>What is wrong? <span class="note">optional – helps the organizers decide</span><textarea name="note" maxlength="500" placeholder="e.g. Set 2 was 6-4 for us"></textarea></label>
           <button class="btn small" type="submit">Send to the organizers</button></form>` : "");
     } else {
-      const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(entry.time) : ""}${entry.court ? ` · 📍 <a href="${mapsUrl(entry.court)}" target="_blank" rel="noopener">${esc(entry.court)}</a>` : ""}</p>` : "";
+      const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(GPPL.timeRange(entry)) : ""}${entry.court ? ` · 📍 <a href="${mapsUrl(entry.court)}" target="_blank" rel="noopener">${esc(entry.court)}</a>` : ""}</p>` : "";
       body = when + `<div class="tm-btns"><button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>
         ${entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule`) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
-        <label>Date &amp; time<input type="datetime-local" name="when" step="900" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
+        <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="900" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
+        <label>Duration<select name="duration">${[60, 90, 120].map(d => `<option value="${d}" ${(+entry.duration || 90) === d ? "selected" : ""}>${d} minutes</option>`).join("")}</select></label></div>
         <div class="tm-venue"><label for="court-${m.key}">Court / venue</label>
           <input id="court-${m.key}" name="court" maxlength="160" autocomplete="off" value="${esc(entry.court || "")}" placeholder="Pick a club or search an address…">
           <div class="tm-sugg" hidden></div></div>
@@ -360,7 +361,7 @@
       const [date = "", time = ""] = v("when").split("T");
       if (!date || !time) throw new Error("Please pick the date and time.");
       if (!v("court")) throw new Error("Please add the court / venue.");
-      return call("/schedule", { key, date, time: time.slice(0, 5), court: v("court") });
+      return call("/schedule", { key, date, time: time.slice(0, 5), duration: +v("duration") || 90, court: v("court") });
     }, "Saved.");
     if (kind === "dispute") return act(key, () => call("/dispute", { key, note: v("note") }), "Sent – the organizers will decide.");
     if (kind === "result") {
