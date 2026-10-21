@@ -16,6 +16,9 @@ const LEAGUE = {
   visibleTabs: ["register", "rules", "participants", "schedule", "team"],
 
   // Member area gatekeeper (Cloudflare Worker) – empty = member area closed
+  // Venues suggested first when teams set a match (My team → Set date). Format: "Name, street, postcode city"
+  venues: [],
+
   memberApi: "https://gppl-members-staging.gppl-members.workers.dev",
 
   startDate: "2026-11-09",

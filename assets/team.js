@@ -55,17 +55,23 @@
     const src = l && (typeof l === "string" ? l : l.src);
     return src ? `<img class="${cls}" src="${esc(src)}" alt="">` : `<span class="${cls} ph" aria-hidden="true">🎾</span>`;
   }
-  const teamCell = id => `<span class="tm-tc">${logo(id, "tm-logo-sm")}<span class="tm-tn">${esc(teamName(id))}</span></span>`;
+  const teamCell = (id, us) => `<span class="tm-tc">${logo(id, "tm-logo-sm")}<span class="tm-tn">${esc(teamName(id))}${us ? ` <span class="tm-us">(Us)</span>` : ""}</span></span>`;
   // score table like in Admin: one row per team, one column per set (my team first)
   function board(m, sets) {
     const labels = ["Set 1", "Set 2", m.fullSets ? "Set 3" : "Tie-break"].slice(0, Math.max(2, sets ? sets.length : 3));
-    const cell = (i, side) => sets ? `<span class="tm-g ${sets[i] && sets[i][side] > sets[i][1 - side] ? "win" : ""}">${sets[i] ? sets[i][side] : ""}</span>`
-      : `<input type="number" inputmode="numeric" min="0" max="${i === 2 && !m.fullSets ? 99 : 7}" name="s${i}${side ? "b" : "a"}" aria-label="${labels[i]} – ${esc(teamName(side ? m.opp : state.team))}">`;
-    return `<div class="tm-board" style="--sets:${labels.length}"><span></span>${labels.map(l => `<span class="tm-bh">${l}</span>`).join("")}
-      ${teamCell(state.team)}${labels.map((_, i) => cell(i, 0)).join("")}
-      ${teamCell(m.opp)}${labels.map((_, i) => cell(i, 1)).join("")}</div>`;
+    const at = (row, col) => `style="grid-row:${row};grid-column:${col}"`;
+    const cell = (i, side) => sets
+      ? `<span class="tm-g ${sets[i] && sets[i][side] > sets[i][1 - side] ? "win" : ""}" ${at(side + 2, i + 2)}>${sets[i] ? sets[i][side] : ""}</span>`
+      : `<input type="number" inputmode="numeric" min="0" max="${i === 2 && !m.fullSets ? 99 : 7}" name="s${i}${side ? "b" : "a"}" ${at(side + 2, i + 2)}
+          aria-label="${labels[i]} – ${esc(teamName(side ? m.opp : state.team))}">`;
+    // set by set (us, them, next set …) so the tab key goes down each column, like in Admin
+    return `<div class="tm-board" style="--sets:${labels.length}">
+      ${labels.map((l, i) => `<span class="tm-bh" ${at(1, i + 2)}>${l}</span>`).join("")}
+      <span ${at(2, 1)}>${teamCell(state.team, true)}</span><span ${at(3, 1)}>${teamCell(m.opp)}</span>
+      ${labels.map((_, i) => cell(i, 0) + cell(i, 1)).join("")}</div>`;
   }
   const linkHtml = link => link && /^https:\/\/[^/]*playtomic\.(io|com)\//.test(link) ? ` <a href="${esc(link)}" target="_blank" rel="noopener">Playtomic ↗</a>` : "";
+  const mapsUrl = place => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
   const dayText = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
   // sets as seen by my team: [my games, their games]
   const mine = (sets, a) => (state.team === a ? sets : sets.map(([x, y]) => [y, x]));
@@ -151,13 +157,15 @@
           <label>What is wrong?<textarea name="note" maxlength="500" required placeholder="e.g. Set 2 was 6-4 for us"></textarea></label>
           <button class="btn small" type="submit">Send to the organizers</button></form>` : "");
     } else {
-      const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(entry.time) : ""}${entry.court ? ` · 📍 ${esc(entry.court)}` : ""}</p>` : "";
+      const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(entry.time) : ""}${entry.court ? ` · 📍 <a href="${mapsUrl(entry.court)}" target="_blank" rel="noopener">${esc(entry.court)}</a>` : ""}</p>` : "";
       body = when + `<div class="tm-btns"><button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change date" : "Set date"}</button>
         ${entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule`) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
         <div class="tm-row"><label>Date<input type="date" name="date" value="${esc(entry.date || "")}"></label>
         <label>Time<input type="time" name="time" value="${esc(entry.time || "")}"></label></div>
-        <label>Court / venue<input name="court" maxlength="80" value="${esc(entry.court || "")}" placeholder="e.g. Padel City, court 3"></label>
+        <div class="tm-venue"><label for="court-${m.key}">Court / venue</label>
+          <input id="court-${m.key}" name="court" maxlength="160" autocomplete="off" value="${esc(entry.court || "")}" placeholder="Search a venue or address…">
+          <div class="tm-sugg" hidden></div></div>
         <button class="btn small" type="submit">Save</button> <span class="note">Visible to both teams. Leave everything empty to clear.</span></form>`;
       if (form === `${m.key}|result` && entry.date) body += resultForm(m);
     }
@@ -171,12 +179,29 @@
   function photoBtn(key) { return `<button class="btn ghost small" data-act="photo" data-key="${key}">📷 Photo</button>`; }
 
   function resultForm(m) {
-    return `<form class="tm-form" data-submit="result" data-key="${m.key}">
+    return `<form class="tm-form" data-submit="result" data-key="${m.key}" data-full="${m.fullSets ? 1 : 0}">
       <div><b>Score</b>${board(m)}</div>
       <p class="note">${m.fullSets ? "Semi-finals and final: 3 full sets." : "Leave the tie-break empty if the match ended 2–0. Match tie-break: first to 10, win by 2."}</p>
-      <label>Matchday photo (all 4 players)<input type="file" name="photo" accept="image/*" required></label>
-      <label>Playtomic link <span class="note">optional – the match on Playtomic</span><input type="url" name="link" inputmode="url" placeholder="https://app.playtomic.io/…"></label>
+      <label>Matchday photo (all 4 players)<input type="file" name="photo" accept="image/*"></label>
+      <label>Playtomic link <span class="note">the match on Playtomic</span><input type="text" name="link" inputmode="url" autocapitalize="off" placeholder="https://app.playtomic.io/…"></label>
       <button class="btn small" type="submit">Submit result</button></form>`;
+  }
+
+  // same rules as Admin and the gatekeeper – checked here first for a quick, clear message
+  const validSet = ([x, y]) => { const hi = Math.max(x, y), lo = Math.min(x, y); return (hi === 6 && lo <= 4) || (hi === 7 && (lo === 5 || lo === 6)); };
+  const validTieBreak = ([x, y]) => { const hi = Math.max(x, y), lo = Math.min(x, y); return hi >= 10 && hi - lo >= 2 && (hi === 10 || hi - lo === 2); };
+  function checkScore(sets, fullSets) {
+    if (sets.length < 2) throw new Error("Enter set 1 and set 2.");
+    if (sets.some(s => s.some(n => !Number.isInteger(n) || n < 0))) throw new Error("Scores must be whole numbers.");
+    sets.slice(0, 2).forEach((s, i) => {
+      if (!validSet(s)) throw new Error(`Set ${i + 1}: ${s[0]}-${s[1]} is not a finished set – a set ends 6-0 … 6-4, 7-5 or 7-6.`);
+    });
+    const split = (sets[0][0] > sets[0][1]) !== (sets[1][0] > sets[1][1]);
+    const third = fullSets ? "set 3" : "the match tie-break";
+    if (split && !sets[2]) throw new Error(`Sets are 1-1 – enter ${third}.`);
+    if (!split && sets[2]) throw new Error(`The match was over after 2 sets – clear ${third}.`);
+    if (sets[2] && fullSets && !validSet(sets[2])) throw new Error(`Set 3: ${sets[2][0]}-${sets[2][1]} is not a finished set – a set ends 6-0 … 6-4, 7-5 or 7-6.`);
+    if (sets[2] && !fullSets && !validTieBreak(sets[2])) throw new Error(`Tie-break: ${sets[2][0]}-${sets[2][1]} isn't possible – first to 10, win by 2 (e.g. 10-7, 12-10).`);
   }
 
   // ---------------------------------------------------------------- actions
@@ -247,11 +272,49 @@
           if (x === "" || y === "") throw new Error(`Set ${i + 1} is incomplete.`);
           sets.push([+x, +y]);
         }
+        checkScore(sets, f.dataset.full === "1");
         const file = f.elements.photo.files[0];
         if (!file) throw new Error("Please add the matchday photo.");
+        if (!/^https:\/\/([a-z0-9-]+\.)*playtomic\.(io|com)\//i.test(v("link"))) throw new Error("Please paste the Playtomic link of the match (https://…playtomic…).");
         await call("/result", { key, sets, link: v("link"), photo: await compress(file) });
       }, "Result sent – your opponent now confirms it.");
     }
+  });
+
+  // ---------------------------------------------------------------- venue search
+  // venues other matches already use, then addresses from OpenStreetMap (Photon, Germany only)
+  let venueTimer = null, venueReq = 0;
+  // the organizers' list of venues (data.js → venues) first, then venues other matches already use
+  const knownVenues = () => [...new Set((LEAGUE.venues || []).concat(Object.values(state.matches).map(x => x.court)).filter(Boolean))];
+  function showVenues(box, list, q) {
+    box.innerHTML = list.map(v => `<button type="button" data-venue="${esc(v)}">📍 ${esc(v)}</button>`).join("") +
+      (q && q.length >= 3 ? `<a class="tm-sugg-maps" href="${mapsUrl(q)}" target="_blank" rel="noopener">${list.length ? "Not in the list?" : "Nothing found –"} check “${esc(q)}” on Google Maps ↗<br>
+        <span class="note">You can also just keep what you typed – it links to Google Maps.</span></a>` : "");
+    box.hidden = !box.innerHTML;
+  }
+  el.addEventListener("input", e => {
+    if (e.target.name !== "court") return;
+    const input = e.target, box = input.parentElement.querySelector(".tm-sugg"), q = input.value.trim();
+    clearTimeout(venueTimer);
+    const known = knownVenues().filter(v => v.toLowerCase().includes(q.toLowerCase()) && v !== q).slice(0, 3);
+    showVenues(box, known, q);
+    if (q.length < 3) return;
+    venueTimer = setTimeout(async () => {
+      const req = ++venueReq;
+      try {
+        const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(q)}&limit=6&lang=de&bbox=5.8,47.2,15.1,55.1&lat=48.137&lon=11.575`); // results near Munich first
+        const data = await res.json();
+        if (req !== venueReq || input.value.trim() !== q) return;
+        const found = data.features.map(({ properties: p }) => [p.name, [p.street, p.housenumber].filter(Boolean).join(" "), [p.postcode, p.city || p.town || p.village].filter(Boolean).join(" ")]
+          .filter((x, i, a) => x && a.indexOf(x) === i).join(", ")).filter(Boolean);
+        showVenues(box, [...new Set(known.concat(found))].slice(0, 7), q);
+      } catch {}
+    }, 350);
+  });
+  el.addEventListener("click", e => {
+    const b = e.target.closest("[data-venue]");
+    if (b) { const input = b.closest(".tm-venue").querySelector("input"); input.value = b.dataset.venue; b.parentElement.hidden = true; input.focus(); return; }
+    if (!e.target.closest(".tm-venue")) el.querySelectorAll(".tm-sugg").forEach(x => (x.hidden = true));
   });
 
   window.addEventListener("hashchange", () => { if (location.hash === "#team") load(); });

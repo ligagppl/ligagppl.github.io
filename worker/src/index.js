@@ -329,7 +329,7 @@ const cleanTime = t => (t === "" || /^([01]\d|2[0-3]):[0-5]\d$/.test(t) ? t : nu
 
 async function schedule(env, team, body) {
   const date = cleanDate(String(body.date ?? "")), time = cleanTime(String(body.time ?? ""));
-  const court = String(body.court ?? "").trim().slice(0, 80);
+  const court = String(body.court ?? "").trim().slice(0, 160);
   if (date === null || time === null) throw httpError(400, "Date or time not valid.");
   const entry = await update(env, ["pairs", "cup", "results", "matches"], files => {
     const info = matchInfo(body.key, files);
@@ -348,10 +348,10 @@ async function schedule(env, team, body) {
 // sets come from the submitting team's point of view: [their games, opponent's games]
 const orient = (sets, team, a) => (team === a ? sets : sets.map(([x, y]) => [y, x]));
 
-// optional link to the match on Playtomic
+// link to the match on Playtomic (required with every result)
 function cleanLink(link) {
   const text = String(link || "").trim();
-  if (!text) return "";
+  if (!text) throw httpError(400, "Please paste the Playtomic link of the match.");
   let url;
   try { url = new URL(text); } catch { throw httpError(400, "The Playtomic link is not a valid address."); }
   if (url.protocol !== "https:" || !/(^|\.)playtomic\.(io|com)$/.test(url.hostname)) throw httpError(400, "Please paste a Playtomic link (https://…playtomic…).");

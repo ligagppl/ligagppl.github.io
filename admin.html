@@ -284,7 +284,7 @@
     </div>
   </main>
 
-  <script src="assets/data.js?v=26"></script>
+  <script src="assets/data.js?v=27"></script>
   <script src="assets/pairs-loader.js?v=2"></script>
   <script src="assets/league.js?v=3"></script>
   <script src="assets/store.js"></script>
@@ -411,12 +411,12 @@
       if (wo) return { a, b, walkover: wo === "both" ? "both" : +wo, ...(link ? { link } : {}) };
       const s1 = [num($("s1-a")), num($("s1-b"))], s2 = [num($("s2-a")), num($("s2-b"))], tb = [num($("tb-a")), num($("tb-b"))];
       if (s1.includes(null) || s2.includes(null)) throw new Error("Enter set 1 and set 2.");
-      if (!validSet(s1) || !validSet(s2)) throw new Error("A set must end 6–0…6–4, 7–5 or 7–6.");
+      [s1, s2].forEach((s, i) => { if (!validSet(s)) throw new Error(`Set ${i + 1}: ${s[0]}-${s[1]} is not a finished set – a set ends 6-0 … 6-4, 7-5 or 7-6.`); });
       const split = (s1[0] > s1[1]) !== (s2[0] > s2[1]);
       const hasTb = !tb.includes(null);
-      if (split && !hasTb) throw new Error("Sets are 1–1 – enter the match tie-break.");
-      if (!split && (tb[0] !== null || tb[1] !== null)) throw new Error("No match tie-break at 2–0 – clear those fields.");
-      if (split && !validTieBreak(tb)) throw new Error("Match tie-break: first to 10, win by 2 (e.g. 10–8, 12–10).");
+      if (split && !hasTb) throw new Error("Sets are 1-1 – enter the match tie-break.");
+      if (!split && (tb[0] !== null || tb[1] !== null)) throw new Error("The match was over after 2 sets – clear the match tie-break.");
+      if (split && !validTieBreak(tb)) throw new Error(`Tie-break: ${tb[0]}-${tb[1]} isn't possible – first to 10, win by 2 (e.g. 10-7, 12-10).`);
       return { a, b, sets: split ? [s1, s2, tb] : [s1, s2], ...(link ? { link } : {}) };
     }
 
@@ -551,14 +551,14 @@
           if (x === "" && y === "") continue;
           if (x === "" || y === "") return flash("cup-msg", `❌ Set ${si + 1} is incomplete.`, false);
           if (si === 2 && !fullSets) {
-            if (!validTieBreak([+x, +y])) return flash("cup-msg", "❌ Match tie-break: first to 10, win by 2 (e.g. 10–8, 12–10).", false);
-          } else if (!validSet([+x, +y])) return flash("cup-msg", `❌ Set ${si + 1}: a set must end 6–0…6–4, 7–5 or 7–6.`, false);
+            if (!validTieBreak([+x, +y])) return flash("cup-msg", `❌ Tie-break: ${x}-${y} isn't possible – first to 10, win by 2 (e.g. 10-7, 12-10).`, false);
+          } else if (!validSet([+x, +y])) return flash("cup-msg", `❌ Set ${si + 1}: ${x}-${y} is not a finished set – a set ends 6-0 … 6-4, 7-5 or 7-6.`, false);
           sets.push([+x, +y]);
         }
         m.sets = sets;
-        if (!GPPL.cupWinner(m)) return flash("cup-msg", "❌ No winner yet – a pair needs 2 sets.", false);
+        if (!GPPL.cupWinner(m)) return flash("cup-msg", sets.length < 2 ? "❌ Enter set 1 and set 2." : `❌ Sets are 1-1 – enter ${fullSets ? "set 3" : "the match tie-break"}.`, false);
         const wins = sets.map(([x, y]) => x > y);
-        if (sets.length === 3 && wins[0] === wins[1]) return flash("cup-msg", "❌ The match was over after 2 sets – remove set 3.", false);
+        if (sets.length === 3 && wins[0] === wins[1]) return flash("cup-msg", `❌ The match was over after 2 sets – clear ${fullSets ? "set 3" : "the match tie-break"}.`, false);
       }
       syncFinalWithSemis(next);
       const finalAdded = GPPL.addFinalIfDue(next);
