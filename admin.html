@@ -55,7 +55,12 @@
     #due-list .dp-card, .md-editor .dp-card { margin: 10px 0 0; }
     .md-day { border-top: 1px solid var(--line); padding: 8px 0; }
     .md-day summary { cursor: pointer; display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
-    .md-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+    .md-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+    .md-pair { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; }
+    .md-a, .md-b { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .md-b { justify-content: flex-end; text-align: right; }
+    .md-a .dp-logo, .md-b .dp-logo { width: 32px; height: 32px; }
+    .md-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
     .md-row.is-done { opacity: .75; }
     .md-teams { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
     .md-teams .dp-logo { width: 32px; height: 32px; }
@@ -63,7 +68,7 @@
     .md-match { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .md-when { font-size: .85rem; color: var(--muted); padding-left: 2px; }
     .md-row .btn { justify-self: start; }
-    @media (max-width: 480px) { .md-row { grid-template-columns: 1fr; } }
+    @media (max-width: 480px) { .md-pair { font-size: .9rem; } }
     .ms-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(120px, 1fr) minmax(0, 1.4fr) auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
     .ms-bar { position: relative; height: 22px; border-radius: 999px; background: color-mix(in srgb, var(--line) 60%, transparent); overflow: hidden; }
     .ms-fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--green-2) 55%, transparent); border-radius: 999px; }
@@ -501,6 +506,8 @@
       return src ? `<img class="dp-logo" src="${escA(src)}" alt="">` : `<span class="dp-logo ph" aria-hidden="true">🎾</span>`;
     }
     const playersOf = id => (GPPL.pairById[id] ? GPPL.pairById[id].players.filter(Boolean).map(escA).join(" & ") : "");
+    // row 1 of a match: first pair left, "vs" in the middle, second pair right (like the public schedule)
+    const pairLine = (a, b) => `<span class="md-pair"><span class="md-a">${teamLogo(a)}<b>${escA(name(a))}</b></span><span class="muted">vs</span><span class="md-b"><b>${escA(name(b))}</b>${teamLogo(b)}</span></span>`;
     const teamHtml = id => `<span class="dp-team">${teamLogo(id)}<span><b>${escA(name(id))}</b><span class="note">${playersOf(id)}</span></span></span>`;
     const whenText = e => e && e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + escA(e.time) : ""}${e.court ? ` · 📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.court)}" target="_blank" rel="noopener">${escA(e.court)}</a>` : ""}` : "";
     const isPast = e => !!(e && e.date) && new Date(`${e.date}T${e.time || "23:59"}:00`).getTime() < Date.now();
@@ -549,8 +556,8 @@
           const state = r ? `✅ <b>${GPPL.scoreText(r, a)}</b>`
             : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}`
             : e.date && isPast(e) ? "⏰ Result due" : "";
-          return `<div class="md-row ${r ? "is-done" : ""}"><span class="md-match"><span class="md-teams">${teamLogo(a)}<b>${escA(name(a))}</b><span class="muted">vs</span><b>${escA(name(b))}</b>${teamLogo(b)}</span>
-            ${e.date && !r ? `<span class="md-when">${whenText(e)}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}</span>
+          return `<div class="md-row ${r ? "is-done" : ""}">${pairLine(a, b)}
+            <span class="md-info">${!r ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}</span>
             <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p ? "View" : "Enter result"}</button></div>`;
         }).join("");
         return `<details class="md-day" data-md="${md}" ${md === (mdOpen || cur) ? "open" : ""}><summary><b>Matchday ${md}</b>
@@ -668,8 +675,8 @@
             const state = has ? (m.walkover === "both" ? "✅ Both out (walkover)" : m.walkover ? `✅ ${escA(name(m.walkover))} by walkover` : `✅ <b>${GPPL.scoreText(m, m.a, !GPPL.cupFullSets(r))}</b>`)
               : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, m.a, !GPPL.cupFullSets(r))}`
               : e.date && isPast(e) ? "⏰ Result due" : "";
-            return `<div class="md-row ${has ? "is-done" : ""}"><span class="md-match"><span class="md-teams">${teamLogo(m.a)}<b>${escA(name(m.a))}</b><span class="muted">vs</span><b>${escA(name(m.b))}</b>${teamLogo(m.b)}</span>
-              ${e.date && !has ? `<span class="md-when">${whenText(e)}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}</span>
+            return `<div class="md-row ${has ? "is-done" : ""}">${pairLine(m.a, m.b)}
+              <span class="md-info">${!has ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}</span>
               <button class="btn ghost small" data-open-cup="${ri}:${mi}">${has ? "Edit" : p ? "View" : "Enter result"}</button></div>
               <div class="md-editor" data-cup-editor="${ri}:${mi}"></div>`;
           }).join("") + `${r.byes && r.byes.length ? `<p class="note">Bye: ${r.byes.map(name).join(", ")}</p>` : ""}</div>`;
