@@ -518,13 +518,12 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 #team .msg.err { color: #c62828; }
 
 /* ---------- Home: running matchday + upcoming matches ---------- */
-.top3-card { grid-column: span 2; }
+.top3-card { grid-column: 1 / -1; }
 .top3 { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; font-size: 1.05rem; }
 .top3 > span { display: flex; align-items: center; gap: 10px; }
 .top3 .mlogo { width: 40px; height: 40px; }
 .top3-name { display: flex; flex-direction: column; min-width: 0; }
 .top3-wait { font-size: 1.3rem; margin: 6px 0 2px; }
-@media (max-width: 560px) { .top3-card { grid-column: 1 / -1; } }
 .md-now { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .md-now-count { display: flex; flex-direction: column; align-items: flex-end; }
 .md-now-count b { font-size: 1.8rem; line-height: 1; }
