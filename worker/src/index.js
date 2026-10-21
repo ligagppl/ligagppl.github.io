@@ -370,6 +370,7 @@ async function submitResult(env, team, body) {
     checkSets(sets, info.fullSets);
     const m = files.matches[info.key] || {};
     if (m.pending && m.pending.by !== team) throw httpError(400, "Your opponent already entered a result – please confirm or dispute it.");
+    if (!m.date) throw httpError(400, "Set the match date first, then enter the result.");
     photoKey = info.key;
     m.pending = { a: info.a, b: info.b, sets, ...(link ? { link } : {}), by: team, at: new Date().toISOString(), status: "pending" };
     files.matches[info.key] = m;

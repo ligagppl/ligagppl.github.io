@@ -153,13 +153,13 @@
     } else {
       const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(entry.time) : ""}${entry.court ? ` · 📍 ${esc(entry.court)}` : ""}</p>` : "";
       body = when + `<div class="tm-btns"><button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change date" : "Set date"}</button>
-        <button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button></div>`;
+        ${entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule`) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
         <div class="tm-row"><label>Date<input type="date" name="date" value="${esc(entry.date || "")}"></label>
         <label>Time<input type="time" name="time" value="${esc(entry.time || "")}"></label></div>
         <label>Court / venue<input name="court" maxlength="80" value="${esc(entry.court || "")}" placeholder="e.g. Padel City, court 3"></label>
         <button class="btn small" type="submit">Save</button> <span class="note">Visible to both teams. Leave everything empty to clear.</span></form>`;
-      if (form === `${m.key}|result`) body += resultForm(m);
+      if (form === `${m.key}|result` && entry.date) body += resultForm(m);
     }
     if (photos[m.key]) body += `<img class="tm-photo" src="${photos[m.key]}" alt="Matchday photo">`;
     return `<div class="card tm-match st-${st.cls}">
