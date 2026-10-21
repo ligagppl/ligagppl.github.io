@@ -105,7 +105,7 @@ const GPPL = (() => {
     return rows.sort((x, y) =>
       y.pts - x.pts || y.h2h - x.h2h || y.w - x.w ||
       (y.sf - y.sa) - (x.sf - x.sa) || (y.gf - y.ga) - (x.gf - x.ga) ||
-      pairName(x.id).localeCompare(pairName(y.id)));
+      x.id - y.id); // finally (and before any result): registration order = seed
   }
 
   // ---------- milestones ----------
