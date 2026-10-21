@@ -516,3 +516,16 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 #team .btn.small { padding: 6px 12px; font-size: .9rem; }
 #team .msg { margin-top: 8px; font-size: .92rem; font-weight: 600; color: var(--win); }
 #team .msg.err { color: #c62828; }
+
+/* ---------- Home: running matchday + upcoming matches ---------- */
+.top3 { display: flex; flex-direction: column; gap: 2px; font-weight: 700; font-size: .95rem; }
+.md-now { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.md-now-count { display: flex; flex-direction: column; align-items: flex-end; }
+.md-now-count b { font-size: 1.8rem; line-height: 1; }
+.md-now-bar { height: 10px; border-radius: 999px; margin-top: 12px; background: color-mix(in srgb, var(--line) 60%, transparent); overflow: hidden; }
+.md-now-bar span { display: block; height: 100%; background: var(--green-2); border-radius: 999px; }
+.up-row { padding: 10px 0; border-bottom: 1px dashed var(--line); }
+.up-row:last-child { border-bottom: 0; }
+.up-row .match { border-bottom: 0; padding: 4px 0; }
+.up-when, .up-venue { font-size: .88rem; }
+.up-venue { color: var(--muted); }
