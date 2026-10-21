@@ -40,10 +40,10 @@ header {
   color: #fff;
   padding: 28px 16px 0;
 }
-.hero { max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: 16px; }
+.hero { max-width: 960px; margin: 0 auto; display: flex; align-items: center; gap: 24px; }
 .hero-text { min-width: 0; }
-.site-logo { width: 150px; height: 150px; flex: none; margin: -8px -6px 6px -10px; cursor: pointer; }
-@media (max-width: 600px) { .site-logo { width: 118px; height: 118px; margin: -6px -6px 8px -10px; } .hero { gap: 8px; } }
+.site-logo { width: 150px; height: 150px; flex: none; margin: -8px 0 6px 8px; cursor: pointer; }
+@media (max-width: 600px) { .site-logo { width: 118px; height: 118px; margin: -6px 0 8px 4px; } .hero { gap: 12px; } }
 .hero h1 { margin: 6px 0 2px; font-size: clamp(1.6rem, 5vw, 2.4rem); letter-spacing: -0.5px; }
 .hero h1 span { color: var(--ball); }
 .hero p { margin: 0 0 18px; opacity: .85; }
