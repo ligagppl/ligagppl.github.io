@@ -518,7 +518,13 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 #team .msg.err { color: #c62828; }
 
 /* ---------- Home: running matchday + upcoming matches ---------- */
-.top3 { display: flex; flex-direction: column; gap: 2px; font-weight: 700; font-size: .95rem; }
+.top3-card { grid-column: span 2; }
+.top3 { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; font-size: 1.05rem; }
+.top3 > span { display: flex; align-items: center; gap: 10px; }
+.top3 .mlogo { width: 40px; height: 40px; }
+.top3-name { display: flex; flex-direction: column; min-width: 0; }
+.top3-wait { font-size: 1.3rem; margin: 6px 0 2px; }
+@media (max-width: 560px) { .top3-card { grid-column: 1 / -1; } }
 .md-now { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
 .md-now-count { display: flex; flex-direction: column; align-items: flex-end; }
 .md-now-count b { font-size: 1.8rem; line-height: 1; }
@@ -529,3 +535,16 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .up-row .match { border-bottom: 0; padding: 4px 0; }
 .up-when, .up-venue { font-size: .88rem; }
 .up-venue { color: var(--muted); }
+
+/* ---------- GPPC Cup tab: score boards ---------- */
+.cup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+.cup-matches { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+.cupboard { display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 12px; }
+.cb-no { font-weight: 600; }
+.cb-grid { display: grid; grid-template-columns: minmax(0, 1fr) repeat(var(--cols, 2), 32px); gap: 6px 4px; align-items: center; }
+.cb-team { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cb-team span { overflow-wrap: anywhere; }
+.cb-team.w { font-weight: 800; color: var(--win); }
+.cb-g { text-align: center; font-variant-numeric: tabular-nums; color: var(--muted); }
+.cb-g.win { color: var(--text); font-weight: 800; }
+.medal-rank { font-size: 1.2rem; }

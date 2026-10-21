@@ -22,7 +22,7 @@ function renderStandings() {
   const rows = GPPL.rankStandings(results);
   let html = `<table><tr><th>#</th><th class="left">Pair</th><th>P</th><th>W</th><th>L</th><th>Sets</th><th>Games</th><th>Pts</th></tr>`;
   rows.forEach((r, i) => {
-    html += `<tr class="${i < 2 ? "top" : ""}"><td>${i + 1}</td>
+    html += `<tr class="${i < 2 ? "top" : ""}"><td>${results.length && i < 3 ? `<span class="medal-rank">${["🥇", "🥈", "🥉"][i]}</span>` : i + 1}</td>
       <td class="left"><b>${pairName(r.id)}</b><br><span class="note">${pairById[r.id].players.join(" & ")}</span></td>
       <td>${r.p}</td><td>${r.w}</td><td>${r.l}</td>
       <td>${sign(r.sf - r.sa)}</td><td>${sign(r.gf - r.ga)}</td><td class="pts">${r.pts}</td></tr>`;
@@ -70,12 +70,17 @@ function renderSchedule() {
 function renderHome() {
   const total = fixtures.reduce((n, g) => n + g.length, 0);
   const last = matchdayWindow(fixtures.length).to;
-  const top = results.length ? GPPL.rankStandings(results).slice(0, 3) : [];
+  // the Top 3 only means something once every pair has played at least once
+  const ranked = GPPL.rankStandings(results), started = ranked.filter(r => r.p > 0).length;
+  const top = ranked.length && started === ranked.length ? ranked.slice(0, 3) : [];
   document.getElementById("home-stats").innerHTML = `
     <div class="card"><div class="note">Pairs</div><div style="font-size:1.8rem;font-weight:700">${LEAGUE.pairs.length}</div></div>
     <div class="card"><div class="note">Matches played</div><div style="font-size:1.8rem;font-weight:700">${results.length} / ${total}</div></div>
     <div class="card"><div class="note">Season</div><div style="font-size:1.1rem;font-weight:700">${datesOn ? `${fmt(start)} – ${fmt(last)}` : "Dates follow"}</div></div>
-    <div class="card"><div class="note">Top 3</div><div class="top3">${top.length ? top.map((r, i) => `<span>${["🥇", "🥈", "🥉"][i]} ${pairName(r.id)}</span>`).join("") : "–"}</div></div>`;
+    <div class="card top3-card"><div class="note">Top 3</div>
+      ${top.length ? `<div class="top3">${top.map((r, i) => `<span>${["🥇", "🥈", "🥉"][i]} ${teamLogo(r.id)}<span class="top3-name"><b>${pairName(r.id)}</b>
+          <span class="note">${r.p} played · ${r.w} W · ${r.l} L · <b>${r.pts} pts</b></span></span></span>`).join("")}</div>`
+        : `<div class="top3-wait"><b>${started} of ${ranked.length}</b> pairs have played</div><span class="note">The Top 3 appears once every pair has played at least one match.</span>`}</div>`;
   renderMatchdayCard();
   renderUpcoming();
 }
@@ -87,7 +92,7 @@ function renderMatchdayCard() {
   if (!cur) {
     const before = Date.now() < start.getTime(), md = before ? 1 : fixtures.length, { from, to } = matchdayWindow(md);
     el.innerHTML = before
-      ? `<h3 style="margin-top:0">📅 The season starts on ${from.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</h3><p class="muted">Matchday 1 runs ${fmt(from)} – ${fmt(to)}. Agree on dates with your opponents and set them in 🎾 My team.</p>`
+      ? `<h3 style="margin-top:0">📅 The season starts on ${from.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</h3><p class="muted">Matchday 1 runs ${fmt(from)} – ${fmt(to)}. Agree on dates with your opponents and set them in <a href="#team">🎾 My team</a>.</p>`
       : `<h3 style="margin-top:0">🏁 The league season is over</h3><p class="muted">Thanks for playing – see the final table.</p>`;
     return;
   }
@@ -127,7 +132,7 @@ function renderUpcoming() {
   document.getElementById("home-next").innerHTML = `<h3 style="margin-top:0">🎾 Upcoming matches</h3>` + (list.length
     ? list.slice(0, 8).map(({ t, e, a, b, label }) => `<div class="up-row"><div class="up-when"><b>${when(t)}</b>${e.time ? " · " + e.time : ""} <span class="note">· ${label}</span></div>
         ${matchRow(a, b)}${e.court ? `<div class="up-venue">📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.court)}" target="_blank" rel="noopener">${e.court.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]))}</a></div>` : ""}</div>`).join("")
-    : `<p class="muted">No matches scheduled yet – teams set their dates in 🎾 My team.</p>`);
+    : `<p class="muted">No matches scheduled yet – teams set their dates in <a href="#team">🎾 My team</a>.</p>`);
 }
 
 function renderCup() {
@@ -141,22 +146,33 @@ function renderCup() {
     ? `<div class="card" style="text-align:center"><div style="font-size:2rem">🏆</div><h3 style="margin:4px 0">GPPC Cup champions</h3><div style="font-size:1.3rem;font-weight:800">${pairName(ns.champion)}</div></div>` : "";
   const seedLine = (r, i) => r.words
     ? `<p class="note">🔐 Seed words: “${r.words}” · <a href="#verify" data-verify="${i}">Verify</a></p>` : "";
-  el.innerHTML = champ + `<div class="bracket">` + cup.rounds.map((r, ri) => {
+  // latest round first; every match as a small score board (logos, sets, winner) like in 🎾 My team
+  const board = (m, r, ri, mi) => {
+    const w = GPPL.cupWinner(m), full = GPPL.cupFullSets(r), e = schedule[`C:${ri}:${mi}`] || {};
+    const sets = m.sets || [], cols = Math.max(sets.length, 2);
+    const row = (id, side) => `<span class="cb-team ${w === id ? "w" : ""}">${teamLogo(id)}<span>${pairName(id)}</span>${w === id ? " 🏆" : ""}</span>` +
+      Array.from({ length: cols }, (_, i) => `<span class="cb-g ${sets[i] && sets[i][side] > sets[i][1 - side] ? "win" : ""}">${sets[i] ? sets[i][side] : ""}</span>`).join("");
+    const foot = m.walkover === "both" ? "Walkover – both pairs out"
+      : m.walkover ? `Walkover – ${pairName(m.walkover)} goes through`
+      : sets.length ? (full ? "3 full sets" : sets.length === 3 ? "3rd set: match tie-break" : "")
+      : e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + e.time : ""}${e.court ? ` · 📍 ${e.court.split(",")[0]}` : ""}`
+      : "Not scheduled yet";
+    return `<div class="cupboard"><span class="note cb-no">Match ${mi + 1}</span>
+      <div class="cb-grid" style="--cols:${cols}">${row(m.a, 0)}${row(m.b, 1)}</div>
+      ${foot ? `<span class="note">${foot}</span>` : ""}</div>`;
+  };
+  el.innerHTML = champ + cup.rounds.map((r, ri) => [r, ri]).reverse().map(([r, ri]) => {
     if (r.type === "lucky") {
       return `<div class="card"><h3 style="margin-top:0">🍀 ${r.name}</h3><p>Back in the cup: <b>${r.lucky.map(pairName).join(", ")}</b></p>${seedLine(r, ri)}</div>`;
     }
-    return `<div class="card"><h3 style="margin-top:0">${r.name}</h3>
-      ${r.matches.map(m => {
-        const w = GPPL.cupWinner(m);
-        const score = m.walkover === "both" ? "W/O – both out" : m.walkover ? "W/O" : m.sets && m.sets.length ? GPPL.scoreText(m, m.a, !GPPL.cupFullSets(r)) : "";
-        return `<div class="cupmatch">
-          <div><span class="${w === m.a ? "w" : ""}">${pairName(m.a)}</span><span class="note">${score}</span></div>
-          <div><span class="${w === m.b ? "w" : ""}">${pairName(m.b)}</span></div></div>`;
-      }).join("")}
-      ${r.byes && r.byes.length ? `<p class="note">Bye: ${r.byes.map(pairName).join(", ")}</p>` : ""}
+    const done = r.matches.filter(m => GPPL.cupWinner(m) || m.walkover === "both").length;
+    return `<div class="card"><div class="cup-head"><h3 style="margin:0">${r.third ? "🥉 " : r.name === "Final" ? "🏆 " : ""}${r.name}</h3>
+        <span class="note">${done}/${r.matches.length} played${GPPL.cupFullSets(r) ? " · 3 full sets" : ""}</span></div>
+      <div class="cup-matches">${r.matches.map((m, mi) => board(m, r, ri, mi)).join("")}</div>
+      ${r.byes && r.byes.length ? `<p class="note">🎟️ Bye: ${r.byes.map(pairName).join(", ")}</p>` : ""}
       ${seedLine(r, ri)}
     </div>`;
-  }).join("") + `</div>`;
+  }).join("");
 }
 
 // ---------- Verify draw ----------
