@@ -144,9 +144,9 @@
         (state.notes && state.notes[m.key] ? `<p class="note">“${esc(state.notes[m.key])}”</p>` : "");
       else if (p.by === state.team) body += `<p>You entered ${txt}. ${esc(teamName(m.opp))} has 48 hours to confirm – after that it counts automatically.</p>
         <div class="tm-btns"><button class="btn ghost small" data-act="withdraw" data-key="${m.key}">Withdraw & correct</button>${photoBtn(m.key)}</div>`;
-      else body += `<p>${esc(teamName(m.opp))} entered ${txt}. Is that right?</p>
-        <div class="tm-btns"><button class="btn small" data-act="confirm" data-key="${m.key}">✅ Confirm</button>
-        <button class="btn ghost small" data-act="form" data-form="${m.key}|dispute">Dispute</button>${photoBtn(m.key)}</div>` +
+      else body += `<div class="tm-ask"><p><b>${esc(teamName(m.opp))}</b> entered ${txt}.<br><b>Is that right?</b></p>
+        <div class="tm-btns"><button class="btn" data-act="confirm" data-key="${m.key}">✅ Yes, confirm</button>
+        <button class="btn ghost" data-act="form" data-form="${m.key}|dispute">❌ No, dispute</button>${photoBtn(m.key)}</div></div>` +
         (form === `${m.key}|dispute` ? `<form class="tm-form" data-submit="dispute" data-key="${m.key}">
           <label>What is wrong?<textarea name="note" maxlength="500" required placeholder="e.g. Set 2 was 6-4 for us"></textarea></label>
           <button class="btn small" type="submit">Send to the organizers</button></form>` : "");
@@ -164,7 +164,7 @@
     if (photos[m.key]) body += `<img class="tm-photo" src="${photos[m.key]}" alt="Matchday photo">`;
     return `<div class="card tm-match st-${st.cls}">
       <div class="tm-head"><span class="tm-label">${esc(m.label)}</span><span class="tm-chip">${st.text}</span></div>
-      <div class="tm-vs">${logo(m.opp)}<div><span class="muted">vs</span> <b>${esc(teamName(m.opp))}</b><span class="tm-players">${players(m.opp)}</span></div></div>
+      <div class="tm-vs">${logo(m.opp)}<div><b>${esc(teamName(m.opp))}</b><span class="tm-players">${players(m.opp)}</span></div></div>
       ${body}${msgHtml(m.key)}</div>`;
   }
 
