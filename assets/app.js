@@ -337,7 +337,7 @@ function renderRegister() {
     <div><span class="perk-icon">🗓️</span><b>Play at your own pace</b><ul>
       <li><b>10 days per matchday</b> – plenty of time to find a day, time and court that suit both pairs.</li>
       <li><b>The whole league schedule from day one</b> – you know all your opponents in advance and play at your own pace.</li>
-      <li><b>Scheduling conflict with an opponent?</b> As an exception, you can play a match from a later matchday first.</li>
+      <li><b>Scheduling conflict with an opponent?</b> Ideally you follow the matchday order – but if dates clash, you can play your matches in any order.</li>
       <li><b>Busy week or travelling?</b> Take a matchday off and catch up later – as long as you reach the milestones:</li></ul>
       <div class="ms-slot"></div>
       <span class="note">The milestones might change after the registration deadline, depending on the start date. Details in the <a href="#rules">Rules</a> (§2).</span></div></div>
