@@ -331,6 +331,7 @@ async function schedule(env, team, body) {
   const date = cleanDate(String(body.date ?? "")), time = cleanTime(String(body.time ?? ""));
   const court = String(body.court ?? "").trim().slice(0, 160);
   if (date === null || time === null) throw httpError(400, "Date or time not valid.");
+  if ((date || time || court) && !(date && time && court)) throw httpError(400, "Please give the date, time and venue.");
   const entry = await update(env, ["pairs", "cup", "results", "matches"], files => {
     const info = matchInfo(body.key, files);
     requirePlayer(info, team);

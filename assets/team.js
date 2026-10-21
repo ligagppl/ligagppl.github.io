@@ -161,12 +161,14 @@
       body = when + `<div class="tm-btns"><button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change date" : "Set date"}</button>
         ${entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule`) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
-        <div class="tm-row"><label>Date<input type="date" name="date" value="${esc(entry.date || "")}"></label>
-        <label>Time<input type="time" name="time" value="${esc(entry.time || "")}"></label></div>
+        <label>Date &amp; time<input type="datetime-local" name="when" step="900" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
         <div class="tm-venue"><label for="court-${m.key}">Court / venue</label>
           <input id="court-${m.key}" name="court" maxlength="160" autocomplete="off" value="${esc(entry.court || "")}" placeholder="Search a venue or address…">
           <div class="tm-sugg" hidden></div></div>
-        <button class="btn small" type="submit">Save</button> <span class="note">Visible to both teams. Leave everything empty to clear.</span></form>`;
+        <div class="tm-btns"><button class="btn small" type="submit">Save</button>
+          <button class="btn ghost small" type="button" data-act="form" data-form="${m.key}|schedule">Cancel</button>
+          ${entry.date ? `<button class="btn ghost small" type="button" data-act="unschedule" data-key="${m.key}">Remove date</button>` : ""}</div>
+        <span class="note">Visible to both teams.</span></form>`;
       if (form === `${m.key}|result` && entry.date) body += resultForm(m);
     }
     if (photos[m.key]) body += `<img class="tm-photo" src="${photos[m.key]}" alt="Matchday photo">`;
@@ -243,6 +245,7 @@
     }
     b.disabled = true;
     if (a === "confirm") return act(key, () => call("/confirm", { key }), "Result confirmed – thanks!");
+    if (a === "unschedule" && confirm("Remove the date, time and venue of this match?")) return act(key, () => call("/schedule", { key, date: "", time: "", court: "" }), "Date removed.");
     if (a === "withdraw" && confirm("Withdraw your result? You can then enter it again.")) return act(key, () => call("/withdraw", { key }), "Result withdrawn.");
     b.disabled = false;
   });
@@ -261,7 +264,12 @@
       } catch (err) { msg = { key: "top", text: err.message, ok: false }; return render(); }
     }
     const v = n => (f.elements[n] ? f.elements[n].value.trim() : "");
-    if (kind === "schedule") return act(key, () => call("/schedule", { key, date: v("date"), time: v("time"), court: v("court") }), "Saved.");
+    if (kind === "schedule") return act(key, () => {
+      const [date = "", time = ""] = v("when").split("T");
+      if (!date || !time) throw new Error("Please pick the date and time.");
+      if (!v("court")) throw new Error("Please add the court / venue.");
+      return call("/schedule", { key, date, time: time.slice(0, 5), court: v("court") });
+    }, "Saved.");
     if (kind === "dispute") return act(key, () => call("/dispute", { key, note: v("note") }), "Sent – the organizers will decide.");
     if (kind === "result") {
       return act(key, async () => {
