@@ -23,7 +23,7 @@ function renderStandings() {
   let html = `<table><tr><th>#</th><th class="left">Pair</th><th>P</th><th>W</th><th>L</th><th>Sets</th><th>Games</th><th>Pts</th></tr>`;
   rows.forEach((r, i) => {
     html += `<tr class="${i < 2 ? "top" : ""}"><td>${results.length && i < 3 ? `<span class="medal-rank">${["🥇", "🥈", "🥉"][i]}</span>` : i + 1}</td>
-      <td class="left"><b>${pairName(r.id)}</b><br><span class="note">${pairById[r.id].players.join(" & ")}</span></td>
+      <td class="left"><span class="tbl-team">${teamLogo(r.id)}<span><b>${pairName(r.id)}</b><br><span class="note">${pairById[r.id].players.filter(Boolean).join(" & ")}</span></span></span></td>
       <td>${r.p}</td><td>${r.w}</td><td>${r.l}</td>
       <td>${sign(r.sf - r.sa)}</td><td>${sign(r.gf - r.ga)}</td><td class="pts">${r.pts}</td></tr>`;
   });
@@ -583,6 +583,10 @@ function updateMenu() {
     const a = document.querySelector(`#nav a[href="#${id}"]`);
     if (a) a.hidden = closed;
   });
+  // the Schedule tab is switched on in Admin → League results
+  const sched = document.querySelector('#nav a[href="#schedule"]');
+  if (sched) sched.hidden = settings.showSchedule !== true;
+  if (settings.showSchedule !== true && location.hash === "#schedule") location.hash = "#" + (visibleTabs ? visibleTabs[0] : "home");
 }
 
 function renderData() {

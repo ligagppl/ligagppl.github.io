@@ -128,6 +128,16 @@
     <!-- LEAGUE -->
     <div class="panel active" id="panel-league">
       <div class="card">
+        <h3 style="margin-top:0">📅 Schedule on the website</h3>
+        <p class="note">Shows or hides the <b>Schedule</b> tab for everyone (teams always see their own matches in 🎾 My team).</p>
+        <div class="reg-status" role="radiogroup" aria-label="Schedule on the website">
+          <label><input type="radio" name="show-schedule" value="on"> <span><b>Show</b>The full schedule is public</span></label>
+          <label><input type="radio" name="show-schedule" value="off"> <span><b>Hide</b>The Schedule tab isn't shown</span></label>
+        </div>
+        <button class="btn" id="show-schedule-save" style="margin-top:10px">Save</button>
+        <div class="msg" id="show-schedule-msg"></div>
+      </div>
+      <div class="card">
         <h3 style="margin-top:0">⏰ Results due</h3>
         <p class="note">Matches whose date has passed and that have no official result yet. Results the teams entered themselves are in <b>❗ Disputes</b> until they're confirmed.</p>
         <div class="msg" id="due-msg"></div>
@@ -903,10 +913,21 @@
       if (await persist("settings", next, `GPPL logo animation: ${mode}`, "site-logo-anim-msg")) siteSettings = next;
     });
 
+    function fillShowSchedule() {
+      const on = siteSettings.showSchedule === true;
+      document.querySelectorAll('input[name="show-schedule"]').forEach(r => (r.checked = r.value === (on ? "on" : "off")));
+    }
+    $("show-schedule-save").addEventListener("click", async () => {
+      const on = (document.querySelector('input[name="show-schedule"]:checked') || {}).value === "on";
+      const next = { ...siteSettings, showSchedule: on };
+      if (await persist("settings", next, `schedule ${on ? "shown" : "hidden"}`, "show-schedule-msg")) siteSettings = next;
+    });
+
     function renderCurrentPairs() {
       renderManual();
       fillLogoAnim();
       fillSiteLogoAnim();
+      fillShowSchedule();
       const draft = getDraft(), list = workingPairs(), pub = LEAGUE.pairs;
       const changed = !!draft && (draft.length !== pub.length || draft.some((p, i) => !sameTeam(p, pub[i])));
       if (draft && !changed) { try { localStorage.removeItem(DRAFT_KEY); } catch {} }

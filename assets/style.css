@@ -548,3 +548,6 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .cb-g.win { color: var(--text); font-weight: 800; }
 .medal-rank { font-size: 1.2rem; }
 #nav a[hidden] { display: none !important; }
+.tbl-team { display: flex; align-items: center; gap: 10px; }
+.tbl-team .mlogo { width: 34px; height: 34px; }
+@media (max-width: 560px) { .tbl-team .mlogo { width: 26px; height: 26px; } .tbl-team { gap: 6px; } }
