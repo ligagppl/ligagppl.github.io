@@ -418,8 +418,7 @@ async function confirm(env, team, body) {
 }
 
 async function dispute(env, team, body) {
-  const note = String(body.note || "").trim().slice(0, 500);
-  if (!note) throw httpError(400, "Please write what is wrong.");
+  const note = String(body.note || "").trim().slice(0, 500); // optional
   await update(env, ["pairs", "cup", "matches"], files => {
     const info = matchInfo(body.key, files);
     requirePlayer(info, team);
@@ -430,8 +429,8 @@ async function dispute(env, team, body) {
     m.pending.disputedBy = team;
     m.pending.disputedAt = new Date().toISOString();
   }, `dispute ${body.key}`);
-  await env.KV.put(`note:${body.key}`, note);
-  await addLog(env, { team, action: "result disputed", key: body.key, detail: note });
+  if (note) await env.KV.put(`note:${body.key}`, note); else await env.KV.delete(`note:${body.key}`);
+  await addLog(env, { team, action: "result disputed", key: body.key, ...(note ? { detail: note } : {}) });
   return json({ ok: true });
 }
 

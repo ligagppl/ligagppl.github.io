@@ -31,6 +31,26 @@
     .reslist .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--line); flex-wrap: wrap; }
     .reslist .row:last-child { border-bottom: 0; }
     .small { padding: 5px 10px; font-size: .85rem; }
+    .subnav button.has-disputes { border-color: var(--loss); color: var(--loss); }
+    .subnav button.has-disputes.active { background: var(--loss); color: #fff; }
+    #panel-disputes h3 { margin: 20px 0 10px; }
+    .dp-card { border-left: 5px solid var(--line); }
+    .dp-card.dp-disputed { border-left-color: var(--loss); }
+    .dp-card.dp-waiting { border-left-color: var(--green-2); }
+    .dp-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .dp-chip { font-weight: 700; }
+    .dp-board { display: grid; grid-template-columns: minmax(0, 1fr) repeat(var(--sets, 3), 58px); gap: 8px; align-items: center; max-width: 560px; margin: 12px 0; }
+    .dp-bh { font-size: .75rem; color: var(--muted); font-weight: 600; text-align: center; }
+    .dp-team { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .dp-team > span { display: flex; flex-direction: column; min-width: 0; }
+    .dp-logo { width: 44px; height: 44px; flex: none; object-fit: contain; }
+    .dp-logo.ph { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: color-mix(in srgb, var(--line) 50%, transparent); }
+    .dp-g { text-align: center; font-size: 1.2rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .dp-g.win { color: var(--text); font-weight: 800; }
+    .dp-facts { display: flex; flex-direction: column; gap: 4px; font-size: .92rem; }
+    .dp-note { margin-top: 2px; padding: 8px 12px; border-radius: 8px; background: color-mix(in srgb, var(--loss) 10%, var(--card)); font-style: italic; }
+    .dp-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+    .dp-photo img { max-width: 100%; max-height: 360px; border-radius: 10px; margin-top: 10px; }
     .mb-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
     .mb-team { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
     .mb-team.has-code { border-color: color-mix(in srgb, var(--win) 45%, var(--line)); }
@@ -72,6 +92,7 @@
       <button data-panel="draw">🎱 Live draw</button>
       <button data-panel="registration">Registration</button>
       <button data-panel="pairs">Pairs</button>
+      <button data-panel="disputes">❗ Disputes</button>
       <button data-panel="members">👥 Member area</button>
       <button data-panel="settings">Settings</button>
     </div>
@@ -231,6 +252,14 @@
     </div>
 
     <!-- SETTINGS -->
+    <!-- DISPUTES -->
+    <div class="panel" id="panel-disputes">
+      <p class="note" style="margin-top:0">Results the teams entered in <b>🎾 My team</b>. They count once the opponent confirms them, or automatically after 48 hours – disputed ones wait for your decision.</p>
+      <div class="msg" id="dp-msg"></div>
+      <div id="dp-list"><div class="card muted">Loading…</div></div>
+      <button class="btn ghost small" id="dp-auto" style="margin-top:12px">Run the 48-hour auto-confirm now</button>
+    </div>
+
     <!-- MEMBER AREA -->
     <div class="panel" id="panel-members">
       <div class="card">
@@ -239,13 +268,6 @@
         <div class="form-row"><label for="mb-key">Admin key</label><input id="mb-key" type="password" autocomplete="off" placeholder="from the gatekeeper setup"></div>
         <button class="btn" id="mb-connect">Save &amp; load</button>
         <div class="msg" id="mb-msg"></div>
-      </div>
-      <div class="card">
-        <h3 style="margin-top:0">❗ Disputes &amp; results waiting</h3>
-        <p class="note">Results count once the opponent confirms them, or automatically after 48 hours. Disputed results wait for you.</p>
-        <div id="mb-open" class="muted reslist">–</div>
-        <button class="btn ghost small" id="mb-auto" style="margin-top:8px">Run 48-hour auto-confirm now</button>
-        <div class="msg" id="mb-open-msg"></div>
       </div>
       <div class="card">
         <h3 style="margin-top:0">Team codes</h3>
@@ -299,7 +321,7 @@
   <script src="assets/league.js?v=3"></script>
   <script src="assets/store.js"></script>
   <script src="assets/lock.js?v=2"></script>
-  <script src="assets/members-admin.js?v=3" defer></script>
+  <script src="assets/members-admin.js?v=4" defer></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;

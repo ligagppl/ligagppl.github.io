@@ -154,7 +154,7 @@
         <div class="tm-btns"><button class="btn" data-act="confirm" data-key="${m.key}">✅ Yes, confirm</button>
         <button class="btn ghost" data-act="form" data-form="${m.key}|dispute">❌ No, dispute</button>${photoBtn(m.key)}</div></div>` +
         (form === `${m.key}|dispute` ? `<form class="tm-form" data-submit="dispute" data-key="${m.key}">
-          <label>What is wrong?<textarea name="note" maxlength="500" required placeholder="e.g. Set 2 was 6-4 for us"></textarea></label>
+          <label>What is wrong? <span class="note">optional – helps the organizers decide</span><textarea name="note" maxlength="500" placeholder="e.g. Set 2 was 6-4 for us"></textarea></label>
           <button class="btn small" type="submit">Send to the organizers</button></form>` : "");
     } else {
       const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(entry.time) : ""}${entry.court ? ` · 📍 <a href="${mapsUrl(entry.court)}" target="_blank" rel="noopener">${esc(entry.court)}</a>` : ""}</p>` : "";
