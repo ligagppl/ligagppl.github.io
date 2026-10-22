@@ -595,7 +595,8 @@
         }).join("");
         return `<details class="md-day" data-md="${md}" ${md === (mdOpen || cur) ? "open" : ""}><summary><b>Matchday ${md}</b>
           <span class="note">${done}/${games.length} played${disputed ? ` · ❗ ${disputed} disputed` : ""}${md === cur ? " · current" : ""}</span>
-          <button class="btn ghost small md-img-btn" data-md-image="${md}">🖼️ Image</button></summary>${rows}<div class="md-editor"></div></details>`;
+          <button class="btn ghost small md-img-btn" data-md-image="${md}">🖼️ Image</button>
+          <button class="btn ghost small" data-md-share="${md}">📤 WhatsApp</button></summary>${rows}<div class="md-editor"></div></details>`;
       }).join("") || '<p class="muted">No pairs yet.</p>';
     }
 
@@ -632,6 +633,7 @@
         rows, footer: "Schedule, table & results: ligagppl.github.io",
       });
     }
+    const mdShareCache = {}; // images made for sharing (Safari needs a second tap)
     const mdFile = md => `GPPL Matchday ${String(md).padStart(2, "0")}.png`;
     document.getElementById("panel-league").addEventListener("click", async e => {
       const one = e.target.closest("[data-md-image]");
@@ -640,6 +642,26 @@
         one.disabled = true;
         GPPLImage.download(await matchdayImage(+one.dataset.mdImage), mdFile(+one.dataset.mdImage));
         one.disabled = false;
+      }
+      const share = e.target.closest("[data-md-share]");
+      if (share) {
+        e.preventDefault();
+        const md = +share.dataset.mdShare, ready = !!mdShareCache[md];
+        const blob = mdShareCache[md] || (mdShareCache[md] = await matchdayImage(md));
+        const file = new File([blob], mdFile(md), { type: "image/png" });
+        // the device's share menu → WhatsApp → pick the contact or group (image already attached)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file] }); share.textContent = "📤 WhatsApp"; }
+          catch (err) {
+            // Safari only opens the share menu right after a tap – the image took a moment, so tap once more
+            if (err.name === "NotAllowedError" && !ready) share.textContent = "📤 Ready – tap again";
+          }
+        } else {
+          // no share menu here (e.g. Firefox): save the image and open WhatsApp's chat picker to attach it
+          GPPLImage.download(blob, mdFile(md));
+          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`📅 GPPL – Matchday ${md}`)}`, "_blank", "noopener");
+          flash("md-img-msg", "Image saved – attach it in the WhatsApp chat that just opened (this browser can't share images directly).");
+        }
       }
       if (e.target.id === "md-images-all") {
         e.target.disabled = true;
@@ -653,7 +675,10 @@
       }
     });
 
-    function renderLeagueViews() { renderDue(); renderMilestones(); renderMatchdays(); }
+    function renderLeagueViews() {
+      Object.keys(mdShareCache).forEach(k => delete mdShareCache[k]); // results/dates may have changed
+      renderDue(); renderMilestones(); renderMatchdays();
+    }
 
     document.getElementById("panel-league").addEventListener("click", async e => {
       const open = e.target.closest("[data-open-editor]");
