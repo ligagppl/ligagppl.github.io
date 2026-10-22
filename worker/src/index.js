@@ -201,6 +201,19 @@ async function update(env, keys, change, message) {
 const normCode = code => String(code || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
 const codeHash = (env, code) => sha256hex(`${env.SESSION_SECRET}:${normCode(code)}`);
 
+// 8 characters from a secure random source; bytes above the last full multiple of the alphabet
+// size are skipped, so every character is exactly equally likely (no modulo bias): ~40 bits
+function randomCode(len) {
+  const n = CODE_ALPHABET.length, limit = 256 - (256 % n);
+  let out = "";
+  while (out.length < len) {
+    for (const b of crypto.getRandomValues(new Uint8Array(16))) {
+      if (b < limit && out.length < len) out += CODE_ALPHABET[b % n];
+    }
+  }
+  return out;
+}
+
 async function login(request, env, body) {
   const ip = request.headers.get("CF-Connecting-IP") || "local";
   const rlKey = `rl:${ip}`;
@@ -248,8 +261,7 @@ async function adminCode(env, body) {
   if (!pair) throw httpError(400, "Unknown team.");
   const old = JSON.parse((await env.KV.get(`team:${pair.id}`)) || "null");
   if (old) await env.KV.delete(`code:${old.hash}`);
-  const rnd = crypto.getRandomValues(new Uint8Array(8));
-  const raw = [...rnd].map(b => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
+  const raw = randomCode(8);
   const hash = await codeHash(env, raw);
   await env.KV.put(`code:${hash}`, String(pair.id));
   // a new version logs out every device that used the old code
