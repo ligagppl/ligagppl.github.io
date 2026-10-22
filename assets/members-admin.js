@@ -100,10 +100,10 @@
     if (!queue.length) { $("mb-queue").innerHTML = ""; return; }
     const next = queue[qPos];
     $("mb-queue").innerHTML = `<div class="mb-queue">
-      <b>📲 Send the new codes</b> <span class="note">– one click per chat (WhatsApp can't send several at once). Don't reload this page until you're done: the codes are shown only now.</span><br>
+      <b>📲 Send the new codes</b> <span class="note">– one click per chat (WhatsApp can't send several at once). Don't reload this page until you're done – the codes are only inside these messages.</span><br>
       ${next ? `<button class="btn" id="mb-send-next" style="margin-top:10px">📲 Send ${qPos + 1} of ${queue.length}: ${esc(next.who)} (${esc(next.team)})</button>`
         : `<p style="margin:10px 0 0"><b>✅ All ${queue.length} messages opened.</b> <button class="btn ghost small" id="mb-queue-close">Close</button></p>`}
-      <ol>${queue.map((q, i) => `<li class="${i < qPos ? "done" : ""}">${esc(q.team)} → ${esc(q.who)} <code>${q.code}</code></li>`).join("")}</ol></div>`;
+      <ol>${queue.map((q, i) => `<li class="${i < qPos ? "done" : ""}">${esc(q.team)} → ${esc(q.who)}</li>`).join("")}</ol></div>`;
   }
   async function bulkCodes(resetAll) {
     const { teams } = await call("/admin/teams");
