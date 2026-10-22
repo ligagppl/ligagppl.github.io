@@ -68,6 +68,7 @@
     .md-state { font-size: .88rem; }
     .md-match { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .md-when { font-size: .85rem; color: var(--muted); padding-left: 2px; }
+    .md-share { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
     .md-row .btn { justify-self: start; }
     @media (max-width: 480px) { .md-pair { font-size: .9rem; } }
     .ms-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(120px, 1fr) minmax(0, 1.4fr) auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
@@ -395,7 +396,7 @@
   <script src="assets/store.js?v=3"></script>
   <script src="assets/lock.js?v=2"></script>
   <script src="assets/members-admin.js?v=12" defer></script>
-  <script src="assets/share-image.js?v=1"></script>
+  <script src="assets/share-image.js?v=4"></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;
@@ -590,7 +591,8 @@
             : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}`
             : e.date && isPast(e) ? "⏰ Result due" : "";
           return `<div class="md-row ${r ? "is-done" : ""}">${pairLine(a, b)}
-            <span class="md-info">${!r ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}</span>
+            <span class="md-info">${!r ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}
+              ${e.date && !r ? `<span class="md-share"><button class="btn ghost small" data-match-share="${lkey(a, b)}|${a}|${b}|Matchday ${md}">📤 Share</button><button class="btn ghost small" data-match-img="${lkey(a, b)}|${a}|${b}|Matchday ${md}">⬇️ Image</button></span>` : ""}</span>
             <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p ? "View" : "Enter result"}</button></div>`;
         }).join("");
         return `<details class="md-day" data-md="${md}" ${md === (mdOpen || cur) ? "open" : ""}><summary><b>Matchday ${md}</b>
@@ -675,7 +677,20 @@
       }
     });
 
+    // scheduled match → image to post in WhatsApp (league rows and cup rows)
+    const matchImgCache = {};
+    document.addEventListener("click", async e => {
+      const b = e.target.closest("[data-match-share],[data-match-img]");
+      if (!b) return;
+      const [key, a, bb, label] = (b.dataset.matchShare || b.dataset.matchImg).split("|");
+      const file = `GPPL ${label.replace("GPPC Cup · ", "")} – ${GPPL.pairName(+a)} vs ${GPPL.pairName(+bb)}.png`;
+      const blob = matchImgCache[key] || (matchImgCache[key] = await GPPLImage.matchImage({ label, a: +a, b: +bb, e: schedule[key] }));
+      if (b.dataset.matchImg) return GPPLImage.download(blob, file);
+      GPPLImage.share(blob, file, () => (b.textContent = "📤 Ready – tap again"));
+    });
+
     function renderLeagueViews() {
+      Object.keys(matchImgCache).forEach(k => delete matchImgCache[k]);
       Object.keys(mdShareCache).forEach(k => delete mdShareCache[k]); // results/dates may have changed
       renderDue(); renderMilestones(); renderMatchdays();
     }
@@ -770,7 +785,8 @@
               : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, m.a, !GPPL.cupFullSets(r))}`
               : e.date && isPast(e) ? "⏰ Result due" : "";
             return `<div class="md-row ${has ? "is-done" : ""}">${pairLine(m.a, m.b)}
-              <span class="md-info">${!has ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}</span>
+              <span class="md-info">${!has ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}
+                ${e.date && !has ? `<span class="md-share"><button class="btn ghost small" data-match-share="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">📤 Share</button><button class="btn ghost small" data-match-img="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">⬇️ Image</button></span>` : ""}</span>
               <button class="btn ghost small" data-open-cup="${ri}:${mi}">${has ? "Edit" : p ? "View" : "Enter result"}</button></div>
               <div class="md-editor" data-cup-editor="${ri}:${mi}"></div>`;
           }).join("") + `${r.byes && r.byes.length ? `<p class="note">Bye: ${r.byes.map(name).join(", ")}</p>` : ""}</div>`;

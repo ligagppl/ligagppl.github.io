@@ -21,6 +21,7 @@
   let msg = null;     // { key, text, ok }
   let loading = false;
   const photos = {};  // key → object URL of a loaded photo
+  const matchImgs = {}; // key → image of a scheduled match (made once – Safari shares on the next tap)
 
   async function call(path, body) {
     const token = ls.get(TOKEN_KEY);
@@ -40,6 +41,7 @@
     if (!api()) { el.innerHTML = `<div class="card muted">The member area isn't open yet.</div>`; return; }
     if (!ls.get(TOKEN_KEY)) { state = null; return render(); }
     loading = true; render();
+    Object.keys(matchImgs).forEach(k => delete matchImgs[k]);
     try { state = await call("/me"); } catch (e) { msg = { key: "top", text: e.message, ok: false }; }
     loading = false; render();
   }
@@ -243,7 +245,8 @@
           <button class="btn small" type="submit">Send to the organizers</button></form>` : "");
     } else {
       const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(GPPL.timeRange(entry)) : ""}${entry.court ? ` · 📍 <a href="${mapsUrl(entry.court)}" target="_blank" rel="noopener">${esc(entry.court)}</a>` : ""}</p>` : "";
-      body = when + `<div class="tm-btns"><button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>
+      body = when + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share</button>
+        <button class="btn ghost small" data-act="match-img" data-key="${m.key}">⬇️ Image</button>` : ""}<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>
         ${entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule`) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
         <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="900" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
@@ -334,6 +337,15 @@
     if (a === "logout") { ls.set(TOKEN_KEY, null); state = null; msg = null; return render(); }
     if (a === "reload") { msg = null; return load(); }
     if (a === "form") { form = form === b.dataset.form ? null : b.dataset.form; msg = null; return render(); }
+    if (a === "match-share" || a === "match-img") {
+      const m = myMatches().find(x => x.key === key), e = state.matches[key];
+      if (!m || !e) return;
+      const name = `GPPL ${m.label.split(" · ")[m.group === "cup" ? 1 : 0]} – ${teamName(state.team)} vs ${teamName(m.opp)}.png`;
+      const blob = matchImgs[key] || (matchImgs[key] = await GPPLImage.matchImage({
+        label: m.group === "cup" ? m.label : m.label.split(" · ")[0], a: state.team, b: m.opp, e }));
+      if (a === "match-img") return GPPLImage.download(blob, name);
+      return GPPLImage.share(blob, name, () => (b.textContent = "📤 Ready – tap again"));
+    }
     if (a === "photo") {
       if (photos[key]) { URL.revokeObjectURL(photos[key]); delete photos[key]; return render(); }
       const res = await call(`/photo?key=${encodeURIComponent(key)}`);
