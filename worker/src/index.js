@@ -17,7 +17,7 @@ import { DurableObject } from "cloudflare:workers";
 const FILES = { pairs: "data/pairs.json", results: "data/results.json", cup: "data/cup.json", matches: "data/matches.json" };
 const FALLBACK = { pairs: [], results: [], cup: { rounds: [] }, matches: {} };
 const AUTO_CONFIRM_MS = 48 * 3600 * 1000;
-const TOKEN_DAYS = 90;
+const TOKEN_DAYS = 30;
 const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
 const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"; // no 0/O, 1/I/L
 
