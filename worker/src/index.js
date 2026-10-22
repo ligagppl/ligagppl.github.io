@@ -12,6 +12,8 @@
 //  Private (KV):           team codes, photos, dispute notes, activity log
 // ============================================================
 
+import { DurableObject } from "cloudflare:workers";
+
 const FILES = { pairs: "data/pairs.json", results: "data/results.json", cup: "data/cup.json", matches: "data/matches.json" };
 const FALLBACK = { pairs: [], results: [], cup: { rounds: [] }, matches: {} };
 const AUTO_CONFIRM_MS = 48 * 3600 * 1000;
@@ -216,18 +218,40 @@ function randomCode(len) {
 
 async function login(request, env, body) {
   const ip = request.headers.get("CF-Connecting-IP") || "local";
-  const rlKey = `rl:${ip}`;
-  const tries = +(await env.KV.get(rlKey)) || 0;
-  if (tries >= 20) throw httpError(429, "Too many attempts – please wait 15 minutes.");
+  // 1) Cloudflare's rate limiter: quick first filter (max 10 login tries a minute per connection)
+  if (env.LOGIN_RL) {
+    const { success } = await env.LOGIN_RL.limit({ key: ip });
+    if (!success) throw httpError(429, "Too many attempts – please wait a minute.");
+  }
+  // 2) the login guard: 10 wrong codes per 15 minutes per connection + league-wide brake
+  const guard = env.GUARD.get(env.GUARD.idFromName("login"));
+  const state = await guard.check(ip);
+  if (state.blocked) throw httpError(429, state.blocked);
+  // 3) Turnstile: proves a person (not a script) is logging in
+  await checkTurnstile(env, body.turnstile, ip);
+
   const teamId = await env.KV.get(`code:${await codeHash(env, body.code)}`);
   if (!teamId) {
-    await env.KV.put(rlKey, String(tries + 1), { expirationTtl: 900 });
-    throw httpError(401, "This team code is not valid.");
+    const after = await guard.fail(ip);
+    if (after.brakeStarted) await addLog(env, { action: "⚠️ login brake on – too many wrong codes league-wide, logins paused for 10 minutes" });
+    throw httpError(401, after.left > 0 ? `This team code is not valid (${after.left} ${after.left === 1 ? "try" : "tries"} left).` : "This team code is not valid. Too many attempts – please wait 15 minutes.");
   }
   const rec = JSON.parse(await env.KV.get(`team:${teamId}`));
   const payload = b64url(enc.encode(JSON.stringify({ t: +teamId, v: rec.ver, exp: Date.now() + TOKEN_DAYS * 86400000 })));
   await addLog(env, { team: +teamId, action: "login" });
   return json({ token: `${payload}.${await hmac(env, payload)}`, team: +teamId });
+}
+
+async function checkTurnstile(env, token, ip) {
+  if (!env.TURNSTILE_SECRET) return; // not set up (e.g. local testing)
+  if (!token) throw httpError(400, "Please complete the security check.");
+  const form = new FormData();
+  form.append("secret", env.TURNSTILE_SECRET);
+  form.append("response", token);
+  form.append("remoteip", ip);
+  const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", { method: "POST", body: form });
+  const out = await res.json().catch(() => ({}));
+  if (!out.success) throw httpError(400, "The security check failed – please try again.");
 }
 
 async function requireTeam(request, env) {
@@ -587,4 +611,35 @@ async function addLog(env, entry) {
   const log = await getLog(env);
   log.unshift({ at: new Date().toISOString(), ...entry });
   await env.KV.put("log", JSON.stringify(log.slice(0, 300)));
+}
+
+// ---------------------------------------------------------------- login guard (Durable Object)
+// One instance counts wrong team codes for the whole league (exact and global, no KV writes):
+// - per connection: 10 wrong codes in 15 minutes → blocked until the oldest one is 15 minutes old
+// - league-wide brake: 200 wrong codes in an hour → all logins paused for 10 minutes
+const IP_LIMIT = 10, IP_WINDOW = 15 * 60000, BRAKE_LIMIT = 200, BRAKE_WINDOW = 60 * 60000, BRAKE_PAUSE = 10 * 60000;
+
+export class LoginGuard extends DurableObject {
+  async load() {
+    if (!this.s) this.s = (await this.ctx.storage.get("s")) || { ips: {}, all: [], pausedUntil: 0 };
+    const now = Date.now(), s = this.s;
+    for (const ip of Object.keys(s.ips)) { s.ips[ip] = s.ips[ip].filter(t => now - t < IP_WINDOW); if (!s.ips[ip].length) delete s.ips[ip]; }
+    s.all = s.all.filter(t => now - t < BRAKE_WINDOW);
+    return s;
+  }
+  async check(ip) {
+    const s = await this.load(), now = Date.now();
+    if (s.pausedUntil > now) return { blocked: `Logins are paused for a few minutes – please try again at ${new Date(s.pausedUntil).toLocaleTimeString("en-GB", { timeZone: "Europe/Berlin", hour: "2-digit", minute: "2-digit" })}.` };
+    if ((s.ips[ip] || []).length >= IP_LIMIT) return { blocked: "Too many wrong codes – please wait 15 minutes." };
+    return {};
+  }
+  async fail(ip) {
+    const s = await this.load(), now = Date.now();
+    (s.ips[ip] = s.ips[ip] || []).push(now);
+    s.all.push(now);
+    let brakeStarted = false;
+    if (s.all.length >= BRAKE_LIMIT && s.pausedUntil <= now) { s.pausedUntil = now + BRAKE_PAUSE; s.all = []; brakeStarted = true; }
+    await this.ctx.storage.put("s", s);
+    return { left: IP_LIMIT - s.ips[ip].length, brakeStarted };
+  }
 }

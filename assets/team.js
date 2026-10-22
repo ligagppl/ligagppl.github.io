@@ -116,9 +116,11 @@
       el.innerHTML = `<div class="card tm-login">
         <p>Log in with the <b>team code</b> the organizers sent you on WhatsApp. Both players of a team use the same code.</p>
         <p class="note">By logging in you accept the <a href="#rules">member area terms</a> (Rules §12) – don't share your code.</p>
-        <form id="tm-login"><input id="tm-code" autocomplete="off" autocapitalize="characters" placeholder="e.g. K7PM-Q2XD" maxlength="12">
+        <form id="tm-login"><input id="tm-code" autocomplete="off" autocapitalize="characters" placeholder="e.g. K7PM-Q2XD" maxlength="12" value="${esc(typedCode)}">
         <button class="btn" type="submit">Log in</button></form>
+        <div id="tm-turnstile"></div>
         ${msgHtml("top")}</div>`;
+      mountTurnstile();
       return;
     }
     if (!state) { el.innerHTML = `<div class="card muted">Loading…</div>`; return; }
@@ -353,10 +355,12 @@
     if (kind === "tm-login") {
       msg = null;
       try {
-        const r = await call("/login", { code: document.getElementById("tm-code").value });
-        ls.set(TOKEN_KEY, r.token);
+        typedCode = document.getElementById("tm-code").value;
+        if (LEAGUE.turnstileSiteKey && !tsToken) throw new Error("Please wait for the security check below to finish.");
+        const r = await call("/login", { code: typedCode, turnstile: tsToken });
+        ls.set(TOKEN_KEY, r.token); typedCode = "";
         return load();
-      } catch (err) { msg = { key: "top", text: err.message, ok: false }; return render(); }
+      } catch (err) { msg = { key: "top", text: err.message, ok: false }; tsToken = null; return render(); }
     }
     const v = n => (f.elements[n] ? f.elements[n].value.trim() : "");
     if (kind === "schedule") return act(key, () => {
@@ -426,6 +430,24 @@
     if (b) { const input = b.closest(".tm-venue").querySelector("input"); input.value = b.dataset.venue; b.parentElement.hidden = true; input.focus(); return; }
     if (!e.target.closest(".tm-venue")) el.querySelectorAll(".tm-sugg").forEach(x => (x.hidden = true));
   });
+
+  // Cloudflare Turnstile on the login form (mostly invisible – proves a person is logging in)
+  let tsToken = null, typedCode = "", tsLoading = null;
+  function mountTurnstile() {
+    const box = document.getElementById("tm-turnstile"), key = LEAGUE.turnstileSiteKey;
+    if (!box || !key) return;
+    tsToken = null;
+    tsLoading = tsLoading || new Promise(res => {
+      window.gpplTurnstileReady = res;
+      const s = document.createElement("script");
+      s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=gpplTurnstileReady";
+      s.async = true; document.head.appendChild(s);
+    });
+    tsLoading.then(() => window.turnstile.render(box, {
+      sitekey: key, appearance: "interaction-only",
+      callback: t => (tsToken = t), "expired-callback": () => (tsToken = null), "error-callback": () => (tsToken = null),
+    }));
+  }
 
   // menu item: once a team is logged in, its logo replaces the padel ball
   function updateNav() {

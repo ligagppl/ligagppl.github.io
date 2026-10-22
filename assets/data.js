@@ -47,6 +47,8 @@ const LEAGUE = {
   ],
 
   memberApi: "https://gppl-members-staging.gppl-members.workers.dev",
+  // Cloudflare Turnstile site key for the My team login (public) – empty = no security check
+  turnstileSiteKey: "",
 
   startDate: "2026-11-02",
   matchdayLengthDays: 10,

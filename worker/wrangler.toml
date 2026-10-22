@@ -3,6 +3,7 @@
 #   GITHUB_TOKEN   fine-grained token: this repository only, Contents read & write
 #   SESSION_SECRET long random text (signs logins, salts team codes)
 #   ADMIN_KEY      long random text (entered once in Admin → Member area)
+#   TURNSTILE_SECRET  secret key of the Turnstile widget (login security check)
 
 name = "gppl-members"
 main = "src/index.js"
@@ -22,6 +23,20 @@ crons = ["17 * * * *"]
 binding = "KV"
 id = "REPLACE_WITH_PROD_KV_ID"
 
+# login protection: Cloudflare rate limiter (10 tries a minute per connection) + login guard
+[[ratelimits]]
+name = "LOGIN_RL"
+namespace_id = "1001"
+simple = { limit = 10, period = 60 }
+
+[[durable_objects.bindings]]
+name = "GUARD"
+class_name = "LoginGuard"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LoginGuard"]
+
 # ---------------------------------------------------------------- staging
 [env.staging]
 name = "gppl-members-staging"
@@ -38,3 +53,16 @@ crons = ["17 * * * *"]
 [[env.staging.kv_namespaces]]
 binding = "KV"
 id = "ab56eec100464561bbab09ef9a4b9567"
+
+[[env.staging.ratelimits]]
+name = "LOGIN_RL"
+namespace_id = "1002"
+simple = { limit = 10, period = 60 }
+
+[[env.staging.durable_objects.bindings]]
+name = "GUARD"
+class_name = "LoginGuard"
+
+[[env.staging.migrations]]
+tag = "v1"
+new_sqlite_classes = ["LoginGuard"]

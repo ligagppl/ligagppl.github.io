@@ -16,7 +16,7 @@
   let queue = [], qPos = 0; // codes created in bulk: one WhatsApp chat per click, player by player
   let phones = {};      // WhatsApp numbers per team (private, kept by the gatekeeper)
   const siteUrl = () => new URL("index.html#team", location.href).href.replace("index.html", "");
-  const codeMessage = (team, code) => `Hi ${team}! 🎾\nYour GPPL team code is: ${code}\n\nLog in at ${siteUrl()} (🎾 My team) to set the dates of your matches and enter results.\nBoth of you use the same code – please keep it private.`;
+  const codeMessage = (team, code) => `Hi ${team}! 🎾\nYour GPPL team code is: ${code}\n\nLog in at ${siteUrl()} (🎾 My team) to set the dates of your matches and enter results.\nBoth of you use the same code – please also share it with your partner (just in case), but with nobody else.`;
   // "+49 176 123", "0049…", "0176…" (Germany), "0300…" (Pakistan) → digits with country code
   function normPhone(p) {
     let d = String(p || "").replace(/[^\d+]/g, "");
