@@ -110,6 +110,7 @@
   // ---------------------------------------------------------------- views
 
   function render() {
+    updateNav();
     if (!api()) return;
     if (!state && !loading) {
       el.innerHTML = `<div class="card tm-login">
@@ -425,6 +426,18 @@
     if (b) { const input = b.closest(".tm-venue").querySelector("input"); input.value = b.dataset.venue; b.parentElement.hidden = true; input.focus(); return; }
     if (!e.target.closest(".tm-venue")) el.querySelectorAll(".tm-sugg").forEach(x => (x.hidden = true));
   });
+
+  // menu item: once a team is logged in, its logo replaces the padel ball
+  function updateNav() {
+    const a = document.querySelector('#nav a[href="#team"]');
+    if (!a) return;
+    let id = null;
+    try { id = JSON.parse(atob(ls.get(TOKEN_KEY).split(".")[0].replace(/-/g, "+").replace(/_/g, "/"))).t; } catch {}
+    const p = id && LEAGUE.pairs.find(x => x.id === id), l = p && (LEAGUE.logos || {})[p.name];
+    const src = l && (typeof l === "string" ? l : l.src);
+    a.innerHTML = src ? `<img class="nav-logo" src="${esc(src)}" alt="">My team` : "🎾 My team";
+  }
+  updateNav();
 
   window.addEventListener("hashchange", () => { if (location.hash === "#team") load(); });
   if (location.hash === "#team") load();

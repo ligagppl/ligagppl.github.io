@@ -13,6 +13,7 @@
   const when = iso => new Date(iso).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 
   let lastCode = null; // the code just created – shown once in its team's card
+  let queue = [], qPos = 0; // codes created in bulk: one WhatsApp chat per click, player by player
   let phones = {};      // WhatsApp numbers per team (private, kept by the gatekeeper)
   const siteUrl = () => new URL("index.html#team", location.href).href.replace("index.html", "");
   const codeMessage = (team, code) => `Hi ${team}! 🎾\nYour GPPL team code is: ${code}\n\nLog in at ${siteUrl()} (🎾 My team) to set the dates of your matches and enter results.\nBoth of you use the same code – please keep it private.`;
@@ -94,6 +95,40 @@
 
   $("mb-key").value = get(KEY) || "";
   $("mb-connect").addEventListener("click", () => { set(KEY, $("mb-key").value.trim()); loadAll(); });
+  // ---------------------------------------------------------------- codes for all teams at once
+  function renderQueue() {
+    if (!queue.length) { $("mb-queue").innerHTML = ""; return; }
+    const next = queue[qPos];
+    $("mb-queue").innerHTML = `<div class="mb-queue">
+      <b>📲 Send the new codes</b> <span class="note">– one click per chat (WhatsApp can't send several at once). Don't reload this page until you're done: the codes are shown only now.</span><br>
+      ${next ? `<button class="btn" id="mb-send-next" style="margin-top:10px">📲 Send ${qPos + 1} of ${queue.length}: ${esc(next.who)} (${esc(next.team)})</button>`
+        : `<p style="margin:10px 0 0"><b>✅ All ${queue.length} messages opened.</b> <button class="btn ghost small" id="mb-queue-close">Close</button></p>`}
+      <ol>${queue.map((q, i) => `<li class="${i < qPos ? "done" : ""}">${esc(q.team)} → ${esc(q.who)} <code>${q.code}</code></li>`).join("")}</ol></div>`;
+  }
+  async function bulkCodes(resetAll) {
+    const { teams } = await call("/admin/teams");
+    const todo = teams.filter(t => resetAll || !t.hasCode);
+    if (!todo.length) return show("mb-code", "Every team already has a code.");
+    if (!confirm(resetAll ? `Make NEW codes for all ${todo.length} teams? All old codes stop working.` : `Create codes for ${todo.length} team(s)?`)) return;
+    queue = []; qPos = 0;
+    for (const [n, t] of todo.entries()) {
+      show("mb-code", `Creating code ${n + 1} of ${todo.length}…`);
+      const { code } = await call("/admin/code", { team: t.id });
+      const pl = (GPPL.pairById[t.id] || { players: [] }).players, nums = phones[t.id] || [], msg = codeMessage(t.name, code);
+      const withNum = [0, 1].filter(i => nums[i]);
+      if (withNum.length) withNum.forEach(i => queue.push({ team: t.name, code, who: pl[i] || `Player ${i + 1}`, url: `https://api.whatsapp.com/send?phone=${nums[i]}&text=${encodeURIComponent(msg)}` }));
+      else queue.push({ team: t.name, code, who: "choose the chat", url: `https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}` });
+    }
+    show("mb-code", `✅ ${todo.length} code(s) created.`);
+    lastCode = null; renderQueue(); loadAll();
+  }
+  $("mb-create-all").addEventListener("click", () => bulkCodes(false).catch(err => show("mb-code", "❌ " + err.message, false)));
+  $("mb-reset-all").addEventListener("click", () => bulkCodes(true).catch(err => show("mb-code", "❌ " + err.message, false)));
+  $("mb-queue").addEventListener("click", e => {
+    if (e.target.id === "mb-send-next") { window.open(queue[qPos].url, "_blank", "noopener"); qPos++; renderQueue(); }
+    if (e.target.id === "mb-queue-close") { queue = []; renderQueue(); }
+  });
+
   $("panel-members").addEventListener("click", async e => {
     const b = e.target.closest("button");
     if (!b) return;
