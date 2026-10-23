@@ -49,10 +49,12 @@ const GPPLImage = (() => {
       const CUP = cups && r.winner ? 40 : 0; // room for the trophy
       const centerFont = ctx.font, nameW = Math.min(300, W / 2 - 70 - s - 16 - ctx.measureText(r.center).width / 2 - 24);
       const cup = (x, align) => { ctx.font = "28px Arial, sans-serif"; ctx.textAlign = align; ctx.fillText("🏆", x, ly + 50); };
-      ctx.fillStyle = r.winner === r.a ? "#0b6b34" : "#14201a"; ctx.textAlign = "left";
+      // the winner's name in gold (a dark gold gradient, readable on white)
+      const gold = () => { const g = ctx.createLinearGradient(0, ly + 20, 0, ly + 56); g.addColorStop(0, "#d9a521"); g.addColorStop(0.5, "#b8860b"); g.addColorStop(1, "#8a6208"); return g; };
+      ctx.fillStyle = r.winner === r.a ? gold() : "#14201a"; ctx.textAlign = "left";
       fit(ctx, name(r.a), nameW - (r.winner === r.a ? CUP : 0), 34); ctx.fillText(name(r.a), 70 + s + 16, ly + 50);
       if (CUP && r.winner === r.a) cup(70 + s + 16 + ctx.measureText(name(r.a)).width + 10, "left");
-      ctx.fillStyle = r.winner === r.b ? "#0b6b34" : "#14201a"; ctx.textAlign = "right";
+      ctx.fillStyle = r.winner === r.b ? gold() : "#14201a"; ctx.textAlign = "right";
       fit(ctx, name(r.b), nameW - (r.winner === r.b ? CUP : 0), 34); ctx.fillText(name(r.b), W - 70 - s - 16, ly + 50);
       if (CUP && r.winner === r.b) cup(W - 70 - s - 16 - ctx.measureText(name(r.b)).width - 10, "right");
       ctx.fillStyle = r.center === "vs" ? "#0b6b34" : "#14201a"; ctx.textAlign = "center";
