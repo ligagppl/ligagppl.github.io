@@ -75,6 +75,20 @@
   const linkHtml = link => link && /^https:\/\/[^/]*playtomic\.(io|com)\//.test(link) ? ` <a href="${esc(link)}" target="_blank" rel="noopener">Playtomic ↗</a>` : "";
   const mapsUrl = place => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
   const dayText = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+
+  // result deadlines (Rules §11): 48 hours after the booked time to enter the result, then 48 hours to confirm
+  const H48 = 48 * 3600000;
+  const matchEnd = e => (e && e.date && e.time ? new Date(`${e.date}T${e.time}:00`).getTime() + (+e.duration || 90) * 60000 : null);
+  const leftText = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60; return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h ${String(m).padStart(2, "0")}m`; };
+  // a line with the time left, kept live by the timer below (data-due = deadline, data-what = text before the time)
+  function dueLine(due, what, over) {
+    return `<p class="tm-due" data-due="${due}" data-what="${esc(what)}" data-over="${esc(over)}">${dueText(due, what, over)}</p>`;
+  }
+  function dueText(due, what, over) {
+    const ms = due - Date.now();
+    return ms <= 0 ? over : `${ms < 12 * 3600000 ? "🟠" : "⏱"} ${what} <b>${leftText(ms)} left</b>`;
+  }
+  setInterval(() => document.querySelectorAll(".tm-due[data-due]").forEach(x => (x.innerHTML = dueText(+x.dataset.due, x.dataset.what, x.dataset.over))), 30000);
   // sets as seen by my team: [my games, their games]
   const mine = (sets, a) => (state.team === a ? sets : sets.map(([x, y]) => [y, x]));
   const scoreText = (sets, fullSets) => sets.map(([x, y], i) => (i === 2 && !fullSets ? `[${x}-${y}]` : `${x}-${y}`)).join(" ");
@@ -105,7 +119,9 @@
     if (p && p.status === "disputed") return { cls: "disputed", text: "❗ Disputed" };
     if (p && p.by !== state.team) return { cls: "action", text: "⚠️ Please confirm" };
     if (p) return { cls: "waiting", text: "⏳ Waiting for confirmation" };
-    if ((state.matches[m.key] || {}).date) return { cls: "scheduled", text: "📅 Scheduled" };
+    const end = matchEnd(state.matches[m.key]);
+    if (end && end <= Date.now()) return { cls: "action", text: "📝 Result due" };
+    if (end) return { cls: "scheduled", text: "📅 Scheduled" };
     return { cls: "open", text: "Open" };
   }
 
@@ -238,8 +254,10 @@
       if (p.status === "disputed") body += `<p>This result was disputed. The organizers will decide.</p>` +
         (state.notes && state.notes[m.key] ? `<p class="note">“${esc(state.notes[m.key])}”</p>` : "");
       else if (p.by === state.team) body += `<p>You entered ${txt}. ${esc(teamName(m.opp))} has 48 hours to confirm – after that it counts automatically.</p>
+        ${dueLine(Date.parse(p.at) + H48, "Counts automatically in", "✅ Counts automatically within the next hour.")}
         <div class="tm-btns"><button class="btn ghost small" data-act="withdraw" data-key="${m.key}">Withdraw & correct</button>${photoBtn(m.key)}</div>`;
       else body += `<div class="tm-ask"><p><b>${esc(teamName(m.opp))}</b> entered ${txt}.<br><b>Is that right?</b></p>
+        ${dueLine(Date.parse(p.at) + H48, "Confirm or dispute –", "✅ Counts automatically within the next hour.")}
         <div class="tm-btns"><button class="btn" data-act="confirm" data-key="${m.key}">✅ Yes, confirm</button>
         <button class="btn ghost" data-act="form" data-form="${m.key}|dispute">❌ No, dispute</button>${photoBtn(m.key)}</div></div>` +
         (form === `${m.key}|dispute` ? `<form class="tm-form" data-submit="dispute" data-key="${m.key}">
@@ -247,7 +265,9 @@
           <button class="btn small" type="submit">Send to the organizers</button></form>` : "");
     } else {
       const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(GPPL.timeRange(entry)) : ""}${entry.court ? ` · 📍 <a href="${mapsUrl(entry.court)}" target="_blank" rel="noopener">${esc(entry.court)}</a>` : ""}</p>` : "";
-      body = when + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share</button>
+      const end = matchEnd(entry);
+      const due = end && end <= Date.now() ? dueLine(end + H48, "Played – enter the result:", "🔴 More than 48 hours since the match – please contact the organizers (Rules §11).") : "";
+      body = when + due + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share</button>
         <button class="btn ghost small" data-act="match-img" data-key="${m.key}">⬇️ Image</button>` : ""}<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>
         ${entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule`) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
