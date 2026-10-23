@@ -6,7 +6,18 @@
       "matches": [
         {
           "a": 2,
-          "b": 7
+          "b": 7,
+          "sets": [
+            [
+              6,
+              3
+            ],
+            [
+              6,
+              2
+            ]
+          ],
+          "link": "https://app.playtomic.io/matches/staging-test-8"
         },
         {
           "a": 5,
