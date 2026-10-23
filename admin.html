@@ -81,6 +81,14 @@
     .ms-missed .ms-fill { background: color-mix(in srgb, var(--loss) 50%, transparent); }
     .ms-behind .ms-fill { background: color-mix(in srgb, #e0a100 55%, transparent); }
     @media (max-width: 640px) { .ms-row { grid-template-columns: 1fr auto; } .ms-bar, .ms-next { grid-column: 1 / -1; } }
+    .dl-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0 10px 10px; border-bottom: 1px dashed var(--line); border-left: 4px solid var(--line); }
+    .dl-row .md-pair { grid-column: 1 / -1; }
+    .dl-info { display: flex; flex-direction: column; gap: 2px; font-size: .9rem; min-width: 0; }
+    .dl-chip { font-weight: 700; font-size: .9rem; white-space: nowrap; }
+    .dl-over { border-left-color: var(--loss); }
+    .dl-soon { border-left-color: #e0a100; }
+    .dl-ok { border-left-color: var(--green-2); }
+    .dl-dispute { border-left-color: var(--loss); }
     .mb-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
     .mb-team { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
     .mb-team.has-code { border-color: color-mix(in srgb, var(--win) 45%, var(--line)); }
@@ -141,6 +149,11 @@
         <div class="form-row"><label for="start-date">First day of matchday 1</label><input type="date" id="start-date"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="start-date-save">Save</button><button class="btn ghost" id="start-date-clear">Clear</button></div>
         <div class="msg" id="start-date-msg"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">⏱ Result deadlines</h3>
+        <p class="note">Matches that were played (date &amp; time passed) but have no confirmed result yet. A result must be entered within <b>48 hours</b> of the match, and the opponent then has <b>48 hours</b> to confirm or dispute (after that it counts automatically). Over the limit = contact the pairs (Rules §10).</p>
+        <div id="dl-list"></div>
       </div>
       <div class="card" id="upd-card">
         <h3 style="margin-top:0">📰 Results update</h3>
@@ -764,8 +777,42 @@
       GPPLImage.share(blob, file, () => (b.textContent = "🏆 Ready – tap again"));
     });
 
+    // ---------- result deadlines: played matches without a confirmed result ----------
+    const H48 = 48 * 3600000;
+    const left = ms => { const h = Math.floor(Math.abs(ms) / 3600000), m = Math.floor(Math.abs(ms) / 60000) % 60; return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h ${String(m).padStart(2, "0")}m`; };
+    function renderDeadlines() {
+      const now = Date.now(), rows = [];
+      const add = (key, a, b, label, e, hasResult) => {
+        if (hasResult || !e || !e.date || !e.time) return;
+        const end = new Date(`${e.date}T${e.time}:00`).getTime() + (+e.duration || 90) * 60000;
+        if (end > now) return; // not played yet
+        const p = e.pending;
+        let step, due;
+        if (p && p.status === "disputed") { step = "❗ Disputed – your decision (❗ Disputes)"; due = null; }
+        else if (p) { step = `⏳ ${name(p.by)} entered ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)} – waiting for ${name(p.by === p.a ? p.b : p.a)} to confirm`; due = Date.parse(p.at) + H48; }
+        else { step = "📝 No result entered yet"; due = end + H48; }
+        const ms = due === null ? null : due - now;
+        const level = ms === null ? "dispute" : ms < 0 ? "over" : ms < 12 * 3600000 ? "soon" : "ok";
+        rows.push({ key, a, b, label, step, ms, level, played: end, auto: !!p && p.status !== "disputed" });
+      };
+      fixtureList.forEach((games, i) => games.forEach(([a, b]) => add(lkey(a, b), a, b, `Matchday ${i + 1}`, schedule[lkey(a, b)], !!GPPL.findResult(results, a, b))));
+      cup.rounds.forEach((rd, ri) => (rd.matches || []).forEach((m, mi) => add(`C:${ri}:${mi}`, m.a, m.b, `GPPC Cup · ${rd.name}`, schedule[`C:${ri}:${mi}`], !!(m.sets || m.walkover))));
+      const order = { over: 0, dispute: 1, soon: 2, ok: 3 };
+      rows.sort((x, y) => order[x.level] - order[y.level] || (x.ms ?? 0) - (y.ms ?? 0));
+      const chip = r => r.level === "dispute" ? "❗ Waiting for you"
+        : r.level === "over" ? (r.auto ? "✅ Counts automatically now" : `🔴 ${left(r.ms)} over`)
+        : `${r.level === "soon" ? "🟠" : "🟢"} ${left(r.ms)} left`;
+      $("dl-list").innerHTML = rows.length ? rows.map(r => `<div class="dl-row dl-${r.level}">
+          ${pairLine(r.a, r.b)}
+          <span class="dl-info"><span class="note">${escA(r.label)} · played ${new Date(r.played).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+            <span>${escA(r.step)}</span></span>
+          <span class="dl-chip">${chip(r)}</span></div>`).join("")
+        : '<p class="muted">Nothing open – every played match has a confirmed result. 🎉</p>';
+    }
+
     function renderLeagueViews() {
       updBlob = null;
+      renderDeadlines();
       renderUpdate();
       Object.keys(matchImgCache).forEach(k => delete matchImgCache[k]);
       Object.keys(mdShareCache).forEach(k => delete mdShareCache[k]); // results/dates may have changed
@@ -894,6 +941,7 @@
       extra += `<button class="btn ghost" id="undo-round">Delete latest round (${cup.rounds[latest].name})</button>`;
       el.innerHTML = dueHtml + list + `<div class="card">${extra}</div>`;
       renderUpdate(); // a saved cup result can be part of the next results update
+      renderDeadlines();
       const third = $("add-third");
       if (third) third.addEventListener("click", async () => {
         const [m1, m2] = semis.matches;
