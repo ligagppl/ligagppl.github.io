@@ -80,7 +80,8 @@
   const H48 = 48 * 3600000;
   const matchStart = e => (e && e.date && e.time ? new Date(`${e.date}T${e.time}:00`).getTime() : null);
   const matchEnd = e => (e && e.date && e.time ? new Date(`${e.date}T${e.time}:00`).getTime() + (+e.duration || 90) * 60000 : null);
-  const leftText = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60; return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h ${String(m).padStart(2, "0")}m`; };
+  const two = n => String(n).padStart(2, "0");
+  const leftText = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60; return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h ${two(m)}m` : `${h}h ${two(m)}m ${two(sec)}s`; };
   // a line with the time left, kept live by the timer below (data-due = deadline, data-what = text before the time)
   function dueLine(due, what, over) {
     return `<p class="tm-due" data-due="${due}" data-what="${esc(what)}" data-over="${esc(over)}">${dueText(due, what, over)}</p>`;
@@ -89,7 +90,7 @@
     const ms = due - Date.now();
     return ms <= 0 ? over : `${ms < 12 * 3600000 ? "🟠" : "⏱"} ${what} <b>${leftText(ms)} left</b>`;
   }
-  setInterval(() => document.querySelectorAll(".tm-due[data-due]").forEach(x => (x.innerHTML = dueText(+x.dataset.due, x.dataset.what, x.dataset.over))), 30000);
+  setInterval(() => document.querySelectorAll(".tm-due[data-due]").forEach(x => (x.innerHTML = dueText(+x.dataset.due, x.dataset.what, x.dataset.over))), 1000);
   // sets as seen by my team: [my games, their games]
   const mine = (sets, a) => (state.team === a ? sets : sets.map(([x, y]) => [y, x]));
   const scoreText = (sets, fullSets) => sets.map(([x, y], i) => (i === 2 && !fullSets ? `[${x}-${y}]` : `${x}-${y}`)).join(" ");
