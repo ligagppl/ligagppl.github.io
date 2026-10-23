@@ -34,5 +34,11 @@
     "time": "11:00",
     "duration": 60,
     "court": "TC Unterföhring, Jahnstraße 7, 85774 Unterföhring"
+  },
+  "C:0:3": {
+    "date": "2026-10-20",
+    "time": "18:00",
+    "duration": 90,
+    "court": "PadelPit, Heiglhofstraße 25, 81377 München"
   }
 }
