@@ -77,7 +77,7 @@ const GPPLImage = (() => {
     return render({
       title: `📅 ${day}${e.time ? " · " + GPPL.timeRange(e) : ""}`,
       subtitle: /cup/i.test(label) ? `🏆 ${label}` : "",
-      rows: [{ label: "", a, b, center: "vs", sub: e.court ? `📍 ${e.court}` : "", subSmall: true }], big: true, titleSize: 40,
+      rows: [{ label: "", a, b, center: "vs", sub: e.court ? `📍 ${e.court}` : "", subSmall: true }], big: true, titleSize: 35,
       footer: "Schedule, table & results: ligagppl.github.io",
     });
   }
