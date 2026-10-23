@@ -90,7 +90,10 @@
     const ms = due - Date.now();
     return ms <= 0 ? over : `${ms < 12 * 3600000 ? "🟠" : "⏱"} ${what} <b>${leftText(ms)} left</b>`;
   }
-  setInterval(() => document.querySelectorAll(".tm-due[data-due]").forEach(x => (x.innerHTML = dueText(+x.dataset.due, x.dataset.what, x.dataset.over))), 1000);
+  setInterval(() => document.querySelectorAll(".tm-due[data-due]").forEach(x => {
+    const t = dueText(+x.dataset.due, x.dataset.what, x.dataset.over);
+    if (x.innerHTML !== t) x.innerHTML = t; // only the countdown lines, and only when the text changes
+  }), 1000);
   // sets as seen by my team: [my games, their games]
   const mine = (sets, a) => (state.team === a ? sets : sets.map(([x, y]) => [y, x]));
   const scoreText = (sets, fullSets) => sets.map(([x, y], i) => (i === 2 && !fullSets ? `[${x}-${y}]` : `${x}-${y}`)).join(" ");
@@ -249,8 +252,7 @@
       let lostIt = !!m.official.walkover && m.official.walkover !== state.team;
       if (m.official.walkover) body = `<p>Decided by walkover (organizers).</p>`;
       else { const s = mine(m.official.sets, m.official.a); lostIt = !won(s); body = board(m, s) + `<p class="tm-score">${won(s) ? "🏆 Won" : "Lost"}${linkHtml(m.official.link)}</p>`; }
-      body += `<div class="tm-btns"><button class="btn ghost small" data-act="win-share" data-key="${m.key}">${lostIt ? "🤝 Share" : "🏆 Share"}</button>
-        <button class="btn ghost small" data-act="win-img" data-key="${m.key}">⬇️ Image</button></div>`;
+      body += `<div class="tm-btns"><button class="btn ghost small" data-act="win-share" data-key="${m.key}">${lostIt ? "🤝" : "🏆"} Share on WhatsApp</button></div>`;
     } else if (p) {
       const s = mine(p.sets, p.a), txt = `<b>${scoreText(s, m.fullSets)}</b> (${won(s) ? "your team won" : "your team lost"})`;
       body = board(m, s) + (p.link ? `<p class="note">${linkHtml(p.link)}</p>` : "");
@@ -272,8 +274,7 @@
       const locked = !!start && start <= Date.now(); // date and venue can't change once the match has started
       const late = !!end && end + H48 <= Date.now(); // no result within 48 hours → the organizers decide (Rules §11)
       const due = end && end <= Date.now() ? dueLine(end + H48, "Played – enter the result:", "🔴 More than 48 hours since the match – please contact the organizers (Rules §11).") : "";
-      body = when + due + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share</button>
-        <button class="btn ghost small" data-act="match-img" data-key="${m.key}">⬇️ Image</button>` : ""}${locked ? "" : `<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>`}
+      body = when + due + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share on WhatsApp</button>` : ""}${locked ? "" : `<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>`}
         ${late ? contactBtn(m) : entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule` && !locked) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
         <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="900" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
@@ -300,6 +301,14 @@
     const e = state.matches[m.key] || {};
     const text = `Hi, this is ${teamName(state.team)} (GPPL). Our match ${m.label} vs ${teamName(m.opp)} on ${dayText(e.date)}${e.time ? " at " + e.time : ""} has no result in My team yet and the 48 hours are over. `;
     return `<a class="btn small" href="https://api.whatsapp.com/send?phone=${state.organizer}&text=${encodeURIComponent(text)}" target="_blank" rel="noopener">💬 Contact the organizers</a>`;
+  }
+
+  // the phone's share sheet with the image (pick WhatsApp there); computers without it get the image saved
+  async function shareImage(btn, blob, name) {
+    const label = btn.textContent;
+    const how = await GPPLImage.share(blob, name, () => (btn.textContent = "📤 Ready – tap again"));
+    if (how === "shared") btn.textContent = label;
+    if (how === "downloaded") { btn.textContent = "✅ Image saved – attach it in WhatsApp"; setTimeout(() => (btn.textContent = label), 5000); }
   }
 
   function photoBtn(key) { return `<button class="btn ghost small" data-act="photo" data-key="${key}">📷 Photo</button>`; }
@@ -372,23 +381,21 @@
     if (a === "logout") { ls.set(TOKEN_KEY, null); state = null; msg = null; return render(); }
     if (a === "reload") { msg = null; return load(); }
     if (a === "form") { form = form === b.dataset.form ? null : b.dataset.form; msg = null; return render(); }
-    if (a === "win-share" || a === "win-img") {
+    if (a === "win-share") {
       const m = myMatches().find(x => x.key === key);
       if (!m || !m.official) return;
       const label = m.group === "cup" ? m.label : m.label.split(" · ")[0];
       const name = `GPPL ${label.replace("GPPC Cup · ", "")} – ${teamName(state.team)} vs ${teamName(m.opp)} result.png`;
       const blob = matchImgs["w" + key] || (matchImgs["w" + key] = await GPPLImage.winnerImage({ label, r: m.official, a: state.team, b: m.opp, fullSets: m.fullSets, sharedBy: state.team }));
-      if (a === "win-img") return GPPLImage.download(blob, name);
-      return GPPLImage.share(blob, name, () => (b.textContent = "🏆 Ready – tap again"));
+      return shareImage(b, blob, name);
     }
-    if (a === "match-share" || a === "match-img") {
+    if (a === "match-share") {
       const m = myMatches().find(x => x.key === key), e = state.matches[key];
       if (!m || !e) return;
       const name = `GPPL ${m.label.split(" · ")[m.group === "cup" ? 1 : 0]} – ${teamName(state.team)} vs ${teamName(m.opp)}.png`;
       const blob = matchImgs[key] || (matchImgs[key] = await GPPLImage.matchImage({
         label: m.group === "cup" ? m.label : m.label.split(" · ")[0], a: state.team, b: m.opp, e }));
-      if (a === "match-img") return GPPLImage.download(blob, name);
-      return GPPLImage.share(blob, name, () => (b.textContent = "📤 Ready – tap again"));
+      return shareImage(b, blob, name);
     }
     if (a === "photo") {
       if (photos[key]) { URL.revokeObjectURL(photos[key]); delete photos[key]; return render(); }
