@@ -13,7 +13,7 @@ const LEAGUE = {
   // Pre-season: only registration and rules. During the season, use e.g.:
   // ["home", "rules", "schedule", "table", "cup", "participants", "gallery", "register", "verify", "admin"]
   // Tabs not listed are hidden; #admin always stays reachable by its link.
-  visibleTabs: ["register", "rules", "participants"],
+  visibleTabs: ["register", "rules", "participants", "team"],
 
   startDate: "2026-11-09",
   matchdayLengthDays: 10,
