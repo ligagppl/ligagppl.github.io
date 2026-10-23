@@ -109,9 +109,10 @@ const GPPLImage = (() => {
   }
 
   // several confirmed results in one image (the admin's results update)
-  function resultsImage(items, subtitle) {
+  // since: the day of the last shared update (empty for the first one)
+  function resultsImage(items, subtitle, since) {
     return render({
-      title: "📰 New results",
+      title: since ? `Results since ${since}` : "Results so far",
       subtitle, cups: true,
       rows: items.map(it => resultRow(it.label.toUpperCase(), it.r, it.a, it.b, it.fullSets)),
       footer: "Table & all results: ligagppl.github.io",

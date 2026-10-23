@@ -416,7 +416,7 @@
   <script src="assets/store.js?v=3"></script>
   <script src="assets/lock.js?v=2"></script>
   <script src="assets/members-admin.js?v=12" defer></script>
-  <script src="assets/share-image.js?v=12"></script>
+  <script src="assets/share-image.js?v=13"></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;
@@ -752,11 +752,12 @@
       const file = `GPPL results ${new Date().toISOString().slice(0, 10)}.png`;
       if (b.dataset.upd === "done") {
         if (!confirm(`Mark these ${updItems.length} result(s) as shared? The next update starts after them.`)) return;
-        const next = { ...siteSettings, sharedResults: [...new Set((siteSettings.sharedResults || []).concat(updItems.map(x => x.key)))] };
+        const next = { ...siteSettings, sharedResults: [...new Set((siteSettings.sharedResults || []).concat(updItems.map(x => x.key)))], sharedResultsAt: new Date().toISOString() };
         if (await persist("settings", next, "results update shared", "upd-msg")) { siteSettings = next; renderUpdate(); }
         return;
       }
-      updBlob = updBlob || await GPPLImage.resultsImage(updItems, today());
+      const since = siteSettings.sharedResultsAt && new Date(siteSettings.sharedResultsAt).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+      updBlob = updBlob || await GPPLImage.resultsImage(updItems, today(), since);
       if (b.dataset.upd === "img") GPPLImage.download(updBlob, file);
       else await GPPLImage.share(updBlob, file, () => (b.textContent = "📤 Ready – tap again"));
       flash("upd-msg", "Shared? Press “✅ Mark as shared” so the next update only has newer results.");
