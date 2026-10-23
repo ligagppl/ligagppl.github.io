@@ -537,7 +537,17 @@
     }
 
     // ---------- league: due results + matches per matchday (cards like the members see) ----------
-    let schedule = {}; // data/matches.json – dates, venues and results the teams entered
+    let schedule = {}; // data/matches.json – dates and venues (public); results waiting for confirmation are added from the gatekeeper
+    // waiting/disputed results are private in the gatekeeper – fetched with the admin key (👥 Member area)
+    async function mergePending() {
+      const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
+      if (!api || !key) return;
+      try {
+        const res = await fetch(api + "/admin/open", { headers: { Authorization: `Admin ${key}` } });
+        if (!res.ok) return;
+        (await res.json()).open.forEach(o => (schedule[o.key] = { ...(schedule[o.key] || {}), pending: o }));
+      } catch {}
+    }
     const lkey = (a, b) => `L:${Math.min(a, b)}-${Math.max(a, b)}`;
     const escA = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     function teamLogo(id) {
@@ -1349,6 +1359,7 @@
       if (!matchdayChosen) { $("md").value = defaultMatchday(); matchdayChosen = true; }
       siteSettings = await STORE.load("settings", {});
       schedule = await STORE.load("matches", {});
+      await mergePending();
       fillMatches(); renderResultList(); renderLeagueViews(); renderCup(); fillRegistration(); renderCurrentPairs();
     }
 

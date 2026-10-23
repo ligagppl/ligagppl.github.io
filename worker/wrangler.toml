@@ -33,9 +33,17 @@ simple = { limit = 10, period = 60 }
 name = "GUARD"
 class_name = "LoginGuard"
 
+[[durable_objects.bindings]]
+name = "PENDING"
+class_name = "PendingStore"
+
 [[migrations]]
 tag = "v1"
 new_sqlite_classes = ["LoginGuard"]
+
+[[migrations]]
+tag = "v2"
+new_sqlite_classes = ["PendingStore"]
 
 # ---------------------------------------------------------------- staging
 [env.staging]
@@ -63,6 +71,14 @@ simple = { limit = 10, period = 60 }
 name = "GUARD"
 class_name = "LoginGuard"
 
+[[env.staging.durable_objects.bindings]]
+name = "PENDING"
+class_name = "PendingStore"
+
 [[env.staging.migrations]]
 tag = "v1"
 new_sqlite_classes = ["LoginGuard"]
+
+[[env.staging.migrations]]
+tag = "v2"
+new_sqlite_classes = ["PendingStore"]

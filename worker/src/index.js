@@ -58,6 +58,7 @@ async function route(request, env, ctx) {
     if (path === "/admin/log") return json({ log: await getLog(env) });
     if (path === "/admin/photo") return photo(env, url.searchParams.get("key"));
     if (path === "/admin/auto-confirm" && request.method === "POST") return json({ confirmed: await autoConfirm(env) });
+    if (path === "/admin/move-pending" && request.method === "POST") return adminMovePending(env);
     if (path === "/admin/phones") return request.method === "POST" ? adminSetPhones(env, body) : json({ phones: await getPhones(env) });
     throw httpError(404, "Not found");
   }
@@ -352,13 +353,17 @@ function checkSets(sets, fullSets) {
 
 // ---------------------------------------------------------------- team actions
 
+// results waiting for confirmation (or disputed) live privately in the PendingStore, not on GitHub
+const pendingStore = env => env.PENDING.get(env.PENDING.idFromName("pending"));
+
 async function me(env, team) {
   const { files } = await readAll(env, ["pairs", "results", "cup", "matches"]);
-  const notes = {};
-  for (const [key, m] of Object.entries(files.matches)) {
-    if (m.pending && m.pending.status === "disputed" && key.includes(String(team))) {
-      notes[key] = await env.KV.get(`note:${key}`);
-    }
+  const pending = await pendingStore(env).all(), notes = {};
+  // a team sees the waiting/disputed results of its own matches only
+  for (const [key, p] of Object.entries(pending)) {
+    if (p.a !== team && p.b !== team) continue;
+    files.matches[key] = { ...(files.matches[key] || {}), pending: p };
+    if (p.status === "disputed") notes[key] = await env.KV.get(`note:${key}`);
   }
   return json({ team, ...files, notes });
 }
@@ -377,8 +382,9 @@ async function schedule(env, team, body) {
     requirePlayer(info, team);
     if (officialResult(info, files)) throw httpError(400, "This match already has a result.");
     const m = files.matches[info.key] || {};
-    if (date || time || court) Object.assign(m, { date, time, duration, court, by: team, at: new Date().toISOString() });
-    else ["date", "time", "duration", "court", "by", "at"].forEach(k => delete m[k]);
+    delete m.by; delete m.at; // who set it and when is in the private activity log
+    if (date || time || court) Object.assign(m, { date, time, duration, court });
+    else ["date", "time", "duration", "court"].forEach(k => delete m[k]);
     if (Object.keys(m).length) files.matches[info.key] = m; else delete files.matches[info.key];
     return m;
   }, `schedule ${body.key}`);
@@ -402,24 +408,19 @@ function cleanLink(link) {
 async function submitResult(env, team, body) {
   const photoBytes = decodePhoto(body.photo);
   const link = cleanLink(body.link);
-  let photoKey;
-  const pending = await update(env, ["pairs", "cup", "results", "matches"], async files => {
-    const info = matchInfo(body.key, files);
-    requirePlayer(info, team);
-    if (officialResult(info, files)) throw httpError(400, "This match already has a confirmed result – contact the organizers to change it.");
-    const sets = orient(body.sets, team, info.a);
-    checkSets(sets, info.fullSets);
-    const m = files.matches[info.key] || {};
-    if (m.pending && m.pending.by !== team) throw httpError(400, "Your opponent already entered a result – please confirm or dispute it.");
-    if (!m.date) throw httpError(400, "Set the match date first, then enter the result.");
-    photoKey = info.key;
-    m.pending = { a: info.a, b: info.b, sets, ...(link ? { link } : {}), by: team, at: new Date().toISOString(), status: "pending" };
-    files.matches[info.key] = m;
-    return m.pending;
-  }, `result ${body.key}`);
-  await env.KV.put(`photo:${photoKey}`, photoBytes, { metadata: { team, at: pending.at } });
-  await env.KV.delete(`note:${photoKey}`);
-  await addLog(env, { team, action: "result entered", key: photoKey, detail: setsText(pending.sets) });
+  const { files } = await readAll(env, ["pairs", "cup", "results", "matches"]);
+  const info = matchInfo(body.key, files);
+  requirePlayer(info, team);
+  if (officialResult(info, files)) throw httpError(400, "This match already has a confirmed result – contact the organizers to change it.");
+  const sets = orient(body.sets, team, info.a);
+  checkSets(sets, info.fullSets);
+  if (!(files.matches[info.key] || {}).date) throw httpError(400, "Set the match date first, then enter the result.");
+  const pending = { a: info.a, b: info.b, sets, link, by: team, at: new Date().toISOString(), status: "pending" };
+  const saved = await pendingStore(env).submit(info.key, pending);
+  if (!saved.ok) throw httpError(400, "Your opponent already entered a result – please confirm or dispute it.");
+  await env.KV.put(`photo:${info.key}`, photoBytes, { metadata: { team, at: pending.at } });
+  await env.KV.delete(`note:${info.key}`);
+  await addLog(env, { team, action: "result entered", key: info.key, detail: setsText(sets) });
   return json({ ok: true, pending });
 }
 
@@ -432,50 +433,42 @@ function decodePhoto(dataUrl) {
 }
 
 async function withdraw(env, team, body) {
-  await update(env, ["pairs", "cup", "matches"], files => {
-    const info = matchInfo(body.key, files);
-    const m = files.matches[info.key];
-    if (!m || !m.pending || m.pending.by !== team) throw httpError(400, "There is no result from your team to withdraw.");
-    delete m.pending;
-    if (!Object.keys(m).length) delete files.matches[info.key];
-  }, `withdraw ${body.key}`);
+  const p = await pendingStore(env).get(body.key);
+  if (!p || p.by !== team) throw httpError(400, "There is no result from your team to withdraw.");
+  await pendingStore(env).remove(body.key);
   await env.KV.delete(`photo:${body.key}`);
   await addLog(env, { team, action: "result withdrawn", key: body.key });
   return json({ ok: true });
 }
 
 async function confirm(env, team, body) {
-  const result = await update(env, ["pairs", "cup", "results", "matches"], files => {
+  const p = await pendingStore(env).get(body.key);
+  if (!p) throw httpError(400, "There is no result to confirm.");
+  if (p.by === team) throw httpError(400, "Your opponent has to confirm your result.");
+  if (p.status !== "pending") throw httpError(400, "This result is disputed – the organizers will decide.");
+  await update(env, ["pairs", "cup", "results", "matches"], files => {
     const info = matchInfo(body.key, files);
     requirePlayer(info, team);
-    const m = files.matches[info.key];
-    if (!m || !m.pending) throw httpError(400, "There is no result to confirm.");
-    if (m.pending.by === team) throw httpError(400, "Your opponent has to confirm your result.");
     if (officialResult(info, files)) throw httpError(400, "The organizers already entered the result of this match.");
-    return makeOfficial(info, files, m.pending);
+    makeOfficial(info, files, p);
   }, `confirm ${body.key}`);
-  await addLog(env, { team, action: "result confirmed", key: body.key, detail: setsText(result.sets) });
+  await pendingStore(env).remove(body.key);
+  await addLog(env, { team, action: "result confirmed", key: body.key, detail: setsText(p.sets) });
   return json({ ok: true });
 }
 
 async function dispute(env, team, body) {
   const note = String(body.note || "").trim().slice(0, 500); // optional
-  await update(env, ["pairs", "cup", "matches"], files => {
-    const info = matchInfo(body.key, files);
-    requirePlayer(info, team);
-    const m = files.matches[info.key];
-    if (!m || !m.pending || m.pending.status !== "pending") throw httpError(400, "There is no result to dispute.");
-    if (m.pending.by === team) throw httpError(400, "You can withdraw your own result instead.");
-    m.pending.status = "disputed";
-    m.pending.disputedBy = team;
-    m.pending.disputedAt = new Date().toISOString();
-  }, `dispute ${body.key}`);
+  const p = await pendingStore(env).get(body.key);
+  if (!p || p.status !== "pending" || (p.a !== team && p.b !== team)) throw httpError(400, "There is no result to dispute.");
+  if (p.by === team) throw httpError(400, "You can withdraw your own result instead.");
+  await pendingStore(env).set(body.key, { ...p, status: "disputed", disputedBy: team, disputedAt: new Date().toISOString() });
   if (note) await env.KV.put(`note:${body.key}`, note); else await env.KV.delete(`note:${body.key}`);
   await addLog(env, { team, action: "result disputed", key: body.key, ...(note ? { detail: note } : {}) });
   return json({ ok: true });
 }
 
-// write the result into results.json / cup.json and clear it from matches.json
+// write the result into results.json / cup.json and clear the schedule entry from matches.json
 function makeOfficial(info, files, pending) {
   const sets = pending.sets, link = pending.link;
   if (info.type === "league") {
@@ -488,10 +481,7 @@ function makeOfficial(info, files, pending) {
     if (link) m.link = link;
     syncFinal(files.cup);
   }
-  const entry = files.matches[info.key];
-  delete entry.pending;
-  ["date", "time", "duration", "court", "by", "at"].forEach(k => delete entry[k]);
-  delete files.matches[info.key];
+  delete files.matches[info.key]; // the date/venue isn't needed once the match has a result
   return { sets };
 }
 
@@ -524,20 +514,22 @@ const setsText = sets => sets.map(([x, y]) => `${x}-${y}`).join(" ");
 // ---------------------------------------------------------------- automatic confirmation
 
 async function autoConfirm(env) {
-  let confirmed = [];
+  const all = await pendingStore(env).all();
+  const due = Object.entries(all).filter(([, p]) => p.status === "pending" && Date.now() - Date.parse(p.at) >= AUTO_CONFIRM_MS);
+  if (!due.length) return [];
+  let confirmed = [], dropped = [];
   await update(env, ["pairs", "cup", "results", "matches"], files => {
-    confirmed = [];
-    for (const [key, m] of Object.entries(files.matches)) {
-      const p = m.pending;
-      if (!p || p.status !== "pending" || Date.now() - Date.parse(p.at) < AUTO_CONFIRM_MS) continue;
+    confirmed = []; dropped = [];
+    for (const [key, p] of due) {
       try {
         const info = matchInfo(key, files);
         // the organizers already entered this match → their result stays, the team's entry is dropped
-        if (officialResult(info, files)) { delete files.matches[key]; continue; }
+        if (officialResult(info, files)) { dropped.push(key); continue; }
         makeOfficial(info, files, p); confirmed.push(key);
       } catch {}
     }
   }, "auto-confirm after 48 hours");
+  for (const key of confirmed.concat(dropped)) await pendingStore(env).remove(key);
   for (const key of confirmed) await addLog(env, { action: "auto-confirmed", key });
   return confirmed;
 }
@@ -545,30 +537,45 @@ async function autoConfirm(env) {
 // ---------------------------------------------------------------- admin
 
 async function adminOpen(env) {
-  const { files } = await readAll(env, ["pairs", "results", "cup", "matches"]);
+  const { files } = await readAll(env, ["pairs", "results", "cup"]);
   const open = [];
-  for (const [key, m] of Object.entries(files.matches)) {
-    if (!m.pending) continue;
+  for (const [key, p] of Object.entries(await pendingStore(env).all())) {
     try { if (officialResult(matchInfo(key, files), files)) continue; } catch { continue; } // already entered by the organizers
-    open.push({ key, ...m.pending, note: m.pending.status === "disputed" ? await env.KV.get(`note:${key}`) : null });
+    open.push({ key, ...p, note: p.status === "disputed" ? await env.KV.get(`note:${key}`) : null });
   }
   return json({ open });
 }
 
 async function adminResolve(env, body) {
   const accept = body.action === "accept";
-  await update(env, ["pairs", "cup", "results", "matches"], files => {
-    const info = matchInfo(body.key, files);
-    const m = files.matches[info.key];
-    if (!m || !m.pending) throw httpError(400, "Nothing open for this match.");
-    if (accept && body.sets) { checkSets(body.sets, info.fullSets); makeOfficial(info, files, { ...m.pending, sets: body.sets }); } // corrected by the admin
-    else if (accept) makeOfficial(info, files, m.pending);
-    else { delete m.pending; if (!Object.keys(m).length) delete files.matches[info.key]; }
-  }, `${accept ? "accept" : "reject"} ${body.key} (admin)`);
+  const p = await pendingStore(env).get(body.key);
+  if (!p) throw httpError(400, "Nothing open for this match.");
+  if (accept) {
+    await update(env, ["pairs", "cup", "results", "matches"], files => {
+      const info = matchInfo(body.key, files);
+      if (body.sets) { checkSets(body.sets, info.fullSets); makeOfficial(info, files, { ...p, sets: body.sets }); } // corrected by the admin
+      else makeOfficial(info, files, p);
+    }, `accept ${body.key} (admin)`);
+  }
+  await pendingStore(env).remove(body.key);
   await env.KV.delete(`note:${body.key}`);
   if (!accept) await env.KV.delete(`photo:${body.key}`);
   await addLog(env, { action: accept ? (body.sets ? "corrected by admin" : "accepted by admin") : "rejected by admin", key: body.key, by: "admin", ...(body.sets ? { detail: setsText(body.sets) } : {}) });
   return json({ ok: true });
+}
+
+// one-off: move waiting/disputed results that are still in data/matches.json into the private store
+async function adminMovePending(env) {
+  const moved = [];
+  await update(env, ["matches"], async files => {
+    moved.length = 0;
+    for (const [key, m] of Object.entries(files.matches)) {
+      if (m.pending) { await pendingStore(env).set(key, m.pending); moved.push(key); delete m.pending; }
+      delete m.by; delete m.at;
+      if (!Object.keys(m).length) delete files.matches[key];
+    }
+  }, "move results waiting for confirmation to private storage");
+  return json({ moved });
 }
 
 async function photo(env, key) {
@@ -641,5 +648,22 @@ export class LoginGuard extends DurableObject {
     if (s.all.length >= BRAKE_LIMIT && s.pausedUntil <= now) { s.pausedUntil = now + BRAKE_PAUSE; s.all = []; brakeStarted = true; }
     await this.ctx.storage.put("s", s);
     return { left: IP_LIMIT - s.ips[ip].length, brakeStarted };
+  }
+}
+
+// ---------------------------------------------------------------- results waiting for confirmation (Durable Object)
+// One instance holds every waiting/disputed result, so two teams entering results at the same time can't overwrite each other.
+export class PendingStore extends DurableObject {
+  async load() { return (this.p = this.p || (await this.ctx.storage.get("p")) || {}); }
+  async save() { await this.ctx.storage.put("p", this.p); }
+  async all() { return await this.load(); }
+  async get(key) { return (await this.load())[key] || null; }
+  async set(key, value) { (await this.load())[key] = value; await this.save(); }
+  async remove(key) { delete (await this.load())[key]; await this.save(); }
+  // only the same team may replace a waiting result (to correct it); the opponent has to confirm or dispute
+  async submit(key, value) {
+    const p = await this.load(), cur = p[key];
+    if (cur && cur.by !== value.by) return { ok: false };
+    p[key] = value; await this.save(); return { ok: true };
   }
 }
