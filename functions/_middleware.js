@@ -6,7 +6,7 @@ const LIVE = /^\/(data\/[\w-]+\.json|img\/gallery\/[\w-]+\.jpg)$/;
 const RAW = "https://raw.githubusercontent.com/ligagppl/ligagppl.github.io/staging";
 
 async function live(path) {
-  const res = await fetch(RAW + path, { cf: { cacheTtl: 0 } });
+  const res = await fetch(RAW + path, { headers: { "User-Agent": "gppl-staging" }, cf: { cacheTtl: 0 } });
   if (!res.ok) return new Response("Not found", { status: 404 });
   return new Response(res.body, { headers: {
     "Content-Type": path.endsWith(".jpg") ? "image/jpeg" : "application/json; charset=utf-8",
