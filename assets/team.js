@@ -117,7 +117,7 @@
     if (!state && !loading) {
       el.innerHTML = `<div class="card tm-login">
         <p>Log in with the <b>team code</b> the organizers sent you on WhatsApp. Both players of a team use the same code.</p>
-        <p class="note">By logging in you accept the <a href="#rules">member area terms</a> (Rules §12) – don't share your code.</p>
+        <p class="note">By logging in you accept the <a href="#rules">member area terms</a> (Rules §13) – don't share your code.</p>
         <form id="tm-login"><input id="tm-code" autocomplete="off" autocapitalize="characters" placeholder="e.g. K7PM-Q2XD" maxlength="12" value="${esc(typedCode)}">
         <button class="btn" type="submit">Log in</button></form>
         <div id="tm-turnstile"></div>

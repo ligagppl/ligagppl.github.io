@@ -122,8 +122,8 @@ const GPPL = (() => {
   }
 
   // ---------- milestones ----------
-  // How far a pair is with its league matches. `schedule` = data/matches.json (dates and results waiting
-  // for confirmation). Each milestone: by the end of matchday `md`, at least `min` matches played.
+  // How far a pair is with its league matches. `schedule` = dates and results waiting (private,
+  // from the gatekeeper). Each milestone: by the end of matchday `md`, at least `min` matches played.
   function milestoneProgress(results, schedule, id, now = Date.now()) {
     const total = fixtures.reduce((n, g) => n + g.filter(([a, b]) => a === id || b === id).length, 0);
     const mine = fixtures.flat().filter(([a, b]) => a === id || b === id);

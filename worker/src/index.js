@@ -7,14 +7,15 @@
 //  files in the GitHub repository with its own token – players never
 //  touch GitHub.
 //
-//  Data (GitHub, public):  data/matches.json – schedules + results waiting for confirmation
-//                          data/results.json, data/cup.json – official results
+//  Data (GitHub, public):  data/results.json, data/cup.json – official results
 //  Private (KV):           team codes, photos, dispute notes, activity log
+//  Private (Durable Objects): match dates/venues (only the two teams + admins see them),
+//                          results waiting for confirmation
 // ============================================================
 
 import { DurableObject } from "cloudflare:workers";
 
-const FILES = { pairs: "data/pairs.json", results: "data/results.json", cup: "data/cup.json", matches: "data/matches.json" };
+const FILES = { pairs: "data/pairs.json", results: "data/results.json", cup: "data/cup.json", matches: "data/matches.json" }; // matches.json: old public schedules, only read by /admin/move-pending
 const FALLBACK = { pairs: [], results: [], cup: { rounds: [] }, matches: {} };
 const AUTO_CONFIRM_MS = 48 * 3600 * 1000;
 const TOKEN_DAYS = 30;
@@ -189,8 +190,7 @@ async function update(env, keys, change, message) {
     const before = Object.fromEntries(keys.map(k => [k, JSON.stringify(files[k])]));
     const result = await change(files);
     let ok = true;
-    // official results first, then matches.json – if the second write fails, a retry is harmless
-    for (const k of keys.slice().sort((x, y) => (x === "matches") - (y === "matches"))) {
+    for (const k of keys) {
       if (JSON.stringify(files[k]) === before[k]) continue;
       if (!(await writeFile(env, k, files[k], shas[k], message))) { ok = false; break; }
     }
@@ -353,13 +353,20 @@ function checkSets(sets, fullSets) {
 
 // ---------------------------------------------------------------- team actions
 
-// results waiting for confirmation (or disputed) live privately in the PendingStore, not on GitHub
+// results waiting for confirmation (or disputed) live privately in the PendingStore, not on GitHub;
+// match dates and venues in a second instance of the same store ("schedule")
 const pendingStore = env => env.PENDING.get(env.PENDING.idFromName("pending"));
+const scheduleStore = env => env.PENDING.get(env.PENDING.idFromName("schedule"));
+
+const isMine = (key, files, team) => { try { return matchInfo(key, files).teams.includes(team); } catch { return false; } };
 
 async function me(env, team) {
-  const { files } = await readAll(env, ["pairs", "results", "cup", "matches"]);
-  const pending = await pendingStore(env).all(), notes = {};
-  // a team sees the waiting/disputed results of its own matches only
+  const { files } = await readAll(env, ["pairs", "results", "cup"]);
+  const [dates, pending] = await Promise.all([scheduleStore(env).all(), pendingStore(env).all()]);
+  const notes = {};
+  files.matches = {};
+  // a team sees the dates, venues and waiting/disputed results of its own matches only
+  for (const [key, e] of Object.entries(dates)) if (isMine(key, files, team)) files.matches[key] = { ...e };
   for (const [key, p] of Object.entries(pending)) {
     if (p.a !== team && p.b !== team) continue;
     files.matches[key] = { ...(files.matches[key] || {}), pending: p };
@@ -377,17 +384,12 @@ async function schedule(env, team, body) {
   if (date === null || time === null) throw httpError(400, "Date or time not valid.");
   if ((date || time || court) && !(date && time && court)) throw httpError(400, "Please give the date, time and venue.");
   const duration = [60, 90, 120].includes(+body.duration) ? +body.duration : 90; // minutes booked
-  const entry = await update(env, ["pairs", "cup", "results", "matches"], files => {
-    const info = matchInfo(body.key, files);
-    requirePlayer(info, team);
-    if (officialResult(info, files)) throw httpError(400, "This match already has a result.");
-    const m = files.matches[info.key] || {};
-    delete m.by; delete m.at; // who set it and when is in the private activity log
-    if (date || time || court) Object.assign(m, { date, time, duration, court });
-    else ["date", "time", "duration", "court"].forEach(k => delete m[k]);
-    if (Object.keys(m).length) files.matches[info.key] = m; else delete files.matches[info.key];
-    return m;
-  }, `schedule ${body.key}`);
+  const { files } = await readAll(env, ["pairs", "cup", "results"]);
+  const info = matchInfo(body.key, files);
+  requirePlayer(info, team);
+  if (officialResult(info, files)) throw httpError(400, "This match already has a result.");
+  const entry = date ? { date, time, duration, court } : {}; // who set it and when is in the private activity log
+  if (date) await scheduleStore(env).set(info.key, entry); else await scheduleStore(env).remove(info.key);
   await addLog(env, { team, action: "schedule", key: body.key, detail: date ? [date, `${time} (${duration} min)`, court].join(" · ") : "cleared" });
   return json({ ok: true, match: entry });
 }
@@ -408,13 +410,13 @@ function cleanLink(link) {
 async function submitResult(env, team, body) {
   const photoBytes = decodePhoto(body.photo);
   const link = cleanLink(body.link);
-  const { files } = await readAll(env, ["pairs", "cup", "results", "matches"]);
+  const { files } = await readAll(env, ["pairs", "cup", "results"]);
   const info = matchInfo(body.key, files);
   requirePlayer(info, team);
   if (officialResult(info, files)) throw httpError(400, "This match already has a confirmed result – contact the organizers to change it.");
   const sets = orient(body.sets, team, info.a);
   checkSets(sets, info.fullSets);
-  if (!(files.matches[info.key] || {}).date) throw httpError(400, "Set the match date first, then enter the result.");
+  if (!((await scheduleStore(env).get(info.key)) || {}).date) throw httpError(400, "Set the match date first, then enter the result.");
   const pending = { a: info.a, b: info.b, sets, link, by: team, at: new Date().toISOString(), status: "pending" };
   const saved = await pendingStore(env).submit(info.key, pending);
   if (!saved.ok) throw httpError(400, "Your opponent already entered a result – please confirm or dispute it.");
@@ -446,13 +448,14 @@ async function confirm(env, team, body) {
   if (!p) throw httpError(400, "There is no result to confirm.");
   if (p.by === team) throw httpError(400, "Your opponent has to confirm your result.");
   if (p.status !== "pending") throw httpError(400, "This result is disputed – the organizers will decide.");
-  await update(env, ["pairs", "cup", "results", "matches"], files => {
+  await update(env, ["pairs", "cup", "results"], files => {
     const info = matchInfo(body.key, files);
     requirePlayer(info, team);
     if (officialResult(info, files)) throw httpError(400, "The organizers already entered the result of this match.");
     makeOfficial(info, files, p);
   }, `confirm ${body.key}`);
   await pendingStore(env).remove(body.key);
+  await scheduleStore(env).remove(body.key); // the date/venue isn't needed once the match has a result
   await addLog(env, { team, action: "result confirmed", key: body.key, detail: setsText(p.sets) });
   return json({ ok: true });
 }
@@ -468,7 +471,7 @@ async function dispute(env, team, body) {
   return json({ ok: true });
 }
 
-// write the result into results.json / cup.json and clear the schedule entry from matches.json
+// write the result into results.json / cup.json (the caller clears the date/venue from the schedule store)
 function makeOfficial(info, files, pending) {
   const sets = pending.sets, link = pending.link;
   if (info.type === "league") {
@@ -481,7 +484,6 @@ function makeOfficial(info, files, pending) {
     if (link) m.link = link;
     syncFinal(files.cup);
   }
-  delete files.matches[info.key]; // the date/venue isn't needed once the match has a result
   return { sets };
 }
 
@@ -518,7 +520,7 @@ async function autoConfirm(env) {
   const due = Object.entries(all).filter(([, p]) => p.status === "pending" && Date.now() - Date.parse(p.at) >= AUTO_CONFIRM_MS);
   if (!due.length) return [];
   let confirmed = [], dropped = [];
-  await update(env, ["pairs", "cup", "results", "matches"], files => {
+  await update(env, ["pairs", "cup", "results"], files => {
     confirmed = []; dropped = [];
     for (const [key, p] of due) {
       try {
@@ -529,7 +531,7 @@ async function autoConfirm(env) {
       } catch {}
     }
   }, "auto-confirm after 48 hours");
-  for (const key of confirmed.concat(dropped)) await pendingStore(env).remove(key);
+  for (const key of confirmed.concat(dropped)) { await pendingStore(env).remove(key); await scheduleStore(env).remove(key); }
   for (const key of confirmed) await addLog(env, { action: "auto-confirmed", key });
   return confirmed;
 }
@@ -538,12 +540,16 @@ async function autoConfirm(env) {
 
 async function adminOpen(env) {
   const { files } = await readAll(env, ["pairs", "results", "cup"]);
-  const open = [];
+  const open = [], schedule = {};
+  // admins see every unplayed match's date and venue
+  for (const [key, e] of Object.entries(await scheduleStore(env).all())) {
+    try { if (!officialResult(matchInfo(key, files), files)) schedule[key] = e; } catch {}
+  }
   for (const [key, p] of Object.entries(await pendingStore(env).all())) {
     try { if (officialResult(matchInfo(key, files), files)) continue; } catch { continue; } // already entered by the organizers
     open.push({ key, ...p, note: p.status === "disputed" ? await env.KV.get(`note:${key}`) : null });
   }
-  return json({ open });
+  return json({ open, schedule });
 }
 
 async function adminResolve(env, body) {
@@ -551,30 +557,32 @@ async function adminResolve(env, body) {
   const p = await pendingStore(env).get(body.key);
   if (!p) throw httpError(400, "Nothing open for this match.");
   if (accept) {
-    await update(env, ["pairs", "cup", "results", "matches"], files => {
+    await update(env, ["pairs", "cup", "results"], files => {
       const info = matchInfo(body.key, files);
       if (body.sets) { checkSets(body.sets, info.fullSets); makeOfficial(info, files, { ...p, sets: body.sets }); } // corrected by the admin
       else makeOfficial(info, files, p);
     }, `accept ${body.key} (admin)`);
   }
   await pendingStore(env).remove(body.key);
+  if (accept) await scheduleStore(env).remove(body.key);
   await env.KV.delete(`note:${body.key}`);
   if (!accept) await env.KV.delete(`photo:${body.key}`);
   await addLog(env, { action: accept ? (body.sets ? "corrected by admin" : "accepted by admin") : "rejected by admin", key: body.key, by: "admin", ...(body.sets ? { detail: setsText(body.sets) } : {}) });
   return json({ ok: true });
 }
 
-// one-off: move waiting/disputed results that are still in data/matches.json into the private store
+// one-off: move dates/venues and waiting results still in the public data/matches.json into the private stores
 async function adminMovePending(env) {
   const moved = [];
   await update(env, ["matches"], async files => {
     moved.length = 0;
     for (const [key, m] of Object.entries(files.matches)) {
-      if (m.pending) { await pendingStore(env).set(key, m.pending); moved.push(key); delete m.pending; }
-      delete m.by; delete m.at;
-      if (!Object.keys(m).length) delete files.matches[key];
+      if (m.pending) await pendingStore(env).set(key, m.pending);
+      if (m.date) await scheduleStore(env).set(key, { date: m.date, time: m.time, duration: m.duration || 90, court: m.court });
+      moved.push(key);
     }
-  }, "move results waiting for confirmation to private storage");
+    files.matches = {};
+  }, "move match dates and venues to private storage");
   return json({ moved });
 }
 

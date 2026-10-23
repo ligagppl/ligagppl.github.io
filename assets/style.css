@@ -529,11 +529,6 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .md-now-count b { font-size: 1.8rem; line-height: 1; }
 .md-now-bar { height: 10px; border-radius: 999px; margin-top: 12px; background: color-mix(in srgb, var(--line) 60%, transparent); overflow: hidden; }
 .md-now-bar span { display: block; height: 100%; background: var(--green-2); border-radius: 999px; }
-.up-row { padding: 10px 0; border-bottom: 1px dashed var(--line); }
-.up-row:last-child { border-bottom: 0; }
-.up-row .match { border-bottom: 0; padding: 4px 0; }
-.up-when, .up-venue { font-size: .88rem; }
-.up-venue { color: var(--muted); }
 
 /* ---------- GPPC Cup tab: score boards ---------- */
 .cup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }

@@ -2,7 +2,6 @@
 
 const { pairById, pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
 let results = [], cup = { rounds: [] };
-let schedule = {}; // data/matches.json – dates and venues the teams set in 🎾 My team
 
 const sign = n => (n > 0 ? "+" + n : String(n));
 let datesOn = LEAGUE.datesConfirmed !== false; // dates hidden until the start date is set (Admin → League results)
@@ -50,6 +49,9 @@ function teamLogo(id) {
   return src ? `<img class="mlogo" src="${src}" alt="" loading="lazy">` : `<span class="mlogo ph" aria-hidden="true">🎾</span>`;
 }
 
+// matches with a result first, then the open ones (in draw order); dates and venues are private (🎾 My team)
+const playedFirst = games => games.filter(([a, b]) => GPPL.findResult(results, a, b)).concat(games.filter(([a, b]) => !GPPL.findResult(results, a, b)));
+
 function renderSchedule() {
   const cur = currentMatchday();
   document.getElementById("schedule-list").innerHTML = fixtures.map((games, i) => {
@@ -64,7 +66,7 @@ function renderSchedule() {
     return `<div class="card md ${md === cur ? "current" : ""}">${cup}
       <div class="md-head"><h3>Matchday ${md}</h3>
       <span class="note">${datesOn ? `${fmt(from)} – ${fmt(to)}` : "dates follow"}${md === cur ? ' · <span class="pill">Current</span>' : ""}</span></div>
-      ${games.map(([a, b]) => matchRow(a, b)).join("")}${ms}</div>`;
+      ${playedFirst(games).map(([a, b]) => matchRow(a, b)).join("")}${ms}</div>`;
   }).join("");
 }
 
@@ -84,7 +86,6 @@ function renderHome() {
           <span class="note">${r.p} played · ${r.w} W · ${r.l} L · <b>${r.pts} pts</b></span></span></span>`).join("")}</div>`
         : `<div class="top3-wait"><b>${started} of ${ranked.length}</b> pairs have played</div><span class="note">The Top 3 appears once every pair has played at least one match.</span>`}</div>`;
   renderMatchdayCard();
-  renderUpcoming();
 }
 
 // which matchday is running (or when the season starts) and how many of its matches are played
@@ -108,35 +109,6 @@ function renderMatchdayCard() {
     <div class="md-now-bar"><span style="width:${games.length ? (100 * played / games.length).toFixed(0) : 0}%"></span></div>`;
 }
 
-// the next matches the teams have scheduled (league and cup), soonest first
-function renderUpcoming() {
-  const now = Date.now(), list = [];
-  Object.entries(schedule).forEach(([key, e]) => {
-    if (!e.date || e.pending) return;
-    const t = new Date(`${e.date}T${e.time || "12:00"}:00`).getTime();
-    if (t < now - 3 * 3600 * 1000) return; // already played (or should have been)
-    let m = /^L:(\d+)-(\d+)$/.exec(key), a, b, label;
-    if (m) {
-      [a, b] = [+m[1], +m[2]];
-      if (GPPL.findResult(results, a, b)) return;
-      const md = fixtures.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a)));
-      if (md >= 0) [a, b] = fixtures[md].find(([x, y]) => (x === a && y === b) || (x === b && y === a));
-      label = md >= 0 ? `Matchday ${md + 1}` : "League";
-    } else if ((m = /^C:(\d+):(\d+)$/.exec(key))) {
-      const r = cup.rounds[+m[1]], x = r && r.matches[+m[2]];
-      if (!x || x.sets || x.walkover) return;
-      [a, b, label] = [x.a, x.b, `🏆 Cup · ${r.name}`];
-    } else return;
-    list.push({ t, e, a, b, label });
-  });
-  list.sort((x, y) => x.t - y.t);
-  const when = t => new Date(t).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-  document.getElementById("home-next").innerHTML = `<h3 style="margin-top:0">🎾 Upcoming matches</h3>` + (list.length
-    ? list.slice(0, 8).map(({ t, e, a, b, label }) => `<div class="up-row"><div class="up-when"><b>${when(t)}</b>${e.time ? " · " + GPPL.timeRange(e) : ""} <span class="note">· ${label}</span></div>
-        ${matchRow(a, b)}${e.court ? `<div class="up-venue">📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.court)}" target="_blank" rel="noopener">${e.court.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]))}</a></div>` : ""}</div>`).join("")
-    : `<p class="muted">No matches scheduled yet – teams set their dates in <a href="#team">🎾 My team</a>.</p>`);
-}
-
 function renderCup() {
   const el = document.getElementById("cup-rounds");
   if (!cup.rounds.length) {
@@ -150,15 +122,14 @@ function renderCup() {
     ? `<p class="note">🔐 Seed words: “${r.words}” · <a href="#verify" data-verify="${i}">Verify</a></p>` : "";
   // latest round first; every match as a small score board (logos, sets, winner) like in 🎾 My team
   const board = (m, r, ri, mi) => {
-    const w = GPPL.cupWinner(m), full = GPPL.cupFullSets(r), e = schedule[`C:${ri}:${mi}`] || {};
+    const w = GPPL.cupWinner(m), full = GPPL.cupFullSets(r);
     const sets = m.sets || [], cols = Math.max(sets.length, 2);
     const row = (id, side) => `<span class="cb-team ${w === id ? "w" : ""}">${teamLogo(id)}<span>${pairName(id)}</span>${w === id ? " 🏆" : ""}</span>` +
       Array.from({ length: cols }, (_, i) => `<span class="cb-g ${sets[i] && sets[i][side] > sets[i][1 - side] ? "win" : ""}">${sets[i] ? sets[i][side] : ""}</span>`).join("");
     const foot = m.walkover === "both" ? "Walkover – both pairs out"
       : m.walkover ? `Walkover – ${pairName(m.walkover)} goes through`
       : sets.length ? (full ? "3 full sets" : sets.length === 3 ? "3rd set: match tie-break" : "")
-      : e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + GPPL.timeRange(e) : ""}${e.court ? ` · 📍 ${e.court.split(",")[0]}` : ""}`
-      : "Not scheduled yet";
+      : "Not played yet";
     return `<div class="cupboard"><span class="note cb-no">Match ${mi + 1}</span>
       <div class="cb-grid" style="--cols:${cols}">${row(m.a, 0)}${row(m.b, 1)}</div>
       ${foot ? `<span class="note">${foot}</span>` : ""}</div>`;
@@ -556,7 +527,6 @@ async function loadData() {
     return s && Date.now() - s.t < FRESH_MS ? s.data : fetched;
   };
   results = await pick("results", []);
-  schedule = await pick("matches", {});
   cup = await pick("cup", { rounds: [] });
   if (!cup.rounds) cup.rounds = [];
   settings = await pick("settings", {});

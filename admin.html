@@ -152,7 +152,7 @@
       </div>
       <div class="card">
         <h3 style="margin-top:0">⏱ Result deadlines</h3>
-        <p class="note">Matches that were played (date &amp; time passed) but have no confirmed result yet. A result must be entered within <b>48 hours</b> of the match, and the opponent then has <b>48 hours</b> to confirm or dispute (after that it counts automatically). Over the limit = contact the pairs (Rules §10).</p>
+        <p class="note">Matches that were played (date &amp; time passed) but have no confirmed result yet. A result must be entered within <b>48 hours</b> of the match, and the opponent then has <b>48 hours</b> to confirm or dispute (after that it counts automatically). Over the limit = contact the pairs (Rules §11).</p>
         <div id="dl-list"></div>
       </div>
       <div class="card" id="upd-card">
@@ -550,15 +550,16 @@
     }
 
     // ---------- league: due results + matches per matchday (cards like the members see) ----------
-    let schedule = {}; // data/matches.json – dates and venues (public); results waiting for confirmation are added from the gatekeeper
-    // waiting/disputed results are private in the gatekeeper – fetched with the admin key (👥 Member area)
+    let schedule = {}; // dates, venues and waiting/disputed results – private in the gatekeeper, fetched with the admin key (👥 Member area)
     async function mergePending() {
       const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
       if (!api || !key) return;
       try {
         const res = await fetch(api + "/admin/open", { headers: { Authorization: `Admin ${key}` } });
         if (!res.ok) return;
-        (await res.json()).open.forEach(o => (schedule[o.key] = { ...(schedule[o.key] || {}), pending: o }));
+        const d = await res.json();
+        schedule = d.schedule || {};
+        d.open.forEach(o => (schedule[o.key] = { ...(schedule[o.key] || {}), pending: o }));
       } catch {}
     }
     const lkey = (a, b) => `L:${Math.min(a, b)}-${Math.max(a, b)}`;
@@ -1406,7 +1407,7 @@
       // start on the current matchday (only on first load – don't jump while an admin is working)
       if (!matchdayChosen) { $("md").value = defaultMatchday(); matchdayChosen = true; }
       siteSettings = await STORE.load("settings", {});
-      schedule = await STORE.load("matches", {});
+      schedule = {};
       await mergePending();
       fillMatches(); renderResultList(); renderLeagueViews(); renderCup(); fillRegistration(); renderCurrentPairs();
     }
