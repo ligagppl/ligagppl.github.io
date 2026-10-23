@@ -12,9 +12,9 @@ const GPPLImage = (() => {
     do { ctx.font = `${weight} ${s}px Arial, sans-serif`; s -= 2; } while (ctx.measureText(text).width > maxW && s > 16);
   }
 
-  // rows: [{ label, a, b, center, sub }] – center: "vs" or a score, sub: small line under the teams
-  async function render({ title, subtitle, rows, footer, big }) {
-    const H = 380 + 90 + (subtitle ? (big ? 64 : 44) : 0) + rows.length * (ROW + (big ? 40 : 16)) + 120;
+  // rows: [{ label, a, b, center, sub }] – center: "vs" or a score, sub: small line under the teams; note: bold line above the footer
+  async function render({ title, subtitle, rows, footer, big, note }) {
+    const H = 380 + 90 + (subtitle ? (big ? 64 : 44) : 0) + rows.length * (ROW + (big ? 40 : 16)) + 120 + (note ? 56 : 0);
     const c = document.createElement("canvas"); c.width = W; c.height = H;
     const ctx = c.getContext("2d");
     ctx.fillStyle = "#dfe7e0"; ctx.fillRect(0, 0, W, H);
@@ -50,6 +50,7 @@ const GPPLImage = (() => {
       if (r.sub) { ctx.fillStyle = big ? "#14201a" : "#6b776e"; ctx.textAlign = "center"; fit(ctx, r.sub, W - 160, big ? 27 : 21, big ? 700 : 600); ctx.fillText(r.sub, W / 2, y + rowH - (big ? 22 : 12)); }
       y += rowH + 16;
     });
+    if (note) { ctx.fillStyle = "#01411c"; ctx.textAlign = "center"; fit(ctx, note, W - 120, 32, 800); ctx.fillText(note, W / 2, y + 44); y += 56; }
     ctx.fillStyle = "#4c5a50"; ctx.textAlign = "center"; fit(ctx, footer, W - 120, 26, 600); ctx.fillText(footer, W / 2, y + 50);
     [["#01411c", 0.25], ["#ffffff", 0.25], ["#111111", 1 / 6], ["#dd0000", 1 / 6], ["#ffce00", 1 / 6]].reduce((x, [col, f]) => {
       ctx.fillStyle = col; ctx.fillRect(x, H - 16, W * f, 16); return x + W * f; }, 0);
@@ -84,11 +85,14 @@ const GPPLImage = (() => {
   }
 
   // one confirmed match: 🏆 winner banner
-  function winnerImage({ label, r, a, b, fullSets }) {
+  // sharedBy: the team sharing it (My team) – the image says whether the winners or the losers posted it
+  function winnerImage({ label, r, a, b, fullSets, sharedBy }) {
     const row = resultRow("", r, a, b, fullSets);
+    const note = !sharedBy ? "" : row.winner === sharedBy ? `📣 Shared by ${GPPL.pairName(sharedBy)} – the winners`
+      : row.winner ? `🤝 Shared by ${GPPL.pairName(sharedBy)} – congrats & well played!` : `Shared by ${GPPL.pairName(sharedBy)}`;
     return render({
       title: row.winner ? `🏆 ${GPPL.pairName(row.winner)} win!` : "🤝 No winner",
-      subtitle: label, rows: [row], big: true,
+      subtitle: label, rows: [row], big: true, note,
       footer: "Schedule, table & results: ligagppl.github.io",
     });
   }

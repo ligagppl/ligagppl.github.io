@@ -372,7 +372,8 @@ async function me(env, team) {
     files.matches[key] = { ...(files.matches[key] || {}), pending: p };
     if (p.status === "disputed") notes[key] = await env.KV.get(`note:${key}`);
   }
-  return json({ team, ...files, notes });
+  // the organizers' WhatsApp number (Worker secret) – only for logged-in teams, for "Contact the organizers"
+  return json({ team, ...files, notes, organizer: String(env.ORGANIZER_PHONE || "").replace(/\D/g, "") });
 }
 
 const cleanDate = d => (d === "" || /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : null);
@@ -388,10 +389,20 @@ async function schedule(env, team, body) {
   const info = matchInfo(body.key, files);
   requirePlayer(info, team);
   if (officialResult(info, files)) throw httpError(400, "This match already has a result.");
+  const cur = await scheduleStore(env).get(info.key);
+  if (cur && cur.date && cur.time && berlinMs(cur.date, cur.time) <= Date.now()) throw httpError(400, "The match has already started – the date and venue can't be changed any more. Contact the organizers if something is wrong.");
   const entry = date ? { date, time, duration, court } : {}; // who set it and when is in the private activity log
   if (date) await scheduleStore(env).set(info.key, entry); else await scheduleStore(env).remove(info.key);
   await addLog(env, { team, action: "schedule", key: body.key, detail: date ? [date, `${time} (${duration} min)`, court].join(" · ") : "cleared" });
   return json({ ok: true, match: entry });
+}
+
+// "2026-10-22" + "19:00" in Munich time → milliseconds (the worker itself runs in UTC)
+function berlinMs(date, time) {
+  const utc = Date.parse(`${date}T${time}:00Z`);
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Berlin", hourCycle: "h23", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" }).formatToParts(new Date(utc));
+  const g = t => +parts.find(p => p.type === t).value;
+  return utc - (Date.UTC(g("year"), g("month") - 1, g("day"), g("hour"), g("minute")) - utc);
 }
 
 // sets come from the submitting team's point of view: [their games, opponent's games]
@@ -416,7 +427,10 @@ async function submitResult(env, team, body) {
   if (officialResult(info, files)) throw httpError(400, "This match already has a confirmed result – contact the organizers to change it.");
   const sets = orient(body.sets, team, info.a);
   checkSets(sets, info.fullSets);
-  if (!((await scheduleStore(env).get(info.key)) || {}).date) throw httpError(400, "Set the match date first, then enter the result.");
+  const when = await scheduleStore(env).get(info.key);
+  if (!(when || {}).date) throw httpError(400, "Set the match date first, then enter the result.");
+  // more than 48 hours after the match: the organizers decide (Rules §11)
+  if (when.time && berlinMs(when.date, when.time) + ((+when.duration || 90) + 48 * 60) * 60000 < Date.now()) throw httpError(400, "More than 48 hours have passed since the match – please contact the organizers.");
   const pending = { a: info.a, b: info.b, sets, link, by: team, at: new Date().toISOString(), status: "pending" };
   const saved = await pendingStore(env).submit(info.key, pending);
   if (!saved.ok) throw httpError(400, "Your opponent already entered a result – please confirm or dispute it.");

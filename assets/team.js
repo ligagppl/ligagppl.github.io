@@ -78,6 +78,7 @@
 
   // result deadlines (Rules §11): 48 hours after the booked time to enter the result, then 48 hours to confirm
   const H48 = 48 * 3600000;
+  const matchStart = e => (e && e.date && e.time ? new Date(`${e.date}T${e.time}:00`).getTime() : null);
   const matchEnd = e => (e && e.date && e.time ? new Date(`${e.date}T${e.time}:00`).getTime() + (+e.duration || 90) * 60000 : null);
   const leftText = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60; return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h ${String(m).padStart(2, "0")}m`; };
   // a line with the time left, kept live by the timer below (data-due = deadline, data-what = text before the time)
@@ -244,9 +245,10 @@
     const entry = state.matches[m.key] || {}, p = entry.pending, st = status(m);
     let body = "";
     if (m.official) {
+      let lostIt = !!m.official.walkover && m.official.walkover !== state.team;
       if (m.official.walkover) body = `<p>Decided by walkover (organizers).</p>`;
-      else { const s = mine(m.official.sets, m.official.a); body = board(m, s) + `<p class="tm-score">${won(s) ? "🏆 Won" : "Lost"}${linkHtml(m.official.link)}</p>`; }
-      body += `<div class="tm-btns"><button class="btn ghost small" data-act="win-share" data-key="${m.key}">🏆 Share</button>
+      else { const s = mine(m.official.sets, m.official.a); lostIt = !won(s); body = board(m, s) + `<p class="tm-score">${won(s) ? "🏆 Won" : "Lost"}${linkHtml(m.official.link)}</p>`; }
+      body += `<div class="tm-btns"><button class="btn ghost small" data-act="win-share" data-key="${m.key}">${lostIt ? "🤝 Share" : "🏆 Share"}</button>
         <button class="btn ghost small" data-act="win-img" data-key="${m.key}">⬇️ Image</button></div>`;
     } else if (p) {
       const s = mine(p.sets, p.a), txt = `<b>${scoreText(s, m.fullSets)}</b> (${won(s) ? "your team won" : "your team lost"})`;
@@ -265,12 +267,14 @@
           <button class="btn small" type="submit">Send to the organizers</button></form>` : "");
     } else {
       const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(GPPL.timeRange(entry)) : ""}${entry.court ? ` · 📍 <a href="${mapsUrl(entry.court)}" target="_blank" rel="noopener">${esc(entry.court)}</a>` : ""}</p>` : "";
-      const end = matchEnd(entry);
+      const end = matchEnd(entry), start = matchStart(entry);
+      const locked = !!start && start <= Date.now(); // date and venue can't change once the match has started
+      const late = !!end && end + H48 <= Date.now(); // no result within 48 hours → the organizers decide (Rules §11)
       const due = end && end <= Date.now() ? dueLine(end + H48, "Played – enter the result:", "🔴 More than 48 hours since the match – please contact the organizers (Rules §11).") : "";
       body = when + due + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share</button>
-        <button class="btn ghost small" data-act="match-img" data-key="${m.key}">⬇️ Image</button>` : ""}<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>
-        ${entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
-      if (form === `${m.key}|schedule`) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
+        <button class="btn ghost small" data-act="match-img" data-key="${m.key}">⬇️ Image</button>` : ""}${locked ? "" : `<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>`}
+        ${late ? contactBtn(m) : entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
+      if (form === `${m.key}|schedule` && !locked) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
         <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="900" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
         <label>Duration<select name="duration">${[60, 90, 120].map(d => `<option value="${d}" ${(+entry.duration || 90) === d ? "selected" : ""}>${d} minutes</option>`).join("")}</select></label></div>
         <div class="tm-venue"><label for="court-${m.key}">Court / venue</label>
@@ -280,13 +284,21 @@
           <button class="btn ghost small" type="button" data-act="form" data-form="${m.key}|schedule">Cancel</button>
           ${entry.date ? `<button class="btn ghost small" type="button" data-act="unschedule" data-key="${m.key}">Remove date</button>` : ""}</div>
         <span class="note">Visible to both teams.</span></form>`;
-      if (form === `${m.key}|result` && entry.date) body += resultForm(m);
+      if (form === `${m.key}|result` && entry.date && !late) body += resultForm(m);
     }
     if (photos[m.key]) body += `<img class="tm-photo" src="${photos[m.key]}" alt="Matchday photo">`;
     return `<div class="card tm-match st-${st.cls}">
       <div class="tm-head"><span class="tm-label">${esc(m.label)}</span><span class="tm-chip">${st.text}</span></div>
       <div class="tm-vs">${logo(m.opp)}<div><b>${esc(teamName(m.opp))}</b><span class="tm-players">${players(m.opp)}</span></div></div>
       ${body}${msgHtml(m.key)}</div>`;
+  }
+
+  // WhatsApp message to the organizers (number comes from the gatekeeper after login, never from the website)
+  function contactBtn(m) {
+    if (!state.organizer) return "";
+    const e = state.matches[m.key] || {};
+    const text = `Hi, this is ${teamName(state.team)} (GPPL). Our match ${m.label} vs ${teamName(m.opp)} on ${dayText(e.date)}${e.time ? " at " + e.time : ""} has no result in My team yet and the 48 hours are over. `;
+    return `<a class="btn small" href="https://api.whatsapp.com/send?phone=${state.organizer}&text=${encodeURIComponent(text)}" target="_blank" rel="noopener">💬 Contact the organizers</a>`;
   }
 
   function photoBtn(key) { return `<button class="btn ghost small" data-act="photo" data-key="${key}">📷 Photo</button>`; }
@@ -364,7 +376,7 @@
       if (!m || !m.official) return;
       const label = m.group === "cup" ? m.label : m.label.split(" · ")[0];
       const name = `GPPL ${label.replace("GPPC Cup · ", "")} – ${teamName(state.team)} vs ${teamName(m.opp)} result.png`;
-      const blob = matchImgs["w" + key] || (matchImgs["w" + key] = await GPPLImage.winnerImage({ label, r: m.official, a: state.team, b: m.opp, fullSets: m.fullSets }));
+      const blob = matchImgs["w" + key] || (matchImgs["w" + key] = await GPPLImage.winnerImage({ label, r: m.official, a: state.team, b: m.opp, fullSets: m.fullSets, sharedBy: state.team }));
       if (a === "win-img") return GPPLImage.download(blob, name);
       return GPPLImage.share(blob, name, () => (b.textContent = "🏆 Ready – tap again"));
     }
