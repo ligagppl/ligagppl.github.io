@@ -74,6 +74,35 @@ const GPPLImage = (() => {
     });
   }
 
+  // score of a result from pair a's view, the winner, and a walkover/both-out note
+  function resultRow(label, r, a, b, fullSets) {
+    if (r.walkover === "both") return { label, a, b, center: "W/O", sub: "Both pairs at fault", winner: null };
+    if (r.walkover) return { label, a, b, center: "W/O", sub: `${GPPL.pairName(r.walkover)} win by walkover`, winner: r.walkover };
+    const sets = r.a === a ? r.sets : r.sets.map(([x, y]) => [y, x]);
+    let wa = 0; sets.forEach(([x, y]) => (x > y ? wa++ : 0));
+    return { label, a, b, center: sets.map(([x, y], i) => (i === 2 && !fullSets ? `[${x}-${y}]` : `${x}-${y}`)).join("  "), winner: wa >= 2 ? a : b };
+  }
+
+  // one confirmed match: 🏆 winner banner
+  function winnerImage({ label, r, a, b, fullSets }) {
+    const row = resultRow("", r, a, b, fullSets);
+    return render({
+      title: row.winner ? `🏆 ${GPPL.pairName(row.winner)} win!` : "🤝 No winner",
+      subtitle: label, rows: [row], big: true,
+      footer: "Schedule, table & results: ligagppl.github.io",
+    });
+  }
+
+  // several confirmed results in one image (the admin's results update)
+  function resultsImage(items, subtitle) {
+    return render({
+      title: "📰 New results",
+      subtitle,
+      rows: items.map(it => resultRow(it.label.toUpperCase(), it.r, it.a, it.b, it.fullSets)),
+      footer: "Table & all results: ligagppl.github.io",
+    });
+  }
+
   // device share menu (phone, Safari, Chrome) → WhatsApp → choose the chat; otherwise save the file
   async function share(blob, fileName, onNeedsTap) {
     const file = new File([blob], fileName, { type: "image/png" });
@@ -85,5 +114,5 @@ const GPPLImage = (() => {
     return "downloaded";
   }
 
-  return { render, download, matchImage, share };
+  return { render, download, matchImage, winnerImage, resultsImage, share };
 })();

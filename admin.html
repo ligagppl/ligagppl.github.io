@@ -69,6 +69,7 @@
     .md-match { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .md-when { font-size: .85rem; color: var(--muted); padding-left: 2px; }
     .md-share { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .upd-ul { margin: 6px 0 10px; padding-left: 20px; font-size: .9rem; }
     .md-row .btn { justify-self: start; }
     @media (max-width: 480px) { .md-pair { font-size: .9rem; } }
     .ms-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(120px, 1fr) minmax(0, 1.4fr) auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
@@ -140,6 +141,12 @@
         <div class="form-row"><label for="start-date">First day of matchday 1</label><input type="date" id="start-date"></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="start-date-save">Save</button><button class="btn ghost" id="start-date-clear">Clear</button></div>
         <div class="msg" id="start-date-msg"></div>
+      </div>
+      <div class="card" id="upd-card">
+        <h3 style="margin-top:0">📰 Results update</h3>
+        <p class="note">All confirmed results (league &amp; cup) that weren't in a shared update yet – as one image for the WhatsApp group.</p>
+        <div id="upd-list"></div>
+        <div class="msg" id="upd-msg"></div>
       </div>
       <div class="card">
         <h3 style="margin-top:0">⏰ Results due</h3>
@@ -396,7 +403,7 @@
   <script src="assets/store.js?v=3"></script>
   <script src="assets/lock.js?v=2"></script>
   <script src="assets/members-admin.js?v=12" defer></script>
-  <script src="assets/share-image.js?v=4"></script>
+  <script src="assets/share-image.js?v=5"></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;
@@ -592,7 +599,8 @@
             : e.date && isPast(e) ? "⏰ Result due" : "";
           return `<div class="md-row ${r ? "is-done" : ""}">${pairLine(a, b)}
             <span class="md-info">${!r ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}
-              ${e.date && !r ? `<span class="md-share"><button class="btn ghost small" data-match-share="${lkey(a, b)}|${a}|${b}|Matchday ${md}">📤 Share</button><button class="btn ghost small" data-match-img="${lkey(a, b)}|${a}|${b}|Matchday ${md}">⬇️ Image</button></span>` : ""}</span>
+              ${e.date && !r ? `<span class="md-share"><button class="btn ghost small" data-match-share="${lkey(a, b)}|${a}|${b}|Matchday ${md}">📤 Share</button><button class="btn ghost small" data-match-img="${lkey(a, b)}|${a}|${b}|Matchday ${md}">⬇️ Image</button></span>` : ""}
+              ${r ? `<span class="md-share"><button class="btn ghost small" data-win="L|${a}|${b}|${md}|share">🏆 Share</button><button class="btn ghost small" data-win="L|${a}|${b}|${md}|img">⬇️ Image</button></span>` : ""}</span>
             <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p ? "View" : "Enter result"}</button></div>`;
         }).join("");
         return `<details class="md-day" data-md="${md}" ${md === (mdOpen || cur) ? "open" : ""}><summary><b>Matchday ${md}</b>
@@ -689,7 +697,66 @@
       GPPLImage.share(blob, file, () => (b.textContent = "📤 Ready – tap again"));
     });
 
+    // ---------- winner banners and the results update ----------
+    // every confirmed result with what's needed to draw it: key (L:a-b / C:ri:mi), label, pairs, result
+    function confirmedResults() {
+      const list = [];
+      fixtureList.forEach((games, i) => games.forEach(([a, b]) => {
+        const r = GPPL.findResult(results, a, b);
+        if (r) list.push({ key: lkey(a, b), label: `Matchday ${i + 1}`, a, b, r, fullSets: false });
+      }));
+      cup.rounds.forEach((rd, ri) => (rd.matches || []).forEach((m, mi) => {
+        if (m.sets || m.walkover) list.push({ key: `C:${ri}:${mi}`, label: `GPPC Cup · ${rd.name}`, a: m.a, b: m.b, r: m, fullSets: GPPL.cupFullSets(rd) });
+      }));
+      return list;
+    }
+    const today = () => new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    let updItems = [];
+    function renderUpdate() {
+      const shared = new Set(siteSettings.sharedResults || []);
+      updItems = confirmedResults().filter(x => !shared.has(x.key));
+      $("upd-list").innerHTML = updItems.length
+        ? `<p><b>${updItems.length} new result${updItems.length === 1 ? "" : "s"}</b> since the last update:</p><ul class="upd-ul">${updItems.map(x =>
+            `<li>${escA(x.label)}: ${escA(name(x.a))} <b>${x.r.walkover ? "W/O" : GPPL.scoreText(x.r, x.a, !x.fullSets)}</b> ${escA(name(x.b))}</li>`).join("")}</ul>
+          <div class="dp-btns"><button class="btn" data-upd="share">📤 Share update</button><button class="btn ghost" data-upd="img">⬇️ Download</button>
+          <button class="btn ghost small" data-upd="done">✅ Mark as shared</button></div>`
+        : '<p class="muted">Nothing new since the last update.</p>';
+    }
+    document.getElementById("upd-card").addEventListener("click", async e => {
+      const b = e.target.closest("[data-upd]");
+      if (!b || !updItems.length) return;
+      const file = `GPPL results ${new Date().toISOString().slice(0, 10)}.png`;
+      if (b.dataset.upd === "done") {
+        if (!confirm(`Mark these ${updItems.length} result(s) as shared? The next update starts after them.`)) return;
+        const next = { ...siteSettings, sharedResults: [...new Set((siteSettings.sharedResults || []).concat(updItems.map(x => x.key)))] };
+        if (await persist("settings", next, "results update shared", "upd-msg")) { siteSettings = next; renderUpdate(); }
+        return;
+      }
+      updBlob = updBlob || await GPPLImage.resultsImage(updItems, today());
+      if (b.dataset.upd === "img") GPPLImage.download(updBlob, file);
+      else await GPPLImage.share(updBlob, file, () => (b.textContent = "📤 Ready – tap again"));
+      flash("upd-msg", "Shared? Press “✅ Mark as shared” so the next update only has newer results.");
+    });
+    let updBlob = null;
+
+    // 🏆 winner banner for one confirmed match (league row or cup row)
+    document.addEventListener("click", async e => {
+      const b = e.target.closest("[data-win]");
+      if (!b) return;
+      const [type, x, y, md, act] = b.dataset.win.split("|");
+      let item;
+      if (type === "L") item = confirmedResults().find(r => r.key === lkey(+x, +y));
+      else item = confirmedResults().find(r => r.key === `C:${x}:${y}`);
+      if (!item) return;
+      const file = `GPPL ${item.label.replace("GPPC Cup · ", "")} – ${name(item.a)} vs ${name(item.b)} result.png`;
+      const blob = await GPPLImage.winnerImage(item);
+      if (act === "img") return GPPLImage.download(blob, file);
+      GPPLImage.share(blob, file, () => (b.textContent = "🏆 Ready – tap again"));
+    });
+
     function renderLeagueViews() {
+      updBlob = null;
+      renderUpdate();
       Object.keys(matchImgCache).forEach(k => delete matchImgCache[k]);
       Object.keys(mdShareCache).forEach(k => delete mdShareCache[k]); // results/dates may have changed
       renderDue(); renderMilestones(); renderMatchdays();
@@ -786,7 +853,8 @@
               : e.date && isPast(e) ? "⏰ Result due" : "";
             return `<div class="md-row ${has ? "is-done" : ""}">${pairLine(m.a, m.b)}
               <span class="md-info">${!has ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}
-                ${e.date && !has ? `<span class="md-share"><button class="btn ghost small" data-match-share="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">📤 Share</button><button class="btn ghost small" data-match-img="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">⬇️ Image</button></span>` : ""}</span>
+                ${e.date && !has ? `<span class="md-share"><button class="btn ghost small" data-match-share="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">📤 Share</button><button class="btn ghost small" data-match-img="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">⬇️ Image</button></span>` : ""}
+                ${has ? `<span class="md-share"><button class="btn ghost small" data-win="C|${ri}|${mi}||share">🏆 Share</button><button class="btn ghost small" data-win="C|${ri}|${mi}||img">⬇️ Image</button></span>` : ""}</span>
               <button class="btn ghost small" data-open-cup="${ri}:${mi}">${has ? "Edit" : p ? "View" : "Enter result"}</button></div>
               <div class="md-editor" data-cup-editor="${ri}:${mi}"></div>`;
           }).join("") + `${r.byes && r.byes.length ? `<p class="note">Bye: ${r.byes.map(name).join(", ")}</p>` : ""}</div>`;
@@ -815,6 +883,7 @@
       }
       extra += `<button class="btn ghost" id="undo-round">Delete latest round (${cup.rounds[latest].name})</button>`;
       el.innerHTML = dueHtml + list + `<div class="card">${extra}</div>`;
+      renderUpdate(); // a saved cup result can be part of the next results update
       const third = $("add-third");
       if (third) third.addEventListener("click", async () => {
         const [m1, m2] = semis.matches;

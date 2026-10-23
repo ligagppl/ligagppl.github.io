@@ -230,6 +230,8 @@
     if (m.official) {
       if (m.official.walkover) body = `<p>Decided by walkover (organizers).</p>`;
       else { const s = mine(m.official.sets, m.official.a); body = board(m, s) + `<p class="tm-score">${won(s) ? "🏆 Won" : "Lost"}${linkHtml(m.official.link)}</p>`; }
+      body += `<div class="tm-btns"><button class="btn ghost small" data-act="win-share" data-key="${m.key}">🏆 Share</button>
+        <button class="btn ghost small" data-act="win-img" data-key="${m.key}">⬇️ Image</button></div>`;
     } else if (p) {
       const s = mine(p.sets, p.a), txt = `<b>${scoreText(s, m.fullSets)}</b> (${won(s) ? "your team won" : "your team lost"})`;
       body = board(m, s) + (p.link ? `<p class="note">${linkHtml(p.link)}</p>` : "");
@@ -337,6 +339,15 @@
     if (a === "logout") { ls.set(TOKEN_KEY, null); state = null; msg = null; return render(); }
     if (a === "reload") { msg = null; return load(); }
     if (a === "form") { form = form === b.dataset.form ? null : b.dataset.form; msg = null; return render(); }
+    if (a === "win-share" || a === "win-img") {
+      const m = myMatches().find(x => x.key === key);
+      if (!m || !m.official) return;
+      const label = m.group === "cup" ? m.label : m.label.split(" · ")[0];
+      const name = `GPPL ${label.replace("GPPC Cup · ", "")} – ${teamName(state.team)} vs ${teamName(m.opp)} result.png`;
+      const blob = matchImgs["w" + key] || (matchImgs["w" + key] = await GPPLImage.winnerImage({ label, r: m.official, a: state.team, b: m.opp, fullSets: m.fullSets }));
+      if (a === "win-img") return GPPLImage.download(blob, name);
+      return GPPLImage.share(blob, name, () => (b.textContent = "🏆 Ready – tap again"));
+    }
     if (a === "match-share" || a === "match-img") {
       const m = myMatches().find(x => x.key === key), e = state.matches[key];
       if (!m || !e) return;
