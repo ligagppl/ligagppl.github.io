@@ -416,7 +416,7 @@
   <script src="assets/store.js?v=3"></script>
   <script src="assets/lock.js?v=2"></script>
   <script src="assets/members-admin.js?v=12" defer></script>
-  <script src="assets/share-image.js?v=14"></script>
+  <script src="assets/share-image.js?v=15"></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;
@@ -623,7 +623,7 @@
             : e.date && isPast(e) ? "⏰ Result due" : "";
           return `<div class="md-row ${r ? "is-done" : ""}">${pairLine(a, b)}
             <span class="md-info">${!r ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}
-              ${e.date && !r ? `<span class="md-share"><button class="btn ghost small" data-match-share="${lkey(a, b)}|${a}|${b}|Matchday ${md}">📤 Share</button><button class="btn ghost small" data-match-img="${lkey(a, b)}|${a}|${b}|Matchday ${md}">⬇️ Image</button></span>` : ""}
+              ${e.date && !r && !p ? `<span class="md-share"><button class="btn ghost small" data-match-share="${lkey(a, b)}|${a}|${b}|Matchday ${md}">📤 Share</button><button class="btn ghost small" data-match-img="${lkey(a, b)}|${a}|${b}|Matchday ${md}">⬇️ Image</button></span>` : ""}
               ${r ? `<span class="md-share"><button class="btn ghost small" data-win="L|${a}|${b}|${md}|share">🏆 Share</button><button class="btn ghost small" data-win="L|${a}|${b}|${md}|img">⬇️ Image</button></span>` : ""}</span>
             <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p ? "View" : "Enter result"}</button></div>`;
         }).join("");
@@ -912,7 +912,7 @@
               : e.date && isPast(e) ? "⏰ Result due" : "";
             return `<div class="md-row ${has ? "is-done" : ""}">${pairLine(m.a, m.b)}
               <span class="md-info">${!has ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}
-                ${e.date && !has ? `<span class="md-share"><button class="btn ghost small" data-match-share="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">📤 Share</button><button class="btn ghost small" data-match-img="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">⬇️ Image</button></span>` : ""}
+                ${e.date && !has && !p ? `<span class="md-share"><button class="btn ghost small" data-match-share="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">📤 Share</button><button class="btn ghost small" data-match-img="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">⬇️ Image</button></span>` : ""}
                 ${has ? `<span class="md-share"><button class="btn ghost small" data-win="C|${ri}|${mi}||share">🏆 Share</button><button class="btn ghost small" data-win="C|${ri}|${mi}||img">⬇️ Image</button></span>` : ""}</span>
               <button class="btn ghost small" data-open-cup="${ri}:${mi}">${has ? "Edit" : p ? "View" : "Enter result"}</button></div>
               <div class="md-editor" data-cup-editor="${ri}:${mi}"></div>`;

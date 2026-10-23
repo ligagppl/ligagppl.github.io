@@ -14,7 +14,8 @@ const GPPLImage = (() => {
 
   // rows: [{ label, a, b, center, sub, subSmall }] – center: "vs" or a score, sub: line under the teams (subSmall: small and grey)
   // quiet: the subtitle small and grey (e.g. "from <team>")
-  async function render({ title, subtitle, rows, footer, big, quiet }) {
+  // titleSize: smaller headline (e.g. a long date and time)
+  async function render({ title, subtitle, rows, footer, big, quiet, titleSize = 50 }) {
     const sub = big && !quiet; // large dark subtitle
     const H = 380 + 90 + (subtitle ? (sub ? 64 : 44) : 0) + rows.length * (ROW + (big ? 40 : 16)) + 120;
     const c = document.createElement("canvas"); c.width = W; c.height = H;
@@ -23,7 +24,7 @@ const GPPLImage = (() => {
     const banner = await loadImg("img/gppl-banner.svg");
     if (banner) ctx.drawImage(banner, 60, 40, 960, 320);
     ctx.fillStyle = "#01411c"; ctx.textAlign = "center";
-    fit(ctx, title, W - 120, 50); ctx.fillText(title, W / 2, 425);
+    fit(ctx, title, W - 120, titleSize); ctx.fillText(title, W / 2, 425);
     let y = 470;
     if (subtitle) {
       ctx.fillStyle = sub ? "#14201a" : quiet ? "#7a857d" : "#4c5a50"; fit(ctx, subtitle, W - 120, sub ? 38 : quiet ? 26 : 28, sub ? 800 : 600);
@@ -54,7 +55,7 @@ const GPPLImage = (() => {
       fit(ctx, name(r.b), nameW, 34); ctx.fillText(name(r.b), W - 70 - s - 16, ly + 50);
       ctx.fillStyle = r.center === "vs" ? "#0b6b34" : "#14201a"; ctx.textAlign = "center";
       ctx.font = centerFont; ctx.fillText(r.center, W / 2, ly + 48);
-      if (r.sub) { const loud = big && !r.subSmall; ctx.fillStyle = loud ? "#14201a" : "#6b776e"; ctx.textAlign = "center"; fit(ctx, r.sub, W - 160, loud ? 27 : 22, loud ? 700 : 600); ctx.fillText(r.sub, W / 2, y + rowH - (big ? 22 : 12)); }
+      if (r.sub) { const loud = big && !r.subSmall; ctx.fillStyle = loud ? "#14201a" : "#858f87"; ctx.textAlign = "center"; fit(ctx, r.sub, W - 160, loud ? 27 : 22, loud ? 700 : 600); ctx.fillText(r.sub, W / 2, y + rowH - (big ? 22 : 12)); }
       y += rowH + 16;
     });
     ctx.fillStyle = "#4c5a50"; ctx.textAlign = "center"; fit(ctx, footer, W - 120, 26, 600); ctx.fillText(footer, W / 2, y + 50);
@@ -76,7 +77,7 @@ const GPPLImage = (() => {
     return render({
       title: `📅 ${day}${e.time ? " · " + GPPL.timeRange(e) : ""}`,
       subtitle: /cup/i.test(label) ? `🏆 ${label}` : "",
-      rows: [{ label: "", a, b, center: "vs", sub: e.court ? `📍 ${e.court}` : "" }], big: true,
+      rows: [{ label: "", a, b, center: "vs", sub: e.court ? `📍 ${e.court}` : "", subSmall: true }], big: true, titleSize: 40,
       footer: "Schedule, table & results: ligagppl.github.io",
     });
   }
