@@ -3,5 +3,11 @@
     "date": "2026-10-23",
     "time": "23:34",
     "court": "PadelCity Frankfurter Ring, Taunusstraße 40, 80807 München"
+  },
+  "L:1-12": {
+    "date": "2026-10-07",
+    "time": "19:00",
+    "duration": 90,
+    "court": "PadelCity Tucherpark, Am Eisbach 5, 80538 München"
   }
 }
