@@ -14,7 +14,8 @@ const GPPLImage = (() => {
 
   // rows: [{ label, a, b, center, sub, subSmall }] – center: "vs" or a score, sub: line under the teams (subSmall: small and grey)
   // quiet: the subtitle small and grey (e.g. "from <team>")
-  async function render({ title, subtitle, rows, footer, big, quiet }) {
+  // cups: small 🏆 next to each row's winner (on the score side)
+  async function render({ title, subtitle, rows, footer, big, quiet, cups }) {
     const sub = big && !quiet; // large dark subtitle
     const H = 380 + 90 + (subtitle ? (sub ? 64 : 44) : 0) + rows.length * (ROW + (big ? 40 : 16)) + 120;
     const c = document.createElement("canvas"); c.width = W; c.height = H;
@@ -45,11 +46,15 @@ const GPPLImage = (() => {
       drawLogo(r.a, 70, ly, s); drawLogo(r.b, W - 70 - s, ly, s);
       // the score first, so the team names can use the space left beside it
       fit(ctx, r.center, 190, r.center === "vs" ? 30 : 28);
+      const CUP = cups && r.winner ? 40 : 0; // room for the trophy
       const centerFont = ctx.font, nameW = Math.min(300, W / 2 - 70 - s - 16 - ctx.measureText(r.center).width / 2 - 24);
+      const cup = (x, align) => { ctx.font = "28px Arial, sans-serif"; ctx.textAlign = align; ctx.fillText("🏆", x, ly + 50); };
       ctx.fillStyle = r.winner === r.a ? "#0b6b34" : "#14201a"; ctx.textAlign = "left";
-      fit(ctx, name(r.a), nameW, 34); ctx.fillText(name(r.a), 70 + s + 16, ly + 50);
+      fit(ctx, name(r.a), nameW - (r.winner === r.a ? CUP : 0), 34); ctx.fillText(name(r.a), 70 + s + 16, ly + 50);
+      if (CUP && r.winner === r.a) cup(70 + s + 16 + ctx.measureText(name(r.a)).width + 10, "left");
       ctx.fillStyle = r.winner === r.b ? "#0b6b34" : "#14201a"; ctx.textAlign = "right";
-      fit(ctx, name(r.b), nameW, 34); ctx.fillText(name(r.b), W - 70 - s - 16, ly + 50);
+      fit(ctx, name(r.b), nameW - (r.winner === r.b ? CUP : 0), 34); ctx.fillText(name(r.b), W - 70 - s - 16, ly + 50);
+      if (CUP && r.winner === r.b) cup(W - 70 - s - 16 - ctx.measureText(name(r.b)).width - 10, "right");
       ctx.fillStyle = r.center === "vs" ? "#0b6b34" : "#14201a"; ctx.textAlign = "center";
       ctx.font = centerFont; ctx.fillText(r.center, W / 2, ly + 48);
       if (r.sub) { const loud = big && !r.subSmall; ctx.fillStyle = loud ? "#14201a" : "#6b776e"; ctx.textAlign = "center"; fit(ctx, r.sub, W - 160, loud ? 27 : 22, loud ? 700 : 600); ctx.fillText(r.sub, W / 2, y + rowH - (big ? 22 : 12)); }
@@ -105,7 +110,7 @@ const GPPLImage = (() => {
   function resultsImage(items, subtitle) {
     return render({
       title: "📰 New results",
-      subtitle,
+      subtitle, cups: true,
       rows: items.map(it => resultRow(it.label.toUpperCase(), it.r, it.a, it.b, it.fullSets)),
       footer: "Table & all results: ligagppl.github.io",
     });
