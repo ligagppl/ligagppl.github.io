@@ -12,9 +12,11 @@ const GPPLImage = (() => {
     do { ctx.font = `${weight} ${s}px Arial, sans-serif`; s -= 2; } while (ctx.measureText(text).width > maxW && s > 16);
   }
 
-  // rows: [{ label, a, b, center, sub }] – center: "vs" or a score, sub: small line under the teams
-  async function render({ title, subtitle, rows, footer, big }) {
-    const H = 380 + 90 + (subtitle ? (big ? 64 : 44) : 0) + rows.length * (ROW + (big ? 40 : 16)) + 120;
+  // rows: [{ label, a, b, center, sub, subSmall }] – center: "vs" or a score, sub: line under the teams (subSmall: small and grey)
+  // quiet: the subtitle small and grey (e.g. "from <team>")
+  async function render({ title, subtitle, rows, footer, big, quiet }) {
+    const sub = big && !quiet; // large dark subtitle
+    const H = 380 + 90 + (subtitle ? (sub ? 64 : 44) : 0) + rows.length * (ROW + (big ? 40 : 16)) + 120;
     const c = document.createElement("canvas"); c.width = W; c.height = H;
     const ctx = c.getContext("2d");
     ctx.fillStyle = "#dfe7e0"; ctx.fillRect(0, 0, W, H);
@@ -24,8 +26,8 @@ const GPPLImage = (() => {
     fit(ctx, title, W - 120, 50); ctx.fillText(title, W / 2, 425);
     let y = 470;
     if (subtitle) {
-      ctx.fillStyle = big ? "#14201a" : "#4c5a50"; fit(ctx, subtitle, W - 120, big ? 38 : 28, big ? 800 : 600);
-      ctx.fillText(subtitle, W / 2, big ? 478 : 462); y += big ? 64 : 44;
+      ctx.fillStyle = sub ? "#14201a" : quiet ? "#7a857d" : "#4c5a50"; fit(ctx, subtitle, W - 120, sub ? 38 : quiet ? 26 : 28, sub ? 800 : 600);
+      ctx.fillText(subtitle, W / 2, sub ? 478 : 462); y += sub ? 64 : 44;
     }
     const logos = {};
     await Promise.all([...new Set(rows.flatMap(r => [r.a, r.b]))].map(async id => { const s = logoOf(id); logos[id] = s ? await loadImg(s) : null; }));
@@ -50,7 +52,7 @@ const GPPLImage = (() => {
       fit(ctx, name(r.b), nameW, 34); ctx.fillText(name(r.b), W - 70 - s - 16, ly + 50);
       ctx.fillStyle = r.center === "vs" ? "#0b6b34" : "#14201a"; ctx.textAlign = "center";
       ctx.font = centerFont; ctx.fillText(r.center, W / 2, ly + 48);
-      if (r.sub) { ctx.fillStyle = big ? "#14201a" : "#6b776e"; ctx.textAlign = "center"; fit(ctx, r.sub, W - 160, big ? 27 : 21, big ? 700 : 600); ctx.fillText(r.sub, W / 2, y + rowH - (big ? 22 : 12)); }
+      if (r.sub) { const loud = big && !r.subSmall; ctx.fillStyle = loud ? "#14201a" : "#6b776e"; ctx.textAlign = "center"; fit(ctx, r.sub, W - 160, loud ? 27 : 22, loud ? 700 : 600); ctx.fillText(r.sub, W / 2, y + rowH - (big ? 22 : 12)); }
       y += rowH + 16;
     });
     ctx.fillStyle = "#4c5a50"; ctx.textAlign = "center"; fit(ctx, footer, W - 120, 26, 600); ctx.fillText(footer, W / 2, y + 50);
@@ -93,7 +95,8 @@ const GPPLImage = (() => {
     const fromLoser = !!sharedBy && !!row.winner && row.winner !== sharedBy;
     return render({
       title: !row.winner ? "🤝 No winner" : fromLoser ? `👏 Congrats, ${GPPL.pairName(row.winner)}!` : `🏆 ${GPPL.pairName(row.winner)} win!`,
-      subtitle: fromLoser ? `${label} · from ${GPPL.pairName(sharedBy)}` : label, rows: [row], big: true,
+      subtitle: fromLoser ? `from ${GPPL.pairName(sharedBy)}` : "", quiet: true, big: true,
+      rows: [{ ...row, sub: [row.sub, label].filter(Boolean).join(" · "), subSmall: true }], // matchday / cup round small under the score
       footer: "Schedule, table & results: ligagppl.github.io",
     });
   }
