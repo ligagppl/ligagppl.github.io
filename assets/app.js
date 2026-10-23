@@ -1,6 +1,6 @@
 // GPPL website – reads settings from data.js and results/cup from /data/*.json
 
-const { pairById, pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
+const { pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
 let results = [], cup = { rounds: [] };
 
 const sign = n => (n > 0 ? "+" + n : String(n));
@@ -22,7 +22,7 @@ function renderStandings() {
   let html = `<table><tr><th>#</th><th class="left">Pair</th><th>P</th><th>W</th><th>L</th><th>Sets</th><th>Games</th><th>Pts</th></tr>`;
   rows.forEach((r, i) => {
     html += `<tr class="${i < 2 ? "top" : ""}"><td>${results.length && i < 3 ? `<span class="medal-rank">${["🥇", "🥈", "🥉"][i]}</span>` : i + 1}</td>
-      <td class="left"><span class="tbl-team">${teamLogo(r.id)}<span><b>${pairName(r.id)}</b><br><span class="note">${pairById[r.id].players.filter(Boolean).join(" & ")}</span></span></span></td>
+      <td class="left"><span class="tbl-team">${teamLogo(r.id)}<b>${pairName(r.id)}</b></span></td>
       <td>${r.p}</td><td>${r.w}</td><td>${r.l}</td>
       <td>${sign(r.sf - r.sa)}</td><td>${sign(r.gf - r.ga)}</td><td class="pts">${r.pts}</td></tr>`;
   });
