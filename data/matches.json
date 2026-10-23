@@ -28,5 +28,11 @@
     "time": "19:00",
     "duration": 90,
     "court": "PadelCity Erding, Schollbach 17, 85435 Erding"
+  },
+  "L:5-6": {
+    "date": "2026-10-25",
+    "time": "11:00",
+    "duration": 60,
+    "court": "TC Unterföhring, Jahnstraße 7, 85774 Unterföhring"
   }
 }
