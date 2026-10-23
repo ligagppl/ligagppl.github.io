@@ -552,3 +552,4 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tbl-team .mlogo { width: 34px; height: 34px; }
 @media (max-width: 560px) { .tbl-team .mlogo { width: 26px; height: 26px; } .tbl-team { gap: 6px; } }
 .nav-logo { width: 20px; height: 20px; vertical-align: -4px; margin-right: 6px; }
+.win-mark { font-size: .85em; flex: none; }

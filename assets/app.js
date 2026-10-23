@@ -38,8 +38,9 @@ function matchRow(a, b) {
     const w = GPPL.evaluate(r).winner; // null when both pairs were at fault
     if (w === a) wa = "w"; else if (w === b) wb = "w";
   }
-  return `<div class="match"><span class="a ${wa}">${teamLogo(a)}<span class="tn">${pairName(a)}</span></span>
-    <span class="score">${score}</span><span class="b ${wb}"><span class="tn">${pairName(b)}</span>${teamLogo(b)}</span></div>`;
+  const cup = '<span class="win-mark" title="Winner">🏆</span>'; // small trophy next to the winner, on the score side
+  return `<div class="match"><span class="a ${wa}">${teamLogo(a)}<span class="tn">${pairName(a)}</span>${wa ? cup : ""}</span>
+    <span class="score">${score}</span><span class="b ${wb}">${wb ? cup : ""}<span class="tn">${pairName(b)}</span>${teamLogo(b)}</span></div>`;
 }
 
 // small still logo next to a team name (a ball for teams without one yet)
