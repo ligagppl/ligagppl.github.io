@@ -40,5 +40,11 @@
     "time": "18:00",
     "duration": 90,
     "court": "PadelPit, Heiglhofstraße 25, 81377 München"
+  },
+  "C:0:5": {
+    "date": "2026-10-27",
+    "time": "20:00",
+    "duration": 90,
+    "court": "PadelCity Frankfurter Ring, Taunusstraße 40, 80807 München"
   }
 }
