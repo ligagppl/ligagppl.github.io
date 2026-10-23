@@ -294,6 +294,60 @@
     }
   });
   navBtn.addEventListener("click", loadDisputes);
+
+  // ---------------------------------------------------------------- 📸 Gallery tab
+  const glThumbs = {}; // key → object URL of the photo (loaded once)
+  async function loadGallery() {
+    if (!api() || !get(KEY)) { $("gl-list").innerHTML = '<div class="card muted">Enter the admin key in <b>👥 Member area</b> first.</div>'; return; }
+    try {
+      const [{ photos, gallery }, results, cup] = await Promise.all([call("/admin/gallery"), STORE.load("results", []), STORE.load("cup", { rounds: [] })]);
+      const official = key => {
+        let m = /^L:(\d+)-(\d+)$/.exec(key);
+        if (m) return !!GPPL.findResult(results, +m[1], +m[2]);
+        m = /^C:(\d+):(\d+)$/.exec(key);
+        const x = m && cup.rounds[+m[1]] && cup.rounds[+m[1]].matches[+m[2]];
+        return !!x && !!(x.sets || x.walkover);
+      };
+      const teams = key => { const m = /^L:(\d+)-(\d+)$/.exec(key); if (m) return [+m[1], +m[2]]; const c = /^C:(\d+):(\d+)$/.exec(key), x = c && cup.rounds[+c[1]] && cup.rounds[+c[1]].matches[+c[2]]; return x ? [x.a, x.b] : []; };
+      const caption = key => `${matchLabel(key, cup).replace("League · ", "")} · ${teams(key).map(name).join(" vs ")}`;
+      const inGallery = new Map((gallery || []).map(g => [g.key, g]));
+      const items = photos.filter(p => official(p.key) || inGallery.has(p.key));
+      const card = p => {
+        const g = inGallery.get(p.key);
+        return `<div class="card gl-card" data-key="${esc(p.key)}">
+          <div class="gl-img">${glThumbs[p.key] ? `<img src="${glThumbs[p.key]}" alt="">` : '<span class="note">Loading photo…</span>'}</div>
+          <div class="gl-body"><div class="note">${esc(matchLabel(p.key, cup))}${g ? " · <b>✅ In the gallery</b>" : ""}</div>
+            <label class="note">Caption<input class="gl-cap" maxlength="140" value="${esc(g ? g.caption : caption(p.key))}"></label>
+            <div class="dp-btns">${g ? `<button class="btn small" data-gl="publish">💾 Update caption</button><button class="btn ghost small" data-gl="remove">✖ Remove from gallery</button>`
+              : `<button class="btn small" data-gl="publish">📸 Publish to gallery</button>`}</div></div></div>`;
+      };
+      const pub = items.filter(p => inGallery.has(p.key)), rest = items.filter(p => !inGallery.has(p.key));
+      $("gl-list").innerHTML = `<h3>Not published yet</h3>${rest.map(card).join("") || '<div class="card muted">No new matchday photos.</div>'}
+        <h3>In the gallery</h3>${pub.map(card).join("") || '<div class="card muted">Nothing published yet.</div>'}`;
+      // photos load one by one in the background
+      for (const p of items) {
+        if (!glThumbs[p.key]) {
+          const res = await call(`/admin/photo?key=${encodeURIComponent(p.key)}`, null, true);
+          if (res.ok) glThumbs[p.key] = URL.createObjectURL(await res.blob());
+        }
+        const box = document.querySelector(`.gl-card[data-key="${p.key}"] .gl-img`);
+        if (box && glThumbs[p.key]) box.innerHTML = `<img src="${glThumbs[p.key]}" alt="">`;
+      }
+    } catch (e) { $("gl-list").innerHTML = `<div class="card msg err">❌ ${esc(e.message)}</div>`; }
+  }
+  $("panel-gallery").addEventListener("click", async e => {
+    const b = e.target.closest("[data-gl]");
+    if (!b) return;
+    const card = b.closest(".gl-card"), key = card.dataset.key, remove = b.dataset.gl === "remove";
+    if (remove && !confirm("Remove this photo from the public gallery?")) return;
+    b.disabled = true;
+    try {
+      await call("/admin/gallery", { key, action: b.dataset.gl, caption: card.querySelector(".gl-cap").value });
+      show("gl-msg", remove ? "✅ Removed from the gallery." : "✅ In the gallery – live on the website in about a minute.");
+      loadGallery();
+    } catch (err) { show("gl-msg", "❌ " + err.message, false); b.disabled = false; }
+  });
+  document.querySelector('.subnav button[data-panel="gallery"]').addEventListener("click", loadGallery);
   // count the open disputes on load, so they're never missed
   if (api() && get(KEY)) call("/admin/open").then(r => setBadge(r.open)).catch(() => {});
 })();

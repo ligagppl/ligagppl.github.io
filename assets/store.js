@@ -5,7 +5,7 @@
 //  - Without a GitHub connection, saves stay in this browser and are downloaded as a file.
 
 const STORE = (() => {
-  const FILES = { results: "data/results.json", cup: "data/cup.json", settings: "data/settings.json", pairs: "data/pairs.json", matches: "data/matches.json" };
+  const FILES = { results: "data/results.json", cup: "data/cup.json", settings: "data/settings.json", pairs: "data/pairs.json", matches: "data/matches.json", gallery: "data/gallery.json" };
   const LOCAL_KEY = key => `gppl-local-${key}`;
 
   function ghConfig() {

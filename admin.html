@@ -34,6 +34,13 @@
     .subnav button.has-disputes { border-color: var(--loss); color: var(--loss); }
     .subnav button.has-disputes.active { background: var(--loss); color: #fff; }
     #panel-disputes h3 { margin: 20px 0 10px; }
+    #panel-gallery h3 { margin: 20px 0 10px; }
+    .gl-card { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+    .gl-img { flex: 0 0 200px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--line) 40%, transparent); border-radius: 10px; overflow: hidden; }
+    .gl-img img { width: 100%; display: block; }
+    .gl-body { flex: 1 1 240px; display: flex; flex-direction: column; gap: 8px; }
+    .gl-body label { display: flex; flex-direction: column; gap: 4px; }
+    .gl-cap { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; }
     .dp-card { border-left: 5px solid var(--line); }
     .dp-card.dp-disputed { border-left-color: var(--loss); }
     .dp-card.dp-waiting { border-left-color: var(--green-2); }
@@ -137,6 +144,7 @@
       <button data-panel="pairs">Pairs</button>
       <button data-panel="disputes">❗ Disputes</button>
       <button data-panel="members">👥 Member area</button>
+      <button data-panel="gallery">📸 Gallery</button>
       <button data-panel="settings">Settings</button>
     </div>
     <div id="banner" class="banner"></div>
@@ -375,6 +383,13 @@
       </div>
     </div>
 
+    <!-- GALLERY: matchday photos the teams uploaded → public Gallery tab -->
+    <div class="panel" id="panel-gallery">
+      <p class="note" style="margin-top:0">Matchday photos from confirmed results. <b>Publish</b> puts a photo on the public <a href="index.html#gallery" target="_top">📸 Gallery</a> (Rules §12) – live in about a minute. Photos stay private until you publish them.</p>
+      <div class="msg" id="gl-msg"></div>
+      <div id="gl-list"><div class="card muted">Loading…</div></div>
+    </div>
+
     <div class="panel" id="panel-settings">
       <div class="card">
         <h3 style="margin-top:0">Save to GitHub</h3>
@@ -413,9 +428,9 @@
   <script src="assets/data.js?v=39"></script>
   <script src="assets/pairs-loader.js?v=3"></script>
   <script src="assets/league.js?v=6"></script>
-  <script src="assets/store.js?v=3"></script>
+  <script src="assets/store.js?v=4"></script>
   <script src="assets/lock.js?v=2"></script>
-  <script src="assets/members-admin.js?v=12" defer></script>
+  <script src="assets/members-admin.js?v=13" defer></script>
   <script src="assets/share-image.js?v=16"></script>
   <script>
     const $ = id => document.getElementById(id);

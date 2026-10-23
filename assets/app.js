@@ -315,14 +315,17 @@ function renderParticipants() {
   window.addEventListener("load", () => Object.values(LEAGUE.logos || {}).forEach(l => { if (l && l.anim) new Image().src = l.anim; }));
 })();
 
+// matchday photos published from Admin → 📸 Gallery (data/gallery.json, newest first), then the fixed ones in data.js
+let gallery = [];
 function renderGallery() {
   const el = document.getElementById("gallery-grid");
-  if (!LEAGUE.gallery.length) {
+  const list = (Array.isArray(gallery) ? gallery : []).concat(LEAGUE.gallery || []);
+  if (!list.length) {
     el.innerHTML = `<div class="card muted">Photos will appear here during the season 📸</div>`;
     return;
   }
-  el.innerHTML = `<div class="gallery">` + LEAGUE.gallery.map(g =>
-    `<figure><img src="${g.src}" alt="${g.caption || ""}" loading="lazy"><figcaption>${g.caption || ""}</figcaption></figure>`).join("") + `</div>`;
+  el.innerHTML = `<div class="gallery">` + list.map(g =>
+    `<figure><img src="${esc(g.src)}" alt="${esc(g.caption)}" loading="lazy"><figcaption>${esc(g.caption)}</figcaption></figure>`).join("") + `</div>`;
 }
 
 // registration settings come from data/settings.json (Admin → Registration), fallback data.js
@@ -530,6 +533,7 @@ async function loadData() {
   cup = await pick("cup", { rounds: [] });
   if (!cup.rounds) cup.rounds = [];
   settings = await pick("settings", {});
+  gallery = await pick("gallery", []);
 }
 
 // GPPL logo in the header: still by default, animates on hover / tap

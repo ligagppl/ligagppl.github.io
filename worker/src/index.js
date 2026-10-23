@@ -15,8 +15,8 @@
 
 import { DurableObject } from "cloudflare:workers";
 
-const FILES = { pairs: "data/pairs.json", results: "data/results.json", cup: "data/cup.json", matches: "data/matches.json" }; // matches.json: old public schedules, only read by /admin/move-pending
-const FALLBACK = { pairs: [], results: [], cup: { rounds: [] }, matches: {} };
+const FILES = { pairs: "data/pairs.json", results: "data/results.json", cup: "data/cup.json", matches: "data/matches.json", gallery: "data/gallery.json" }; // matches.json: old public schedules, only read by /admin/move-pending
+const FALLBACK = { pairs: [], results: [], cup: { rounds: [] }, matches: {}, gallery: [] };
 const AUTO_CONFIRM_MS = 48 * 3600 * 1000;
 const TOKEN_DAYS = 30;
 const MAX_PHOTO_BYTES = 4 * 1024 * 1024;
@@ -60,6 +60,7 @@ async function route(request, env, ctx) {
     if (path === "/admin/photo") return photo(env, url.searchParams.get("key"));
     if (path === "/admin/auto-confirm" && request.method === "POST") return json({ confirmed: await autoConfirm(env) });
     if (path === "/admin/move-pending" && request.method === "POST") return adminMovePending(env);
+    if (path === "/admin/gallery") return request.method === "POST" ? adminGallery(env, body) : adminGalleryList(env);
     if (path === "/admin/phones") return request.method === "POST" ? adminSetPhones(env, body) : json({ phones: await getPhones(env) });
     throw httpError(404, "Not found");
   }
@@ -162,6 +163,21 @@ async function readFile(env, key) {
   if (!res.ok) throw new Error(`GitHub read ${FILES[key]}: ${res.status}`);
   const meta = await res.json();
   return { data: JSON.parse(fromBase64Utf8(meta.content)), sha: meta.sha };
+}
+
+// a binary file (gallery photo) in the repository: write (bytes) or delete (null)
+async function putBinary(env, path, bytes, message) {
+  if (env.DEV_FAKE_GITHUB === "1") return bytes ? env.KV.put(`dev-file:${path}`, bytes) : env.KV.delete(`dev-file:${path}`);
+  const cur = await gh(env, path);
+  const sha = cur.ok ? (await cur.json()).sha : undefined;
+  if (!bytes && !sha) return;
+  let bin = "";
+  if (bytes) for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  const res = await gh(env, path, {
+    method: bytes ? "PUT" : "DELETE",
+    body: JSON.stringify({ message: `GPPL members: ${message}`, branch: env.GH_BRANCH, sha, ...(bytes ? { content: btoa(bin) } : {}) }),
+  });
+  if (!res.ok) throw new Error(`GitHub ${bytes ? "write" : "delete"} ${path}: ${res.status} ${await res.text()}`);
 }
 
 async function readAll(env, keys) {
@@ -598,6 +614,45 @@ async function adminMovePending(env) {
     files.matches = {};
   }, "move match dates and venues to private storage");
   return json({ moved });
+}
+
+// ---------------------------------------------------------------- gallery (public: data/gallery.json + img/gallery/*.jpg)
+
+// the matches with a matchday photo, and what is already in the gallery
+async function adminGalleryList(env) {
+  const photos = [];
+  let cursor;
+  do {
+    const page = await env.KV.list({ prefix: "photo:", cursor });
+    page.keys.forEach(k => photos.push({ key: k.name.slice(6), at: (k.metadata || {}).at || null }));
+    cursor = page.list_complete ? null : page.cursor;
+  } while (cursor);
+  const { files } = await readAll(env, ["gallery"]);
+  return json({ photos, gallery: files.gallery });
+}
+
+// body: { key, caption, action: "publish" | "remove" } – only matches with an official result can be published
+async function adminGallery(env, body) {
+  const key = String(body.key || ""), file = `img/gallery/${key.replace(/[^A-Za-z0-9]+/g, "-")}.jpg`;
+  if (body.action === "remove") {
+    await update(env, ["gallery"], files => { files.gallery = files.gallery.filter(g => g.key !== key); }, `gallery: remove ${key}`);
+    await putBinary(env, file, null, `gallery: remove ${key}`);
+    await addLog(env, { action: "photo removed from gallery", key, by: "admin" });
+    return json({ ok: true });
+  }
+  const { files } = await readAll(env, ["pairs", "cup", "results"]);
+  const info = matchInfo(key, files);
+  if (!officialResult(info, files)) throw httpError(400, "Only matches with a confirmed result can go in the gallery.");
+  const bytes = await env.KV.get(`photo:${key}`, { type: "arrayBuffer" });
+  if (!bytes) throw httpError(404, "No photo for this match.");
+  await putBinary(env, file, new Uint8Array(bytes), `gallery: photo ${key}`);
+  const caption = String(body.caption || "").trim().slice(0, 140);
+  await update(env, ["gallery"], f => {
+    f.gallery = f.gallery.filter(g => g.key !== key);
+    f.gallery.unshift({ key, src: `${file}?v=${Date.now()}`, caption, at: new Date().toISOString() }); // newest first
+  }, `gallery: add ${key}`);
+  await addLog(env, { action: "photo published in gallery", key, by: "admin" });
+  return json({ ok: true });
 }
 
 async function photo(env, key) {
