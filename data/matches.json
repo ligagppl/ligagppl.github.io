@@ -34,5 +34,11 @@
     "time": "11:00",
     "duration": 60,
     "court": "TC Unterföhring, Jahnstraße 7, 85774 Unterföhring"
+  },
+  "C:0:0": {
+    "date": "2026-10-19",
+    "time": "19:00",
+    "duration": 90,
+    "court": "PadelCity Tucherpark, Am Eisbach 5, 80538 München"
   }
 }
