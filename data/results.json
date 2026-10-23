@@ -66,5 +66,20 @@
       ]
     ],
     "link": "https://app.playtomic.io/matches/staging-test-5"
+  },
+  {
+    "a": 1,
+    "b": 11,
+    "sets": [
+      [
+        1,
+        6
+      ],
+      [
+        2,
+        6
+      ]
+    ],
+    "link": "https://app.playtomic.io/matches/staging-test-6"
   }
 ]
