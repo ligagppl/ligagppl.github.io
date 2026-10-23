@@ -60,6 +60,7 @@ const LEAGUE = {
     "Sheesha Torr": { src: "img/logos/sheesha-torr.svg?v=2", anim: "img/logos/sheesha-torr-anim.svg?v=2" },
     "Smashistan": { src: "img/logos/smashistan.svg?v=1", anim: "img/logos/smashistan-anim.svg?v=1" },
     "Padel to the Metal": { src: "img/logos/padel-to-the-metal.svg?v=1", anim: "img/logos/padel-to-the-metal-anim.svg?v=1" },
+    "Spin Reapers": { src: "img/logos/spin-reapers.svg?v=1", anim: "img/logos/spin-reapers-anim.svg?v=1" },
   },
 
   // ----------------------------------------------------------
