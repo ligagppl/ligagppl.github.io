@@ -1,0 +1,695 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GPPC Cup – Live Draw</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎱</text></svg>">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    body { min-height: 100vh; }
+    .stage {
+      background: radial-gradient(circle at 50% 30%, var(--green-2), var(--green) 70%);
+      color: #fff; border-radius: var(--radius); padding: 28px 16px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .stage:fullscreen { display: flex; flex-direction: column; justify-content: center; border-radius: 0; }
+    .stage:fullscreen .ball { width: min(420px, 60vh); font-size: clamp(1.6rem, 4vw, 2.6rem); }
+    .stage h2 { color: #fff; margin: 0 0 4px; }
+    .ball {
+      width: min(260px, 70vw); aspect-ratio: 1; margin: 24px auto; border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #f4ff9e, var(--ball) 45%, #9fb41c 100%);
+      color: #1a2400; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+      padding: 18px; font-weight: 800; font-size: clamp(1.1rem, 4vw, 1.7rem); line-height: 1.2;
+      box-shadow: 0 18px 40px rgba(0,0,0,.35), inset -10px -14px 30px rgba(0,0,0,.18);
+      position: relative; transition: transform .25s;
+    }
+    .ball .bnum { font-size: .7em; opacity: .7; }
+    .ball .bname { position: relative; z-index: 1; }
+    .ball .blogo { position: relative; z-index: 1; width: 84%; height: auto; filter: drop-shadow(0 4px 8px rgba(0,0,0,.3)); }
+    .ball .sstack { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; }
+    .ball .sstack > * { grid-area: 1 / 1; visibility: hidden; }
+    .ball .sstack > .on { visibility: visible; }
+    .ball .bmystery { position: relative; z-index: 1; font-size: 2.4em; }
+    /* picked ball: logo and info stacked on top of each other; the info replaces the logo after a moment */
+    .ball .bstack { position: relative; z-index: 1; display: grid; place-items: center; width: 100%; }
+    .ball .bstack > * { grid-area: 1 / 1; transition: opacity .45s ease; }
+    .ball .binfo { display: flex; flex-direction: column; align-items: center; opacity: 0; }
+    .ball.show-info .binfo { opacity: 1; }
+    .ball.show-info .bstack > .blogo, .ball.show-info .blogos { opacity: 0; }
+    .ball .bvs { position: relative; z-index: 1; display: flex; align-items: center; justify-content: center; gap: 4px; width: 100%; }
+    .ball .blogo-sm { width: 46%; height: auto; filter: drop-shadow(0 3px 6px rgba(0,0,0,.3)); }
+    .ball .bvs .bname { font-size: .6em; max-width: 46%; }
+    .ball .bname-sm { font-size: .75em; }
+    .ball .bbye-wrap { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .ball .bbye { font-size: 1.1em; letter-spacing: .12em; color: #0b3d1e; }
+    .ball .blogo-bye { width: 52%; height: auto; filter: drop-shadow(0 3px 6px rgba(0,0,0,.3)); }
+    .slot-logo { width: 28px; height: 28px; vertical-align: middle; margin-right: 6px; }
+    /* members fade in below the team name after the reveal */
+    .ball .bplayers {
+      position: relative; z-index: 1; margin-top: 8px; font-size: .55em; font-weight: 600;
+      opacity: 0; transform: translateY(10px); transition: opacity .5s ease .45s, transform .5s ease .45s;
+    }
+    .ball.show-players .bplayers { opacity: 1; transform: none; }
+    .ball::before, .ball::after {
+      content: ""; position: absolute; inset: 8%; border-radius: 50%;
+      border: 3px solid rgba(255,255,255,.75); clip-path: inset(0 55% 0 0);
+    }
+    .ball::after { clip-path: inset(0 0 0 55%); }
+    .ball.spin { animation: wobble .12s linear infinite; }
+    .ball.reveal { animation: pop .5s ease-out; }
+    @keyframes wobble { 0% { transform: rotate(-6deg) scale(.97); } 50% { transform: rotate(6deg) scale(1.02); } 100% { transform: rotate(-6deg) scale(.97); } }
+    @keyframes pop { 0% { transform: scale(.6); } 70% { transform: scale(1.12); } 100% { transform: scale(1); } }
+    .status { min-height: 1.6em; font-size: 1.15rem; opacity: .95; }
+    .controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 10px; }
+    .controls .btn { background: var(--ball); color: #1a2400; }
+    .controls .btn.ghost { background: transparent; color: #fff; border-color: rgba(255,255,255,.5); }
+    .controls .btn:disabled { opacity: .45; cursor: default; }
+    .bowl { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 18px; }
+    .bowl span { background: rgba(255,255,255,.15); padding: 4px 10px; border-radius: 999px; font-size: .85rem; }
+    .layout { display: grid; gap: 16px; grid-template-columns: 1fr; margin-top: 16px; }
+    .drawn .slot { padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; display: flex; justify-content: space-between; gap: 8px; }
+    .drawn .slot.new { border-color: var(--ball); box-shadow: 0 0 0 2px var(--ball); }
+    .drawn .vs { color: var(--muted); }
+    /* match rows: left team left-aligned, "vs" in the middle, right team right-aligned */
+    .drawn .slot.match { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; column-gap: 12px; row-gap: 2px; }
+    .drawn .slot.match .mno { grid-column: 1 / -1; font-weight: 700; font-size: .85rem; color: var(--muted); }
+    .drawn .slot.match .ta { text-align: left; }
+    .drawn .slot.match .vs { text-align: center; }
+    .drawn .slot.match .tb { text-align: right; }
+    .drawn .slot.match .tb .slot-logo { margin: 0 0 0 6px; }
+    #setup-dlg { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; margin: auto; border: 1px solid var(--line); color: var(--text); background: var(--card); }
+    #setup-dlg::backdrop { background: rgba(0, 0, 0, .55); }
+    .setup label { display: flex; gap: 8px; align-items: center; padding: 4px 0; }
+    .setup select, .setup input[type=number] { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; }
+    .setup select { width: 100%; }
+    .setup input[type=text] { width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; }
+    #bowl-preview .chip { display: inline-block; margin: 0 6px 6px 0; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); font-size: .88rem; }
+    #bowl-preview .chip small { color: var(--muted); }
+    .next-stage { padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--ball) 30%, transparent); margin-bottom: 10px; font-size: .92rem; }
+    .msg { min-height: 1.4em; margin-top: 8px; font-weight: 600; }
+    .msg.ok { color: var(--win); }
+    .msg.err { color: var(--loss); }
+    textarea { width: 100%; min-height: 140px; font-family: ui-monospace, Menlo, monospace; font-size: .85rem; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  </style>
+</head>
+<body>
+  <header style="padding-bottom:18px">
+    <div class="hero">
+      <div class="flags">🇩🇪 🇵🇰</div>
+      <h1>GPPC Cup <span>Live Draw</span></h1>
+      <p style="margin:0" class="back-link"><a href="index.html#cup" style="color:#fff">← Back to the website</a></p>
+    </div>
+  </header>
+
+  <main>
+    <div class="stage">
+      <h2 id="round-title">Round 1</h2>
+      <div class="status" id="status">Enter the seed words, then press “Fill the bowl &amp; start”.</div>
+      <div class="ball" id="ball">🎾</div>
+      <div class="controls">
+        <button class="btn" id="btn-next" disabled>Draw next ball</button>
+        <button class="btn ghost" id="btn-auto" disabled>Auto-draw next match</button>
+        <button class="btn ghost" id="btn-setup">⚙ Setup</button>
+        <button class="btn ghost" id="btn-full">⛶ Fullscreen</button>
+      </div>
+      <div class="bowl" id="bowl"></div>
+    </div>
+
+    <div class="layout">
+      <div class="card drawn">
+        <h3 style="margin-top:0">Draw result</h3>
+        <div id="result"><p class="muted">Nothing drawn yet.</p></div>
+      </div>
+
+      <dialog id="setup-dlg" class="card setup">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">⚙ Setup</h3>
+          <button type="button" class="btn ghost" id="btn-setup-close" aria-label="Close setup" style="color:var(--text);border-color:var(--line);padding:4px 12px">✕</button></div>
+        <div class="next-stage" id="next-stage">Loading the cup…</div>
+        <!-- format choice – only for round 1 -->
+        <label id="format-wrap" style="display:none;margin-top:10px">Round 1 format
+          <select id="mode">
+            <option value="lucky-format" selected>Everyone plays – lucky losers fill up 🍀</option>
+            <option value="classic">Classic byes</option>
+            <option value="lucky-draw" hidden>Lucky loser draw</option>
+          </select>
+        </label>
+        <p class="note" id="mode-help"></p>
+        <p class="note" style="margin:10px 0 4px" id="bowl-label">In the bowl:</p>
+        <div id="bowl-preview"></div>
+        <p class="note" id="plan"></p>
+
+        <label style="display:block;margin-top:12px"><b>🔐 Seed words</b> – from 3 random people
+          <input type="text" id="seed" placeholder="e.g. mango lahore padel" autocomplete="off">
+        </label>
+        <p class="note">Ask 3 randomly chosen people (participants or not) for one word each, revealed at the same time. The words decide the whole draw – anyone can check it afterwards on the <b>Verify draw</b> tab, or with their own program.</p>
+
+        <!-- filled automatically from the cup results – kept hidden -->
+        <div hidden>
+          <input type="text" id="round-name" value="Round 1">
+          <span id="lucky-wrap"><input type="number" id="lucky-count" min="1" value="2"></span>
+          <div id="pair-list"></div>
+        </div>
+        <p style="margin:14px 0 4px"><b>⏱ Timing</b></p>
+        <label>Each drawn team stays for <input type="number" id="t-team" min="1" max="30" step="0.5" value="3" style="width:76px"> seconds</label>
+        <label>The match card (A vs B) stays for <input type="number" id="t-vs" min="2" max="60" step="0.5" value="6" style="width:76px"> seconds</label>
+        <p class="note" style="margin-top:2px">The logo shows first, then the name and players. “Auto-draw next match” draws both teams of a match, shows the match card and then waits for you.</p>
+        <div class="controls" style="justify-content:flex-start">
+          <button class="btn" id="btn-start" style="background:var(--green);color:#fff">Fill the bowl &amp; start</button>
+        </div>
+      </dialog>
+
+      <div class="card share" id="share-card" hidden>
+        <h3 style="margin-top:0">Save &amp; share</h3>
+        <div class="controls" style="justify-content:flex-start">
+          <button class="btn" id="btn-save" style="background:var(--green);color:#fff" disabled>💾 Save draw to the cup</button>
+        </div>
+        <div class="msg" id="save-msg"></div>
+        <textarea id="share" readonly placeholder="The result appears here when the draw is complete – ready to paste into WhatsApp."></textarea>
+        <div class="controls" style="justify-content:flex-start">
+          <button class="btn ghost" id="btn-copy" style="color:var(--text);border-color:var(--line)">Copy result</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="assets/data.js?v=24"></script>
+  <script src="assets/pairs-loader.js?v=2"></script>
+  <script src="assets/league.js?v=3"></script>
+  <script src="assets/store.js"></script>
+  <script src="assets/lock.js?v=2"></script>
+  <script>
+    let cup = { rounds: [] };
+
+    const $ = id => document.getElementById(id);
+    const pairs = LEAGUE.pairs;
+    const team = id => pairs.find(p => p.id === id);
+    const plainName = id => team(id).name;
+    const name = id => `#${id} ${team(id).name}`; // shown everywhere in the draw
+    const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    // ball content: number + team name, members appear below after the reveal
+    // team logo (still version) instead of the name, where a team has one
+    const logoSrc = id => { const l = (LEAGUE.logos || {})[team(id).name]; return l ? (typeof l === "string" ? l : l.src) : null; };
+    const teamMark = (id, cls) => logoSrc(id)
+      ? `<img class="${cls}" src="${esc(logoSrc(id))}" alt="${esc(team(id).name)}">`
+      : `<span class="bname">${esc(team(id).name)}</span>`;
+    const smallLogo = id => logoSrc(id) ? `<img class="slot-logo" src="${esc(logoSrc(id))}" alt="">` : "";
+    window.addEventListener("load", () => pairs.forEach(p => { const src = logoSrc(p.id); if (src) new Image().src = src; }));
+    // shuffling: only the logo (a padel ball for teams without one) – no number, no name
+    // all logos sit in the ball at once while shuffling – only the visible one changes, so the ball is never empty
+    function showShuffle(ball, id) {
+      let stack = ball.querySelector(".sstack");
+      if (!stack) {
+        ball.innerHTML = `<span class="sstack">` + pairs.map(p => logoSrc(p.id)
+          ? `<img class="blogo" data-id="${p.id}" src="${esc(logoSrc(p.id))}" alt="">`
+          : `<span class="bmystery" data-id="${p.id}">🎾</span>`).join("") + `</span>`;
+        stack = ball.querySelector(".sstack");
+      }
+      stack.querySelectorAll(".on").forEach(el => el.classList.remove("on"));
+      const el = stack.querySelector(`[data-id="${id}"]`);
+      if (el) el.classList.add("on");
+    }
+    const shuffleHtml = id => logoSrc(id) ? `<img class="blogo" src="${esc(logoSrc(id))}" alt="">` : `<span class="bmystery">🎾</span>`;
+    // picked: the logo first, then (after LOGO_HOLD) the number, team name and players
+    const LOGO_HOLD = 2500;
+    const secs = (id, def, min) => { const v = parseFloat($(id).value); return Math.max(min, isFinite(v) ? v : def) * 1000; };
+    const teamTime = () => secs("t-team", 3, 1);
+    const vsTime = () => secs("t-vs", 6, 2);
+    let vsTimer = null;
+    try { const t = JSON.parse(localStorage.getItem("gppl-draw-times") || "{}"); if (t.team) $("t-team").value = t.team; if (t.vs) $("t-vs").value = t.vs; } catch {}
+    ["t-team", "t-vs"].forEach(id => $(id).addEventListener("change", () => {
+      try { localStorage.setItem("gppl-draw-times", JSON.stringify({ team: $("t-team").value, vs: $("t-vs").value })); } catch {}
+    }));
+    const vsHtml = (a, b) => `<span class="bstack"><span class="bvs blogos">${teamMark(a, "blogo-sm")}<span class="bnum">vs</span>${teamMark(b, "blogo-sm")}</span>` +
+      `<span class="binfo"><span class="bname bname-sm">${esc(name(a))}</span><span class="bnum" style="margin:4px 0">vs</span><span class="bname bname-sm">${esc(name(b))}</span></span></span>`;
+    function ballHtml(id) {
+      const t = team(id);
+      return `<span class="bstack">` +
+        (logoSrc(id) ? `<img class="blogo" src="${esc(logoSrc(id))}" alt="${esc(t.name)}">` : "") +
+        `<span class="binfo"><span class="bnum">#${id}</span><span class="bname">${esc(t.name)}</span>` +
+        `<span class="bplayers">${t.players.map(esc).join(" & ")}</span></span></span>`;
+    }
+    // show the logo, wait, then swap to number + name + players; calls done() when the info is shown
+    let infoTimer = null;
+    function revealTeam(ball, html, hasLogo, done) {
+      clearTimeout(infoTimer);
+      ball.innerHTML = html;
+      const show = () => { ball.classList.add("show-info", "show-players"); done && done(); };
+      if (hasLogo) infoTimer = setTimeout(show, LOGO_HOLD);
+      else requestAnimationFrame(() => requestAnimationFrame(show));
+    }
+
+    // fair random integer using the browser's crypto RNG
+    function randInt(n) {
+      const buf = new Uint32Array(1), limit = Math.floor(0x100000000 / n) * n;
+      do crypto.getRandomValues(buf); while (buf[0] >= limit);
+      return buf[0] % n;
+    }
+
+    const mode = () => $("mode").value;
+    const plural = (n, w) => `${n} ${w}${n === 1 ? "" : w.endsWith("h") ? "es" : "s"}`;
+
+    // What gets drawn for n pairs in the bowl. total = number of balls drawn.
+    function plan(n) {
+      if (mode() === "lucky-draw") {
+        const lucky = Math.max(0, Math.min(+$("lucky-count").value || 0, n));
+        return { matches: 0, byes: 0, lucky, total: lucky };
+      }
+      if (mode() === "lucky-format") {
+        // everyone plays – only an odd number of pairs leaves one bye
+        return { matches: Math.floor(n / 2), byes: n % 2, lucky: 0, total: n };
+      }
+      // classic: only as many matches as needed to reach 2, 4, 8 or 16
+      if (n < 2) return { matches: 0, byes: n, lucky: 0, total: n };
+      if ((n & (n - 1)) === 0) return { matches: n / 2, byes: 0, lucky: 0, total: n };
+      const target = 2 ** Math.floor(Math.log2(n));
+      const matches = n - target;
+      return { matches, byes: n - 2 * matches, lucky: 0, total: n };
+    }
+
+    // ---------- setup ----------
+    $("pair-list").innerHTML = pairs.map(p =>
+      `<label><input type="checkbox" value="${p.id}" checked> ${p.name} <span class="note">${p.players.join(" & ")}</span></label>`).join("");
+    function selectedIds() { return [...document.querySelectorAll("#pair-list input:checked")].map(i => +i.value); }
+
+    // default lucky losers: fill the quarter-finals up to 8 after an everyone-plays round 1
+    const n0 = pairs.length;
+    $("lucky-count").value = n0 > 8 ? Math.max(1, 8 - Math.ceil(n0 / 2)) : 1;
+
+    const HELP = {
+      "lucky-format": "Every pair plays. With an odd number of pairs, one random bye.",
+      "classic": "Only as many matches as needed to reach 8, 4 or 2 pairs – everyone else gets a bye.",
+      "lucky-draw": "The losers of the last round are in the bowl – the drawn ones get back into the cup. 🍀",
+    };
+    function updatePlan() {
+      const n = selectedIds().length, p = plan(n), m = mode();
+      $("mode-help").textContent = HELP[m];
+      $("lucky-wrap").style.display = m === "lucky-draw" ? "flex" : "none";
+      $("bowl-label").textContent = m === "lucky-draw" ? "Losers in the bowl:" : "Pairs in the bowl:";
+      $("bowl-preview").innerHTML = selectedIds().map(id => {
+        const p = pairs.find(x => x.id === id);
+        return `<span class="chip">#${p.id} ${esc(p.name)} <small>${p.players.map(esc).join(" & ")}</small></span>`;
+      }).join("");
+      if (m === "lucky-draw") {
+        $("plan").textContent = n < 1 ? "Select the losers." : `${plural(n, "loser")} → ${p.lucky} drawn back into the cup`;
+      } else {
+        $("plan").textContent = n < 2 ? "Select at least 2 pairs."
+          : `${n} pairs → ${plural(p.matches, "match")}` + (p.byes ? ` + ${plural(p.byes, "bye")}` : "");
+      }
+    }
+    $("pair-list").addEventListener("change", updatePlan);
+    $("lucky-count").addEventListener("input", updatePlan);
+    $("mode").addEventListener("change", () => {
+      const rn = $("round-name");
+      if (mode() === "lucky-draw" && rn.value === "Round 1") rn.value = "Lucky loser draw";
+      if (mode() !== "lucky-draw" && rn.value === "Lucky loser draw") rn.value = "Round 1";
+      $("round-title").textContent = rn.value;
+      updatePlan();
+    });
+    $("round-name").addEventListener("input", e => ($("round-title").textContent = e.target.value || "Draw"));
+    updatePlan();
+
+    // ---------- draw state ----------
+    let bowl = [], drawn = [], P = null, busy = false, autoTimer = null;
+
+    function renderBowl() { $("bowl").innerHTML = bowl.map(id => `<span>${name(id)}</span>`).join(""); }
+
+    function slotLabel(i) {
+      if (P.lucky) return { type: "lucky", n: i + 1 };
+      // first 2*matches balls form matches, the rest are byes
+      return i < P.matches * 2 ? { type: "match", n: Math.floor(i / 2) + 1, side: i % 2 } : { type: "bye" };
+    }
+
+    function renderResult(newIdx) {
+      if (!drawn.length) { $("result").innerHTML = '<p class="muted">Nothing drawn yet.</p>'; return; }
+      let html = "";
+      if (P.lucky) {
+        html = `<h3 style="margin-top:0">🍀 Back in the cup</h3>` + drawn.map((id, i) =>
+          `<div class="slot ${newIdx === i ? "new" : ""}"><span><b>Lucky loser ${i + 1}:</b> ${smallLogo(id)}${name(id)}</span><span>🍀</span></div>`).join("");
+        if (drawn.length >= P.total && bowl.length) {
+          html += `<h3>Out of the cup</h3><p class="muted">${bowl.map(name).join(", ")}</p>`;
+        }
+        $("result").innerHTML = html;
+        return;
+      }
+      for (let m = 0; m < P.matches; m++) {
+        const a = drawn[m * 2], b = drawn[m * 2 + 1];
+        if (a === undefined) break;
+        const isNew = newIdx === m * 2 || newIdx === m * 2 + 1;
+        html += `<div class="slot match ${isNew ? "new" : ""}"><span class="mno">Match ${m + 1}</span><span class="ta">${smallLogo(a)}${name(a)}</span>
+          <span class="vs">vs</span><span class="tb">${b !== undefined ? name(b) + smallLogo(b) : "…"}</span></div>`;
+      }
+      const byes = drawn.slice(P.matches * 2);
+      if (byes.length) {
+        html += `<h3>🎟️ Byes – straight to the next round</h3>` + byes.map((id, i) =>
+          `<div class="slot ${newIdx === P.matches * 2 + i ? "new" : ""}"><span>${smallLogo(id)}${name(id)}</span><span>🎟️</span></div>`).join("");
+      }
+      $("result").innerHTML = html;
+    }
+
+    function shareText() {
+      const verify = `\n\n🔐 Seed words: "${seeded.clean}" – check it on the website's ✅ Verify draw tab`;
+      if (P.lucky) {
+        return `🍀 *GPPC Cup – ${$("round-name").value}*\n\nBack in the cup:\n` +
+          drawn.map((id, i) => `${i + 1}. ${name(id)}`).join("\n") + `\n\nCongrats – second chance! 🎾` + verify;
+      }
+      let t = `🏆 *GPPC Cup – ${$("round-name").value} draw*\n\n`;
+      for (let m = 0; m < P.matches; m++) t += `Match ${m + 1}: ${name(drawn[m * 2])} vs ${name(drawn[m * 2 + 1])}\n`;
+      const byes = drawn.slice(P.matches * 2);
+      if (byes.length) t += `\n🎟️ Bye${byes.length === 1 ? "" : "s"}: ${byes.map(name).join(", ")}\n`;
+      return t + `\nGood luck everyone! 🎾` + verify;
+    }
+
+    function drawNext() {
+      if (busy || !bowl.length || !seeded || drawn.length >= P.total) return;
+      busy = true;
+      $("seed").disabled = true; // seed is fixed from the first ball on
+      drawStarted = true;
+      updateStartButton();
+      $("btn-next").disabled = true;
+      const ball = $("ball");
+      clearTimeout(infoTimer);
+      clearTimeout(vsTimer);
+      ball.classList.remove("reveal", "show-players", "show-info");
+      ball.classList.add("spin");
+      const slot = slotLabel(drawn.length);
+      $("status").textContent = slot.type === "lucky" ? `Lucky loser ${slot.n}… 🍀`
+        : slot.type === "match"
+        ? (slot.side === 0 ? `Match ${slot.n} – first pair…` : `Match ${slot.n} – opponent…`)
+        : "Next ball… 🎟️ a bye!";
+      // suspense: flicker through names in the bowl
+      let ticks = 0;
+      const flicker = setInterval(() => {
+        showShuffle(ball, bowl[randInt(bowl.length)]);
+        if (++ticks > 18) {
+          clearInterval(flicker);
+          // the order is fixed by the seed words (see the Verify draw tab)
+          const pick = seeded.order[drawn.length];
+          bowl.splice(bowl.indexOf(pick), 1);
+          drawn.push(pick);
+          ball.classList.remove("spin");
+          void ball.offsetWidth;
+          ball.classList.add("reveal");
+          $("status").textContent = "…";
+          revealTeam(ball, ballHtml(pick), !!logoSrc(pick), () => {
+            $("status").textContent = slot.type === "lucky" ? `🍀 ${name(pick)} is back in the cup!`
+              : slot.type === "match"
+              ? (slot.side === 0 ? `Match ${slot.n}: ${name(pick)} vs …` : `Match ${slot.n}: ${name(drawn[drawn.length - 2])} vs ${name(pick)}!`)
+              : `🎟️ ${name(pick)} gets a bye!`;
+            renderBowl();
+            renderResult(drawn.length - 1);
+            const stopAuto = () => { autoTimer = null; $("btn-auto").textContent = "Auto-draw next match"; };
+            const done = () => {
+              busy = false;
+              if (drawn.length >= P.total) { stopAuto(); finish(); return; }
+              if (autoRevealRest()) return;
+              $("btn-next").disabled = false;
+              // auto-draw: keep going until the current match is complete
+              if (autoTimer && slot.type === "match" && slot.side === 0) autoTimer = setTimeout(drawNext, teamTime());
+              else stopAuto();
+            };
+            if (slot.type === "match" && slot.side === 1) {
+              // match complete: after the team's own time, show both opponents on the ball
+              const a = drawn[drawn.length - 2];
+              setTimeout(() => {
+                ball.classList.remove("reveal", "show-players", "show-info");
+                void ball.offsetWidth;
+                ball.classList.add("reveal");
+                revealTeam(ball, vsHtml(a, pick), !!(logoSrc(a) || logoSrc(pick)), done);
+                // the match card stays for its own time, then the ball is ready for the next match
+                clearTimeout(vsTimer);
+                vsTimer = setTimeout(() => {
+                  if (busy || drawn.length >= P.total) return;
+                  clearTimeout(infoTimer);
+                  ball.classList.remove("reveal", "show-players", "show-info");
+                  ball.textContent = "🎾";
+                  $("status").textContent = `Ready for match ${slot.n + 1}`;
+                }, vsTime());
+              }, teamTime());
+            } else done();
+          });
+        }
+      }, 90);
+    }
+
+    // When the rest of the draw is already decided, show it right away:
+    // 2 balls left that form the last match together, or a single ball left.
+    function autoRevealRest() {
+      const rest = P.total - drawn.length;
+      const allBallsDrawn = P.total === drawn.length + bowl.length; // not a lucky loser draw picking only some
+      const lastMatch = rest === 2 && drawn.length % 2 === 0 && drawn.length + 2 <= P.matches * 2;
+      const onlyByesLeft = drawn.length >= P.matches * 2; // e.g. classic mode: every remaining pair gets a bye
+      if (!allBallsDrawn || !(rest === 1 || lastMatch || onlyByesLeft)) return false;
+
+      clearInterval(autoTimer);
+      autoTimer = null;
+      $("btn-next").disabled = true;
+      $("btn-auto").disabled = true;
+      setTimeout(() => {
+        const first = drawn.length;
+        while (drawn.length < P.total) {
+          const pick = seeded.order[drawn.length];
+          bowl.splice(bowl.indexOf(pick), 1);
+          drawn.push(pick);
+        }
+        const ball = $("ball");
+        clearTimeout(infoTimer);
+        ball.classList.remove("reveal", "show-players", "show-info");
+        void ball.offsetWidth;
+        ball.classList.add("reveal");
+        const after = statusText => () => {
+          $("status").textContent = statusText;
+          renderBowl();
+          renderResult(drawn.length - 1);
+          setTimeout(finish, 1500);
+        };
+        if (lastMatch) {
+          const [a, b] = drawn.slice(-2);
+          const logos = !!(logoSrc(a) || logoSrc(b));
+          const html = `<span class="bstack"><span class="bvs blogos">${teamMark(a, "blogo-sm")}<span class="bnum">vs</span>${teamMark(b, "blogo-sm")}</span>` +
+            `<span class="binfo"><span class="bname bname-sm">${esc(name(a))}</span><span class="bnum" style="margin:4px 0">vs</span><span class="bname bname-sm">${esc(name(b))}</span></span></span>`;
+          $("status").textContent = "…";
+          revealTeam(ball, html, logos, after(`Last match is set: ${name(a)} vs ${name(b)}!`));
+        } else if (onlyByesLeft && rest > 1) {
+          ball.textContent = "🎟️";
+          after(`🎟️ Byes: ${drawn.slice(first).map(name).join(", ")}`)();
+        } else {
+          const last = drawn[drawn.length - 1];
+          if (slotLabel(first).type === "bye") {
+            // the bye isn't drawn – the remaining team is simply shown with "Bye"
+            ball.innerHTML = `<span class="bbye-wrap"><span class="bbye">BYE</span>` +
+              (logoSrc(last) ? `<img class="blogo-bye" src="${esc(logoSrc(last))}" alt="">` : "") +
+              `<span class="bname bname-sm">${esc(name(last))}</span></span>`;
+            ball.classList.add("show-info", "show-players");
+            after(`🎟️ ${name(last)} gets the bye!`)();
+          } else {
+            $("status").textContent = "…";
+            revealTeam(ball, ballHtml(last), !!logoSrc(last), after(`Last ball: ${name(last)}`));
+          }
+        }
+      }, 1500);
+      return true;
+    }
+
+    function finish() {
+      clearInterval(autoTimer);
+      autoTimer = null;
+      $("btn-next").disabled = true;
+      $("btn-auto").disabled = true;
+      $("btn-auto").textContent = "Auto-draw next match";
+      $("status").textContent = P.lucky ? "✅ Lucky loser draw complete! 🍀" : "✅ Draw complete – good luck everyone!";
+      renderResult(drawn.length - 1);
+      $("share").value = shareText();
+      $("btn-save").disabled = false;
+      $("share-card").hidden = false; // Save & share appears once the draw is complete
+    }
+
+    let seeded = null; // { clean, seed, entrants, order }
+
+    // (Re)calculate the draw order from the seed words. Allowed until the first ball is drawn.
+    // seed words: at least one word each from 3 people
+    const MIN_WORDS = 3;
+    const wordCount = clean => clean ? clean.split(" ").length : 0;
+    function applySeed() {
+      if (!P || drawn.length) return;
+      const { clean, seed } = GPPL.wordsToSeed($("seed").value);
+      const ready = wordCount(clean) >= MIN_WORDS;
+      seeded = ready ? { clean, seed, ...(({ start, order }) => ({ entrants: start, order }))(GPPL.seededShuffle(seed, bowl)) } : null;
+      $("btn-next").disabled = !ready;
+      $("btn-auto").disabled = !ready;
+      $("status").textContent = !ready
+        ? (clean ? `🔐 At least ${MIN_WORDS} seed words needed (${wordCount(clean)} so far).` : "🔐 Enter the seed words.")
+        : `🔐 Seed words: “${clean}” – ` + (P.lucky
+          ? `${plural(bowl.length, "loser")} in the bowl, ${P.lucky} get${P.lucky === 1 ? "s" : ""} a second chance. Ready!`
+          : `${bowl.length} pairs in the bowl, ${plural(P.matches, "match")}` + (P.byes ? `, ${plural(P.byes, "bye")}` : "") + ". Ready!");
+    }
+    // changing the words before the first ball updates the draw; after that they're locked
+    $("seed").addEventListener("input", () => { applySeed(); updateStartButton(); });
+
+    // "Fill the bowl & start" needs a draw that's due and seed words
+    let stageReady = false;
+    let drawStarted = false; // true from the first ball until the draw is saved – no restarting a draw
+    function updateStartButton() {
+      const hasWords = wordCount(GPPL.wordsToSeed($("seed").value).clean) >= MIN_WORDS;
+      $("btn-start").disabled = drawStarted || !(stageReady && hasWords);
+      $("btn-start").title = drawStarted ? "Draw in progress – save it to start the next one"
+        : !stageReady ? "No draw due right now" : hasWords ? "" : `Enter at least ${MIN_WORDS} seed words first`;
+    }
+
+    $("btn-start").addEventListener("click", () => {
+      const ids = selectedIds();
+      P = plan(ids.length);
+      if (P.lucky ? P.lucky < 1 : ids.length < 2) return;
+      clearInterval(autoTimer);
+      autoTimer = null;
+      bowl = ids.slice();
+      drawn = [];
+      $("seed").disabled = false;
+      $("round-title").textContent = $("round-name").value || "Draw";
+      clearTimeout(infoTimer); $("ball").classList.remove("show-players", "show-info");
+      $("ball").textContent = P.lucky ? "🍀" : "🎾";
+      $("share").value = "";
+      $("share-card").hidden = true;
+      $("btn-save").disabled = true;
+      $("save-msg").textContent = "";
+      renderBowl();
+      renderResult();
+      applySeed();
+      if (!seeded) $("seed").focus();
+      else dlg.close();
+    });
+
+    // setup lives in a popup: opens on the setup button (and when the page loads), closes once the bowl is filled
+    const dlg = $("setup-dlg");
+    const openSetup = () => { if (!dlg.open) dlg.showModal(); };
+    $("btn-setup").addEventListener("click", openSetup);
+    $("btn-setup-close").addEventListener("click", () => dlg.close());
+    window.addEventListener("load", () => { if (!drawStarted) openSetup(); });
+
+    $("btn-next").addEventListener("click", drawNext);
+
+    $("btn-auto").addEventListener("click", () => {
+      if (autoTimer) {
+        clearInterval(autoTimer);
+        autoTimer = null;
+        $("btn-auto").textContent = "Auto-draw next match";
+        return;
+      }
+      $("btn-auto").textContent = "Pause";
+      clearTimeout(vsTimer);
+      drawNext();
+      autoTimer = true; // drawNext keeps going until the match is complete (see done())
+    });
+
+    $("btn-full").addEventListener("click", () => {
+      const el = document.querySelector(".stage");
+      if (document.fullscreenElement) document.exitFullscreen();
+      else if (el.requestFullscreen) el.requestFullscreen();
+    });
+
+    $("btn-copy").addEventListener("click", async () => {
+      if (!$("share").value) return;
+      try { await navigator.clipboard.writeText($("share").value); $("btn-copy").textContent = "Copied ✓"; }
+      catch { $("share").select(); document.execCommand("copy"); $("btn-copy").textContent = "Copied ✓"; }
+      setTimeout(() => ($("btn-copy").textContent = "Copy result"), 2000);
+    });
+
+    // ---------- link with the saved cup ----------
+    let nextStage = null;
+
+    function applyNextStage() {
+      nextStage = GPPL.cupNextStage(cup);
+      const ns = nextStage, box = $("next-stage");
+      const check = ids => document.querySelectorAll("#pair-list input").forEach(i => (i.checked = ids.includes(+i.value)));
+      const ready = ns.type === "matches" || ns.type === "lucky";
+      stageReady = ready;
+      updateStartButton();
+      $("format-wrap").style.display = ns.type === "matches" && ns.name === "Round 1" ? "flex" : "none";
+      if (!ready) {
+        check([]);
+        $("bowl-label").textContent = "";
+        $("bowl-preview").innerHTML = "";
+        $("plan").textContent = "";
+        $("mode-help").textContent = "";
+      }
+      if (ready) {
+        $("mode").value = ns.type === "lucky" ? "lucky-draw" : "lucky-format";
+        $("mode").dispatchEvent(new Event("change"));
+        if (ns.type === "lucky") $("lucky-count").value = ns.lucky;
+        $("round-name").value = ns.name;
+        $("round-title").textContent = ns.name;
+        if (!P || drawn.length === 0 || drawn.length >= P.total) {
+          $("status").textContent = "Enter the seed words, then press “Fill the bowl & start”.";
+          $("ball").textContent = ns.type === "lucky" ? "🍀" : "🎾";
+        }
+        check(ns.entrants);
+        updatePlan();
+        box.innerHTML = ns.type === "lucky"
+          ? `Next up: <b>🍀 Lucky loser draw</b> – ${ns.lucky} of ${ns.entrants.length} losers get back in. The losers are pre-selected.`
+          : `Next up: <b>${ns.name}</b> – ${ns.entrants.length} pairs, pre-selected from the cup results.`;
+      } else if (ns.type === "waiting") {
+        $("round-title").textContent = "Waiting for results ⏳";
+        $("status").textContent = `${ns.name} isn't finished yet.`;
+        box.innerHTML = `⏳ Waiting for results of <b>${ns.name}</b>: ${ns.pending.map(m => `${name(m.a)} vs ${name(m.b)}`).join(", ")}.<br>Enter them in <b>🔒 Admin → Cup results</b>.`;
+      } else if (ns.type === "final") {
+        $("round-title").textContent = "🏆 Final – no draw needed";
+        $("status").textContent = `${name(ns.entrants[0])} vs ${name(ns.entrants[1])}`;
+        box.innerHTML = `🏆 No draw needed – the semi-final winners meet in the final: <b>${name(ns.entrants[0])}</b> vs <b>${name(ns.entrants[1])}</b>.<br>It's created automatically in <b>🔒 Admin → Cup results</b>.`;
+      } else if (ns.type === "done") {
+        $("round-title").textContent = "🏆 Cup finished";
+        $("status").textContent = `Champion: ${name(ns.champion)}`;
+        box.innerHTML = `🏆 The cup is finished – champion: <b>${name(ns.champion)}</b>!`;
+      }
+    }
+
+    $("btn-save").addEventListener("click", async () => {
+      const msg = $("save-msg");
+      if (!nextStage || nextStage.type === "waiting" || nextStage.type === "done") {
+        msg.className = "msg err";
+        msg.textContent = nextStage && nextStage.type === "done"
+          ? "❌ The cup is already finished." : "❌ Enter the open results of the current round first.";
+        return;
+      }
+      const round = P.lucky
+        ? { name: $("round-name").value, type: "lucky", from: drawn.concat(bowl), lucky: drawn.slice() }
+        : {
+            name: $("round-name").value, type: "matches",
+            matches: Array.from({ length: P.matches }, (_, i) => ({ a: drawn[i * 2], b: drawn[i * 2 + 1] })),
+            byes: drawn.slice(P.matches * 2),
+          };
+      // everything needed to verify the draw later
+      round.words = seeded.clean;
+      round.seed = seeded.seed;
+      round.entrants = seeded.entrants;
+      round.labels = Object.fromEntries(seeded.entrants.map(id => [id, plainName(id)]));
+      const next = structuredClone(cup);
+      next.rounds.push(round);
+      try {
+        const mode = await STORE.save("cup", next, `draw ${round.name}`);
+        cup = next;
+        msg.className = "msg ok";
+        msg.textContent = mode === "github" ? "✅ Saved to GitHub – live on the website in about a minute." : "💾 Saved in this browser only (not connected to GitHub).";
+        $("btn-save").disabled = true;
+        // fresh seed words for the next draw
+        $("seed").value = "";
+        $("seed").disabled = false;
+        drawStarted = false;
+        applyNextStage();
+      } catch (e) {
+        msg.className = "msg err";
+        msg.textContent = "❌ " + e.message;
+      }
+    });
+
+    // reload the cup (called by the admin page) – skipped while a draw is running
+    window.refreshCup = async () => {
+      if (P && drawn.length && drawn.length < P.total) return;
+      cup = await STORE.load("cup", { rounds: [] });
+      if (!cup.rounds) cup.rounds = [];
+      applyNextStage();
+    };
+
+    requireAdmin(() => window.refreshCup());
+  </script>
+</body>
+</html>

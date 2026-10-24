@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GPPL Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
+    .subnav button.active { background: var(--green); color: #fff; border-color: var(--green); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    .banner { padding: 10px 14px; border-radius: 10px; margin-bottom: 14px; font-size: .92rem; }
+    .banner.ok { background: color-mix(in srgb, var(--win) 15%, transparent); }
+    .banner.warn { background: color-mix(in srgb, var(--ball) 35%, transparent); }
+    .form-row { display: grid; grid-template-columns: 150px 1fr; gap: 10px; align-items: center; margin: 10px 0; }
+    @media (max-width: 560px) { .form-row { grid-template-columns: 1fr; gap: 4px; } }
+    select, input[type=text], input[type=password], input[type=number], input[type=url] {
+      padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; width: 100%;
+    }
+    /* scoreboard: pairs = rows, sets = columns. Filled column by column, so Tab goes
+       pair A set 1 → pair B set 1 → pair A set 2 → … */
+    .sets { display: grid; grid-template-columns: auto repeat(3, 68px); grid-template-rows: repeat(3, auto); grid-auto-flow: column; gap: 6px 10px; align-items: center; }
+    .sets input { text-align: center; }
+    .sets .head { font-size: .8rem; color: var(--muted); text-align: center; font-weight: 600; white-space: nowrap; }
+    .msg { min-height: 1.4em; margin-top: 8px; font-weight: 600; }
+    .msg.ok { color: var(--win); }
+    .msg.err { color: var(--loss); }
+    .reslist .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--line); flex-wrap: wrap; }
+    .reslist .row:last-child { border-bottom: 0; }
+    .small { padding: 5px 10px; font-size: .85rem; }
+    .cupmatch-edit { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
+    .done { color: var(--win); font-weight: 700; }
+    .pairs-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+    .pairs-table th, .pairs-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; text-transform: none; letter-spacing: 0; }
+    .pairs-table td.n { font-weight: 800; color: var(--green-2); width: 3em; }
+    .pairs-table tr.wait td { color: var(--muted); }
+    .warn-box { padding: 8px 12px; border-radius: 10px; margin: 8px 0; font-size: .88rem; background: color-mix(in srgb, var(--ball) 22%, var(--card)); }
+    .reg-status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+    @media (max-width: 560px) { .reg-status { grid-template-columns: 1fr; } }
+    .reg-status label { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; cursor: pointer; font-size: .85rem; color: var(--muted); }
+    .reg-status label b { display: block; color: var(--text); font-size: .95rem; }
+    .reg-status label:has(input:checked) { border-color: var(--green); background: color-mix(in srgb, var(--green) 8%, var(--card)); }
+    .reg-status input { margin-top: 3px; accent-color: var(--green); }
+  </style>
+</head>
+<body>
+  <header style="padding-bottom:18px">
+    <div class="hero">
+      <div class="flags">🇩🇪 🇵🇰</div>
+      <h1>GPPL <span>Admin</span></h1>
+      <p style="margin:0" class="back-link"><a href="index.html" style="color:#fff">← Back to the website</a></p>
+    </div>
+  </header>
+
+  <main>
+    <div class="subnav">
+      <button data-panel="league" class="active">League results</button>
+      <button data-panel="cup">Cup results</button>
+      <button data-panel="draw">🎱 Live draw</button>
+      <button data-panel="registration">Registration</button>
+      <button data-panel="pairs">Pairs</button>
+      <button data-panel="settings">Settings</button>
+    </div>
+    <div id="banner" class="banner"></div>
+
+    <!-- LEAGUE -->
+    <div class="panel active" id="panel-league">
+      <div class="card">
+        <h3 style="margin-top:0">Enter a league result</h3>
+        <div class="form-row"><label for="md">Matchday</label><select id="md"></select></div>
+        <div class="form-row"><label for="match">Match</label><select id="match"></select></div>
+        <div class="form-row"><label>Score</label>
+          <div class="sets" id="league-sets"></div>
+        </div>
+        <div class="form-row"><label for="wo">Walkover</label>
+          <select id="wo"></select>
+        </div>
+        <div class="form-row"><label for="link">Playtomic link</label>
+          <input type="url" id="link" placeholder="optional – https://app.playtomic.io/…">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="save-result">Save result</button>
+          <button class="btn ghost" id="delete-result">Delete result</button>
+        </div>
+        <div class="msg" id="league-msg"></div>
+      </div>
+      <div class="card reslist">
+        <h3 style="margin-top:0">Entered results</h3>
+        <div id="result-list"></div>
+      </div>
+    </div>
+
+    <!-- CUP -->
+    <div class="panel" id="panel-cup">
+      <div class="card">
+        <p style="margin:0">Enter cup scores here (full sets). New rounds are drawn in the <b>🔒 Draw</b> tab – it picks up the winners and lucky-loser candidates automatically.</p>
+      </div>
+      <div class="msg" id="cup-msg" style="margin:0 0 10px"></div>
+      <div id="cup-list"></div>
+    </div>
+
+    <!-- LIVE DRAW -->
+    <div class="panel" id="panel-draw">
+      <p class="note" style="margin-top:0">Tip: <a href="draw.html" target="_blank">open the draw in its own window</a> for a TV or screen share.</p>
+      <iframe id="draw-frame" src="draw.html" title="GPPC Cup live draw" allow="fullscreen"
+        style="width:100%;min-height:720px;border:0;display:block"></iframe>
+    </div>
+
+    <!-- REGISTRATION -->
+    <div class="panel" id="panel-registration">
+      <div class="card">
+        <h3 style="margin-top:0">Registration window</h3>
+        <div class="reg-status" role="radiogroup" aria-label="Registration status">
+          <label><input type="radio" name="reg-status" value="soon"> <span><b>Coming soon</b>Visitors see "Registration opens soon"</span></label>
+          <label><input type="radio" name="reg-status" value="open"> <span><b>Open</b>The registration form is shown</span></label>
+          <label><input type="radio" name="reg-status" value="closed"> <span><b>Closed</b>Visitors see "Registration is closed"</span></label>
+        </div>
+        <div class="form-row"><label for="reg-deadline">Deadline</label><input type="text" id="reg-deadline" placeholder="e.g. Sunday, 1 November 2026"></div>
+        <div class="form-row"><label for="reg-fee">Entry fee</label><input type="text" id="reg-fee" placeholder="e.g. €25 per person / €50 per pair"></div>
+        <div class="form-row"><label for="reg-form">Form link</label><input type="url" id="reg-form" placeholder="Google Form embed link (…/viewform?embedded=true)"></div>
+        <div class="form-row"><label for="reg-pay-url">Payment link</label><input type="url" id="reg-pay-url" placeholder="PayPal pool link – shown while registration is open"></div>
+        <div class="form-row"><label for="reg-payment">Payment note</label><input type="text" id="reg-payment" placeholder="e.g. Pay via the PayPal pool link in the WhatsApp group"></div>
+        <button class="btn" id="reg-save">Save</button>
+        <div class="msg" id="reg-msg"></div>
+      </div>
+    </div>
+
+    <!-- PAIRS -->
+    <div class="panel" id="panel-pairs">
+      <div class="card">
+        <h3 style="margin-top:0">Current pairs</h3>
+        <p class="note" id="pairs-source"></p>
+        <div id="pairs-current"></div>
+        <div id="pairs-publish" hidden style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;align-items:center">
+          <button class="btn" id="pub-btn">Publish</button>
+          <button class="btn ghost" id="pub-discard">Discard changes</button>
+          <span class="note" id="pub-info"></span>
+        </div>
+        <div class="msg" id="pub-msg"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Add a team manually</h3>
+        <p class="note" id="manual-note"></p>
+        <div id="manual-form">
+          <div class="form-row"><label for="man-team">Team name</label><input id="man-team" maxlength="40"></div>
+          <div class="form-row"><label for="man-p1">Player 1</label><input id="man-p1" maxlength="40"></div>
+          <div class="form-row"><label for="man-p2">Player 2</label><input id="man-p2" maxlength="40"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn" id="man-add">Add team</button>
+            <button class="btn ghost" id="man-undo">Remove the last team</button>
+          </div>
+        </div>
+        <div class="msg" id="man-msg"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Import from CSV</h3>
+        <p class="note">Export the registrations from the Google Sheet (File → Download → CSV) and choose the file here.
+          Only rows <b>with a payment date</b> are imported, numbered in payment order (#1 = paid first).
+          The file is read only in this browser – only team and player names are saved.</p>
+        <input type="file" id="csv-file" accept=".csv,text/csv">
+        <div id="csv-map" hidden>
+          <div class="form-row"><label for="map-team">Team name</label><select id="map-team"></select></div>
+          <div class="form-row"><label for="map-p1">Player 1</label><select id="map-p1"></select></div>
+          <div class="form-row"><label for="map-p2">Player 2</label><select id="map-p2"></select></div>
+          <p class="note" style="margin:0 0 6px">If both names are in one column (e.g. “Ali, Umer”), choose it for Player 1 and leave Player 2 empty – the names are split automatically.</p>
+          <div class="form-row"><label for="map-paid">Payment date</label><select id="map-paid"></select></div>
+          <div class="form-row"><label for="map-pk1">Pakistani? (both / player 1)</label><select id="map-pk1"></select></div>
+          <div class="form-row"><label for="map-pk2">Player 2 – Pakistani?</label><select id="map-pk2"></select></div>
+          <p class="note" style="margin:0 0 6px">If the form asks once for both players, choose that column above and leave Player 2 empty.</p>
+          <p class="note" style="margin:0 0 6px">Optional. Only used if more pairs paid than there are places: full Pakistani pairs (both “Yes”) get the places first (§1.1).</p>
+          <div class="form-row"><label for="map-datefmt">Date format</label>
+            <select id="map-datefmt">
+              <option value="auto">Automatic</option>
+              <option value="dmy">DD.MM.YYYY or DD/MM/YYYY (Europe)</option>
+              <option value="mdy">MM/DD/YYYY (US)</option>
+              <option value="ymd">YYYY-MM-DD</option>
+            </select>
+          </div>
+          <div class="form-row"><label for="map-max">Max. pairs</label><input type="number" id="map-max" min="2" value="12" style="max-width:100px"></div>
+          <div id="csv-preview"></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+            <button class="btn" id="pairs-save" disabled>Use these pairs (publish afterwards)</button>
+          </div>
+        </div>
+        <div class="msg" id="pairs-msg"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Logo animations</h3>
+        <p class="note">How the team logos move on the Participants tab.</p>
+        <div class="reg-status" role="radiogroup" aria-label="Logo animations">
+          <label><input type="radio" name="logo-anim" value="hover"> <span><b>Only on hover / tap</b>Logos stay still until someone points at or taps a card</span></label>
+          <label><input type="radio" name="logo-anim" value="always"> <span><b>Always</b>All logos play their animation by default</span></label>
+        </div>
+        <button class="btn" id="logo-anim-save" style="margin-top:10px">Save</button>
+        <div class="msg" id="logo-anim-msg"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">GPPL logo</h3>
+        <p class="note">How the GPPL crest in the website header moves.</p>
+        <div class="reg-status" role="radiogroup" aria-label="GPPL logo animation">
+          <label><input type="radio" name="site-logo-anim" value="hover"> <span><b>Animate on hover only</b>The logo stays still until someone points at or taps it</span></label>
+          <label><input type="radio" name="site-logo-anim" value="always"> <span><b>Always</b>The logo plays its animation all the time</span></label>
+        </div>
+        <button class="btn" id="site-logo-anim-save" style="margin-top:10px">Save</button>
+        <div class="msg" id="site-logo-anim-msg"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">Reset</h3>
+        <p class="note">Remove all pairs (clean slate).</p>
+        <button class="btn ghost" id="pairs-reset">Remove all pairs</button>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="panel" id="panel-settings">
+      <div class="card">
+        <h3 style="margin-top:0">Save to GitHub</h3>
+        <p class="note">Results are saved straight into the website's GitHub repository. The token is stored <b>only in this browser</b> – every admin sets it up once on their own device.</p>
+        <div class="form-row"><label for="gh-owner">GitHub owner</label><input type="text" id="gh-owner" placeholder="e.g. gppl"></div>
+        <div class="form-row"><label for="gh-repo">Repository</label><input type="text" id="gh-repo" placeholder="e.g. gppl.github.io"></div>
+        <div class="form-row"><label for="gh-branch">Branch</label><input type="text" id="gh-branch" value="main"></div>
+        <div class="form-row"><label for="gh-token">Access token</label><input type="password" id="gh-token" placeholder="github_pat_…" autocomplete="off"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn" id="gh-save">Save &amp; test</button>
+          <button class="btn ghost" id="gh-clear">Disconnect</button>
+        </div>
+        <div class="msg" id="gh-msg"></div>
+        <details style="margin-top:12px">
+          <summary><b>How to create the token</b></summary>
+          <ol class="note">
+            <li>GitHub → your profile picture → <b>Settings → Developer settings → Personal access tokens → Fine-grained tokens</b> → Generate new token.</li>
+            <li>Resource owner: the account that owns the website. Repository access: <b>Only select repositories</b> → the website repository.</li>
+            <li>Permissions → Repository permissions → <b>Contents: Read and write</b>. Nothing else.</li>
+            <li>Set an expiry date (e.g. end of the season), generate, and paste it above.</li>
+          </ol>
+        </details>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Local test data</h3>
+        <p class="note">Without a GitHub connection, saves stay in this browser only – handy for testing. To publish them by hand, download the files and upload them to the <code>data/</code> folder on GitHub.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn ghost" id="download-data">Download data files</button>
+          <button class="btn ghost" id="clear-local">Clear local test data</button>
+        </div>
+        <div class="msg" id="local-msg"></div>
+      </div>
+    </div>
+  </main>
+
+  <script src="assets/data.js?v=25"></script>
+  <script src="assets/pairs-loader.js?v=2"></script>
+  <script src="assets/league.js?v=3"></script>
+  <script src="assets/store.js"></script>
+  <script src="assets/lock.js?v=2"></script>
+  <script>
+    const $ = id => document.getElementById(id);
+    const name = GPPL.pairName;
+    let results = [], cup = { rounds: [] };
+
+    function flash(el, text, ok = true) {
+      $(el).textContent = text;
+      $(el).className = "msg " + (ok ? "ok" : "err");
+    }
+
+    function renderBanner() {
+      const c = STORE.ghConfig();
+      const b = $("banner");
+      if (STORE.connected()) {
+        b.className = "banner ok";
+        b.innerHTML = `✅ Saving to GitHub: <b>${c.owner}/${c.repo}</b> (${c.branch || "main"}) – the website updates about a minute after saving.`;
+      } else {
+        b.className = "banner warn";
+        b.innerHTML = `⚠️ Not connected to GitHub – saves stay in this browser only (fine for testing). Set it up under <b>Settings</b>.`;
+      }
+    }
+
+    async function persist(key, data, message, msgEl) {
+      try {
+        const mode = await STORE.save(key, data, message);
+        flash(msgEl, mode === "github" ? "✅ Saved to GitHub – live in about a minute." : "💾 Saved in this browser only (not connected to GitHub).");
+        return true;
+      } catch (e) {
+        flash(msgEl, "❌ " + e.message, false);
+        return false;
+      }
+    }
+
+    // ---------- set validation ----------
+    function validSet([x, y]) {
+      const hi = Math.max(x, y), lo = Math.min(x, y);
+      return (hi === 6 && lo <= 4) || (hi === 7 && (lo === 5 || lo === 6));
+    }
+    function validTieBreak([x, y]) {
+      const hi = Math.max(x, y), lo = Math.min(x, y);
+      return hi >= 10 && hi - lo >= 2 && (hi === 10 || hi - lo === 2);
+    }
+    const num = el => (el.value === "" ? null : +el.value);
+
+    // columns: names, then one column per set (header, pair A, pair B)
+    function setInputs(container, cols, a, b) {
+      container.innerHTML = `<span></span><span>${name(a)}</span><span>${name(b)}</span>` +
+        cols.map(([label, id]) => `<span class="head">${label}</span>` +
+          `<input type="number" min="0" max="20" id="${id}-a" aria-label="${label} ${name(a)}">` +
+          `<input type="number" min="0" max="20" id="${id}-b" aria-label="${label} ${name(b)}">`).join("");
+    }
+
+    // ---------- league ----------
+    const fixtureList = GPPL.fixtures;
+    function currentMatch() {
+      const [a, b] = $("match").value.split("-").map(Number);
+      return { a, b };
+    }
+
+    // matchday running today; outside the season: first matchday with open results (else the last one)
+    function currentMatchday() {
+      if (LEAGUE.datesConfirmed === false) return null;
+      const now = Date.now();
+      for (let md = 1; md <= fixtureList.length; md++) {
+        const { from, to } = GPPL.matchdayWindow(md);
+        if (now >= from.getTime() && now < to.getTime() + GPPL.DAY) return md;
+      }
+      return null;
+    }
+    function defaultMatchday() {
+      const cur = currentMatchday();
+      if (cur) return cur;
+      const open = fixtureList.findIndex(g => g.some(([a, b]) => !GPPL.findResult(results, a, b)));
+      return open === -1 ? fixtureList.length : open + 1;
+    }
+
+    function fillMatchdays() {
+      const cur = currentMatchday();
+      $("md").innerHTML = fixtureList.map((_, i) => {
+        const { from, to } = GPPL.matchdayWindow(i + 1);
+        const dates = LEAGUE.datesConfirmed !== false ? ` (${GPPL.fmt(from)} – ${GPPL.fmt(to)})` : "";
+        return `<option value="${i + 1}">Matchday ${i + 1}${dates}${cur === i + 1 ? " · current" : ""}</option>`;
+      }).join("");
+    }
+
+    function fillMatches() {
+      const games = fixtureList[$("md").value - 1];
+      if (!games) { $("match").innerHTML = ""; $("league-sets").innerHTML = '<p class="note">No pairs yet – import or add the teams on the Pairs tab first.</p>'; return; }
+      const keep = $("match").value;
+      $("match").innerHTML = games.map(([a, b]) =>
+        `<option value="${a}-${b}">${GPPL.findResult(results, a, b) ? "✅ " : ""}${name(a)} vs ${name(b)}</option>`).join("");
+      if ([...$("match").options].some(o => o.value === keep)) $("match").value = keep;
+      loadMatch();
+    }
+
+    function loadMatch() {
+      const { a, b } = currentMatch();
+      setInputs($("league-sets"), [["Set 1", "s1"], ["Set 2", "s2"], ["Tie-break", "tb"]], a, b);
+      $("wo").innerHTML = `<option value="">No walkover</option><option value="${a}">${name(a)} wins by walkover</option><option value="${b}">${name(b)} wins by walkover</option>` +
+        `<option value="both">Both pairs at fault / no photo – −1 each</option>`;
+      $("link").value = "";
+      const r = GPPL.findResult(results, a, b);
+      if (r) {
+        if (r.walkover) $("wo").value = r.walkover;
+        else r.sets.forEach(([x, y], i) => {
+          const [p, q] = r.a === a ? [x, y] : [y, x];
+          const id = ["s1", "s2", "tb"][i];
+          $(id + "-a").value = p; $(id + "-b").value = q;
+        });
+        $("link").value = r.link || "";
+      }
+      flash("league-msg", "");
+    }
+
+    function readLeague() {
+      const { a, b } = currentMatch();
+      const link = $("link").value.trim();
+      const wo = $("wo").value;
+      if (wo) return { a, b, walkover: wo === "both" ? "both" : +wo, ...(link ? { link } : {}) };
+      const s1 = [num($("s1-a")), num($("s1-b"))], s2 = [num($("s2-a")), num($("s2-b"))], tb = [num($("tb-a")), num($("tb-b"))];
+      if (s1.includes(null) || s2.includes(null)) throw new Error("Enter set 1 and set 2.");
+      if (!validSet(s1) || !validSet(s2)) throw new Error("A set must end 6–0…6–4, 7–5 or 7–6.");
+      const split = (s1[0] > s1[1]) !== (s2[0] > s2[1]);
+      const hasTb = !tb.includes(null);
+      if (split && !hasTb) throw new Error("Sets are 1–1 – enter the match tie-break.");
+      if (!split && (tb[0] !== null || tb[1] !== null)) throw new Error("No match tie-break at 2–0 – clear those fields.");
+      if (split && !validTieBreak(tb)) throw new Error("Match tie-break: first to 10, win by 2 (e.g. 10–8, 12–10).");
+      return { a, b, sets: split ? [s1, s2, tb] : [s1, s2], ...(link ? { link } : {}) };
+    }
+
+    function renderResultList() {
+      if (!results.length) { $("result-list").innerHTML = '<p class="muted">No results yet.</p>'; return; }
+      // latest matchday first
+      $("result-list").innerHTML = fixtureList.map((games, i) => [games, i]).reverse().map(([games, i]) => {
+        const rows = games.map(([a, b]) => {
+          const r = GPPL.findResult(results, a, b);
+          if (!r) return "";
+          const w = GPPL.evaluate(r).winner;
+          return `<div class="row"><span>MD${i + 1} · <span class="${w === a ? "done" : ""}">${name(a)}</span> vs <span class="${w === b ? "done" : ""}">${name(b)}</span></span>
+            <span><b>${GPPL.scoreText(r, a)}</b> ${r.link ? `<a href="${r.link}" target="_blank" rel="noopener">🔗</a>` : ""}
+            <button class="btn ghost small" data-edit="${i + 1}|${a}-${b}">Edit</button></span></div>`;
+        }).join("");
+        return rows;
+      }).join("") || '<p class="muted">No results yet.</p>';
+      // results for pairs not in the fixture list (e.g. after changing pairs)
+      document.querySelectorAll("[data-edit]").forEach(btn => btn.addEventListener("click", () => {
+        const [md, m] = btn.dataset.edit.split("|");
+        $("md").value = md; fillMatches(); $("match").value = m; loadMatch();
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }));
+    }
+
+    $("md").addEventListener("change", fillMatches);
+    $("match").addEventListener("change", loadMatch);
+    $("save-result").addEventListener("click", async () => {
+      let r;
+      try { r = readLeague(); } catch (e) { return flash("league-msg", "❌ " + e.message, false); }
+      const next = results.filter(x => !GPPL.samePair(x, r.a, r.b)).concat(r);
+      if (await persist("results", next, `result ${name(r.a)} vs ${name(r.b)}`, "league-msg")) {
+        const saved = $("league-msg").textContent; results = next; fillMatches(); renderResultList(); flash("league-msg", saved);
+      }
+    });
+    $("delete-result").addEventListener("click", async () => {
+      const { a, b } = currentMatch();
+      if (!GPPL.findResult(results, a, b)) return flash("league-msg", "No result saved for this match.", false);
+      if (!confirm(`Delete the result ${name(a)} vs ${name(b)}?`)) return;
+      const next = results.filter(x => !GPPL.samePair(x, a, b));
+      if (await persist("results", next, `delete ${name(a)} vs ${name(b)}`, "league-msg")) {
+        const saved = $("league-msg").textContent; results = next; fillMatches(); renderResultList(); flash("league-msg", saved);
+      }
+    });
+
+    // ---------- cup ----------
+    function renderCup() {
+      const el = $("cup-list");
+      if (!cup.rounds.length) {
+        el.innerHTML = '<div class="card muted">No cup rounds yet – run the first draw in the 🔒 Draw tab.</div>';
+        return;
+      }
+      // newest round first
+      const latest = cup.rounds.length - 1;
+      const badge = ri => (ri === latest ? ' <span class="pill">Current</span>' : "");
+      const list = cup.rounds.map((r, ri) => {
+        if (r.type === "lucky") {
+          return `<div class="card"><h3 style="margin-top:0">🍀 ${r.name}${badge(ri)}</h3>
+            <p>Back in the cup: <b>${r.lucky.map(name).join(", ")}</b></p></div>`;
+        }
+        return `<div class="card"><h3 style="margin-top:0">${r.name}${badge(ri)}</h3>` + r.matches.map((m, mi) => {
+          const w = GPPL.cupWinner(m);
+          return `<div class="cupmatch-edit" data-r="${ri}" data-m="${mi}">
+            <div style="margin-bottom:6px"><b>${name(m.a)}</b> vs <b>${name(m.b)}</b> ${w ? `· <span class="done">🏆 ${name(w)}</span>` : m.walkover === "both" ? '· <span class="muted">both out</span>' : ""}</div>
+            <div class="sets">
+              <span></span><span>${name(m.a)}</span><span>${name(m.b)}</span>
+              ${[0, 1, 2].map(si => `<span class="head">${si === 2 && !GPPL.cupFullSets(r) ? "Tie-break" : `Set ${si + 1}`}</span>` + [m.a, m.b].map((p, pi) =>
+                `<input type="number" min="0" max="${si === 2 && !GPPL.cupFullSets(r) ? 99 : 7}" data-s="${si}" data-p="${pi}" aria-label="Set ${si + 1} ${name(p)}" value="${m.sets && m.sets[si] ? m.sets[si][pi] : ""}">`).join("")).join("")}
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
+              <select data-wo style="width:auto">
+                <option value="">No walkover</option>
+                <option value="${m.a}" ${m.walkover === m.a ? "selected" : ""}>${name(m.a)} wins by walkover</option>
+                <option value="${m.b}" ${m.walkover === m.b ? "selected" : ""}>${name(m.b)} wins by walkover</option>
+                <option value="both" ${m.walkover === "both" ? "selected" : ""}>Both at fault – both out</option>
+              </select>
+              <button class="btn small" data-save>Save</button>
+            </div></div>`;
+        }).join("") + `${r.byes && r.byes.length ? `<p class="note">Bye: ${r.byes.map(name).join(", ")}</p>` : ""}</div>`;
+      }).reverse().join("");
+
+      // actions on top: 3rd-place match once both semi-finals are done, undo the latest round
+      const semis = GPPL.mainRounds(cup).find(r => r.name === "Semi-finals");
+      const hasThird = cup.rounds.some(r => r.third);
+      let extra = "";
+      if (semis && semis.matches.every(GPPL.cupWinner) && !hasThird) {
+        extra += `<button class="btn ghost" id="add-third">Add 3rd-place match (semi-final losers)</button> `;
+      }
+      // fallback, e.g. after deleting the final by mistake
+      const ns = GPPL.cupNextStage(cup);
+      if (ns.type === "final") {
+        extra += `<button class="btn" id="create-final">Create the final: ${name(ns.entrants[0])} vs ${name(ns.entrants[1])}</button> `;
+      }
+      extra += `<button class="btn ghost" id="undo-round">Delete latest round (${cup.rounds[latest].name})</button>`;
+      el.innerHTML = `<div class="card">${extra}</div>` + list;
+
+      el.querySelectorAll("[data-save]").forEach(btn => btn.addEventListener("click", () => saveCupMatch(btn.closest(".cupmatch-edit"))));
+      const third = $("add-third");
+      if (third) third.addEventListener("click", async () => {
+        const [m1, m2] = semis.matches;
+        const next = structuredClone(cup);
+        next.rounds.push({ name: "3rd place", type: "matches", third: true, matches: [{ a: GPPL.cupLoser(m1), b: GPPL.cupLoser(m2) }] });
+        if (await persist("cup", next, "add 3rd-place match", "cup-msg")) { cup = next; renderCup(); }
+      });
+      const createFinal = $("create-final");
+      if (createFinal) createFinal.addEventListener("click", async () => {
+        const next = structuredClone(cup);
+        GPPL.addFinalIfDue(next);
+        if (await persist("cup", next, "create final", "cup-msg")) { cup = next; renderCup(); }
+      });
+      $("undo-round").addEventListener("click", async () => {
+        const last = cup.rounds[cup.rounds.length - 1];
+        if (!confirm(`Delete the round "${last.name}" including its results?`)) return;
+        const next = structuredClone(cup);
+        next.rounds.pop();
+        if (await persist("cup", next, `delete round ${last.name}`, "cup-msg")) { cup = next; renderCup(); }
+      });
+    }
+
+    async function saveCupMatch(box) {
+      const ri = +box.dataset.r, mi = +box.dataset.m;
+      const next = structuredClone(cup);
+      const m = next.rounds[ri].matches[mi];
+      const fullSets = GPPL.cupFullSets(next.rounds[ri]);
+      const wo = box.querySelector("[data-wo]").value;
+      delete m.sets; delete m.walkover;
+      if (wo) m.walkover = wo === "both" ? "both" : +wo;
+      else {
+        const sets = [];
+        for (let si = 0; si < 3; si++) {
+          const x = box.querySelector(`[data-s="${si}"][data-p="0"]`).value, y = box.querySelector(`[data-s="${si}"][data-p="1"]`).value;
+          if (x === "" && y === "") continue;
+          if (x === "" || y === "") return flash("cup-msg", `❌ Set ${si + 1} is incomplete.`, false);
+          if (si === 2 && !fullSets) {
+            if (!validTieBreak([+x, +y])) return flash("cup-msg", "❌ Match tie-break: first to 10, win by 2 (e.g. 10–8, 12–10).", false);
+          } else if (!validSet([+x, +y])) return flash("cup-msg", `❌ Set ${si + 1}: a set must end 6–0…6–4, 7–5 or 7–6.`, false);
+          sets.push([+x, +y]);
+        }
+        m.sets = sets;
+        if (!GPPL.cupWinner(m)) return flash("cup-msg", "❌ No winner yet – a pair needs 2 sets.", false);
+        const wins = sets.map(([x, y]) => x > y);
+        if (sets.length === 3 && wins[0] === wins[1]) return flash("cup-msg", "❌ The match was over after 2 sets – remove set 3.", false);
+      }
+      syncFinalWithSemis(next);
+      const finalAdded = GPPL.addFinalIfDue(next);
+      if (await persist("cup", next, `cup ${name(m.a)} vs ${name(m.b)}`, "cup-msg")) {
+        cup = next; renderCup();
+        if (finalAdded) {
+          const f = next.rounds[next.rounds.length - 1].matches[0];
+          flash("cup-msg", `✅ Saved – 🏆 the final is set: ${name(f.a)} vs ${name(f.b)}`);
+        }
+      }
+    }
+
+    // A corrected semi-final result updates a final / 3rd-place match that hasn't been played yet
+    function syncFinalWithSemis(c) {
+      const mains = GPPL.mainRounds(c);
+      const fin = mains[mains.length - 1], sf = mains[mains.length - 2];
+      if (!fin || fin.name !== "Final" || !sf || sf.matches.length !== 2) return;
+      const winners = sf.matches.map(GPPL.cupWinner), losers = sf.matches.map(GPPL.cupLoser);
+      if (winners.every(Boolean) && !GPPL.cupWinner(fin.matches[0])) fin.matches[0] = { a: winners[0], b: winners[1] };
+      const third = c.rounds.find(r => r.third);
+      if (third && losers.every(Boolean) && !GPPL.cupWinner(third.matches[0])) third.matches[0] = { a: losers[0], b: losers[1] };
+    }
+
+    // ---------- registration window ----------
+    let siteSettings = {};
+    function fillRegistration() {
+      const reg = { ...LEAGUE.registration, ...(siteSettings.registration || {}) };
+      const status = reg.status || (reg.open ? "open" : "soon");
+      document.querySelectorAll('input[name="reg-status"]').forEach(r => (r.checked = r.value === status));
+      $("reg-deadline").value = reg.deadline || "";
+      $("reg-fee").value = reg.fee || "";
+      $("reg-form").value = reg.formUrl || "";
+      $("reg-payment").value = reg.paymentNote || "";
+      $("reg-pay-url").value = reg.paymentUrl || "";
+    }
+    $("reg-save").addEventListener("click", async () => {
+      const status = (document.querySelector('input[name="reg-status"]:checked') || {}).value || "soon";
+      const formUrl = $("reg-form").value.trim();
+      if (formUrl && !/^https:\/\//.test(formUrl)) return flash("reg-msg", "❌ The form link must start with https://", false);
+      const paymentUrl = $("reg-pay-url").value.trim();
+      if (paymentUrl && !/^https:\/\//.test(paymentUrl)) return flash("reg-msg", "❌ The payment link must start with https://", false);
+      const next = { ...siteSettings, registration: {
+        status, deadline: $("reg-deadline").value.trim() || "TBD", fee: $("reg-fee").value.trim() || "Details coming soon",
+        formUrl, paymentUrl, paymentNote: $("reg-payment").value.trim(),
+      } };
+      const label = { soon: "coming soon", open: "open", closed: "closed" }[status];
+      if (await persist("settings", next, `registration ${label}`, "reg-msg")) {
+        siteSettings = next;
+        renderManual();
+        const saved = $("reg-msg").textContent;
+        flash("reg-msg", `${saved} Registration is now: ${label}.`);
+      }
+    });
+
+    // ---------- pairs: CSV import (numbered in payment order) ----------
+    const escH = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    let csv = null;        // { header: [], rows: [[]] }
+    let importList = null; // pairs ready to save
+
+    // Changes to the pairs are kept as a draft in this browser and stay hidden from everyone else
+    // until "Publish" saves them to the website (data/pairs.json).
+    const DRAFT_KEY = "gppl-draft-pairs";
+    const getDraft = () => { try { return JSON.parse(localStorage.getItem(DRAFT_KEY) || "null"); } catch { return null; } };
+    const setDraft = list => { try { list ? localStorage.setItem(DRAFT_KEY, JSON.stringify(list)) : localStorage.removeItem(DRAFT_KEY); } catch {} renderCurrentPairs(); };
+    const workingPairs = () => getDraft() || LEAGUE.pairs;
+    const sameTeam = (x, y) => !!x && !!y && x.id === y.id && x.name === y.name && x.players.join("|") === y.players.join("|");
+
+    // manual entry: only while registration is open; the next number is the seed (#1, #2, …)
+    function renderManual() {
+      const open = ((siteSettings.registration || {}).status) === "open";
+      const list = workingPairs();
+      $("manual-note").textContent = open
+        ? `The team gets #${list.length + 1} – teams are numbered in the order they are added. Add them in order of payment.`
+        : "Only possible while registration is open (Registration tab).";
+      document.querySelectorAll("#manual-form input, #manual-form button").forEach(el => (el.disabled = !open));
+      $("man-undo").disabled = !open || !list.length;
+    }
+    $("man-add").addEventListener("click", () => {
+      if (((siteSettings.registration || {}).status) !== "open") return flash("man-msg", "❌ Registration isn't open.", false);
+      const team = $("man-team").value.trim(), p1 = $("man-p1").value.trim(), p2 = $("man-p2").value.trim();
+      if (!team || !p1 || !p2) return flash("man-msg", "❌ Fill in the team name and both players.", false);
+      const list = workingPairs();
+      if (list.some(p => p.name.toLowerCase() === team.toLowerCase())) return flash("man-msg", `❌ “${team}” is already registered.`, false);
+      setDraft(list.map(p => ({ ...p })).concat({ id: list.length + 1, name: team, players: [p1, p2] }));
+      ["man-team", "man-p1", "man-p2"].forEach(id => ($(id).value = ""));
+      flash("man-msg", `✅ #${list.length + 1} ${team} added – not public yet. Press “Publish” above when you're ready.`);
+    });
+    $("man-undo").addEventListener("click", () => {
+      const list = workingPairs(), last = list[list.length - 1];
+      if (!last || !confirm(`Remove #${last.id} ${last.name}?`)) return;
+      setDraft(list.slice(0, -1).map(p => ({ ...p })));
+      flash("man-msg", `#${last.id} ${last.name} removed – press “Publish” to update the website.`);
+    });
+
+    function fillLogoAnim() {
+      const mode = siteSettings.logoAnimation === "always" ? "always" : "hover";
+      document.querySelectorAll('input[name="logo-anim"]').forEach(r => (r.checked = r.value === mode));
+    }
+    $("logo-anim-save").addEventListener("click", async () => {
+      const mode = (document.querySelector('input[name="logo-anim"]:checked') || {}).value || "hover";
+      const next = { ...siteSettings, logoAnimation: mode };
+      if (await persist("settings", next, `logo animations: ${mode}`, "logo-anim-msg")) siteSettings = next;
+    });
+    function fillSiteLogoAnim() {
+      const mode = siteSettings.siteLogoAnimation === "always" ? "always" : "hover";
+      document.querySelectorAll('input[name="site-logo-anim"]').forEach(r => (r.checked = r.value === mode));
+    }
+    $("site-logo-anim-save").addEventListener("click", async () => {
+      const mode = (document.querySelector('input[name="site-logo-anim"]:checked') || {}).value || "hover";
+      const next = { ...siteSettings, siteLogoAnimation: mode };
+      if (await persist("settings", next, `GPPL logo animation: ${mode}`, "site-logo-anim-msg")) siteSettings = next;
+    });
+
+    function renderCurrentPairs() {
+      renderManual();
+      fillLogoAnim();
+      fillSiteLogoAnim();
+      const draft = getDraft(), list = workingPairs(), pub = LEAGUE.pairs;
+      const changed = !!draft && (draft.length !== pub.length || draft.some((p, i) => !sameTeam(p, pub[i])));
+      if (draft && !changed) { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
+      $("pairs-source").textContent = !list.length
+        ? (changed ? "All pairs removed – not published yet." : "No pairs yet – add them below or import the paid registrations.")
+        : changed ? "Unpublished changes – only you can see them until you publish." : "Published – visible on the Participants tab.";
+      $("pairs-current").innerHTML = !list.length ? "" : `<table class="pairs-table"><tr><th>#</th><th>Team</th><th>Players</th><th></th></tr>` +
+        list.map((p, i) => `<tr><td class="n">#${p.id}</td><td><b>${escH(p.name)}</b></td><td>${p.players.map(escH).join(" &amp; ")}</td>
+          <td>${changed && !sameTeam(p, pub[i]) ? '<span class="note">not published</span>' : ""}</td></tr>`).join("") + `</table>`;
+      $("pairs-publish").hidden = !changed;
+      $("pairs-publish").style.display = changed ? "flex" : "none";
+      if (changed) {
+        const removed = pub.filter((p, i) => !sameTeam(p, list[i])).length;
+        const added = list.filter((p, i) => !sameTeam(p, pub[i])).length;
+        $("pub-info").textContent = [added && `${added} new/changed`, removed && `${removed} removed/replaced`].filter(Boolean).join(" · ");
+      }
+    }
+    $("pub-btn").addEventListener("click", async () => {
+      const draft = getDraft();
+      if (!draft || !confirm(`Publish ${draft.length} team${draft.length === 1 ? "" : "s"} to the Participants tab?`)) return;
+      await savePairs(draft, `publish ${draft.length} pairs`, "pub-msg");
+    });
+    $("pub-discard").addEventListener("click", () => {
+      if (!confirm("Discard the unpublished changes?")) return;
+      setDraft(null);
+      flash("pub-msg", "Changes discarded.");
+    });
+
+    // CSV with quotes; delimiter "," or ";" (whichever the header uses more)
+    function parseCSV(text) {
+      text = text.replace(/^﻿/, "");
+      const firstLine = text.split(/\r?\n/)[0];
+      const delim = (firstLine.match(/;/g) || []).length > (firstLine.match(/,/g) || []).length ? ";" : ",";
+      const rows = [];
+      let row = [], field = "", inQ = false;
+      for (let i = 0; i < text.length; i++) {
+        const c = text[i];
+        if (inQ) {
+          if (c === '"' && text[i + 1] === '"') { field += '"'; i++; }
+          else if (c === '"') inQ = false;
+          else field += c;
+        } else if (c === '"') inQ = true;
+        else if (c === delim) { row.push(field); field = ""; }
+        else if (c === "\n" || c === "\r") {
+          if (c === "\r" && text[i + 1] === "\n") i++;
+          row.push(field); field = "";
+          if (row.some(f => f.trim() !== "")) rows.push(row);
+          row = [];
+        } else field += c;
+      }
+      row.push(field);
+      if (row.some(f => f.trim() !== "")) rows.push(row);
+      return { header: rows[0] || [], rows: rows.slice(1) };
+    }
+
+    // "05.11.2026 14:32", "05/11/2026 14:32:10", "2026-11-05T14:32" … → Date (or null)
+    function parseDate(str, fmt) {
+      const s = String(str || "").trim();
+      if (!s) return null;
+      let m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+      if (m && (fmt === "auto" || fmt === "ymd")) return mk(+m[1], +m[2], +m[3], m[4], m[5], m[6]);
+      m = s.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})(?:,?\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+      if (!m) return null;
+      let [a, b, y] = [+m[1], +m[2], +m[3]];
+      if (y < 100) y += 2000;
+      let dmy = fmt === "dmy" || (fmt === "auto" && (s.includes(".") || a > 12));
+      if (fmt === "mdy") dmy = false;
+      if (fmt === "auto" && !s.includes(".") && b > 12) dmy = false;
+      return dmy ? mk(y, b, a, m[4], m[5], m[6]) : mk(y, a, b, m[4], m[5], m[6]);
+      function mk(Y, M, D, h, mi, se) {
+        const d = new Date(Y, M - 1, D, +(h || 0), +(mi || 0), +(se || 0));
+        return d.getMonth() === M - 1 && d.getDate() === D ? d : null;
+      }
+    }
+
+    function guessColumn(header, patterns) {
+      const i = header.findIndex(h => patterns.some(p => p.test(h)));
+      return i === -1 ? "" : String(i);
+    }
+
+    function fillMapping() {
+      const opts = `<option value="">– choose –</option>` + csv.header.map((h, i) => `<option value="${i}">${escH(h || `Column ${i + 1}`)}</option>`).join("");
+      ["map-team", "map-p1", "map-p2", "map-paid", "map-pk1", "map-pk2"].forEach(id => ($(id).innerHTML = opts));
+      $("map-team").value = guessColumn(csv.header, [/team/i, /pair name/i, /teamname/i]);
+      $("map-p1").value = guessColumn(csv.header, [/player\s*1/i, /spieler\s*1/i, /first player/i, /member/i, /players/i]);
+      $("map-p2").value = guessColumn(csv.header, [/player\s*2/i, /spieler\s*2/i, /second player/i]);
+      $("map-paid").value = guessColumn(csv.header, [/paid/i, /payment/i, /bezahlt/i, /zahlung/i]);
+      $("map-pk1").value = guessColumn(csv.header, [/player\s*1.*pakistan/i, /spieler\s*1.*pakistan/i, /both.*pakistan/i, /pakistan/i]);
+      $("map-pk2").value = guessColumn(csv.header, [/player\s*2.*pakistan/i, /spieler\s*2.*pakistan/i]);
+      $("csv-map").hidden = false;
+      buildPreview();
+    }
+
+    function buildPreview() {
+      importList = null;
+      $("pairs-save").disabled = true;
+      const col = id => ($(id).value === "" ? -1 : +$(id).value);
+      const [ct, c1, c2, cp] = ["map-team", "map-p1", "map-p2", "map-paid"].map(col);
+      const [ck1, ck2] = ["map-pk1", "map-pk2"].map(col);
+      if ([ct, c1, cp].includes(-1)) { $("csv-preview").innerHTML = '<p class="note">Choose the team name, player and payment date columns.</p>'; return; }
+      const splitNames = c2 === -1 || c2 === c1;
+      // "Automatic": decide DD/MM vs MM/DD for the whole column – European order unless a date proves otherwise
+      let fmt = $("map-datefmt").value;
+      if (fmt === "auto") {
+        const vals = csv.rows.map(r => (r[cp] || "").trim()).filter(Boolean);
+        const parts = vals.map(v => v.match(/^(\d{1,2})[./-](\d{1,2})[./-]\d{2,4}/)).filter(Boolean);
+        if (parts.some(m => +m[2] > 12) && !parts.some(m => +m[1] > 12)) fmt = "mdy";
+        else if (parts.length) fmt = "dmy";
+      }
+      const max = Math.max(2, +$("map-max").value || 12);
+      const paid = [], skipped = [];
+      csv.rows.forEach((r, i) => {
+        const team = (r[ct] || "").trim(), raw = (r[cp] || "").trim();
+        let p1 = (r[c1] || "").trim(), p2 = splitNames ? "" : (r[c2] || "").trim();
+        if (splitNames) [p1, p2 = ""] = p1.split(/\s*(?:\r?\n|,|;|&|\+|\/|\band\b|\bund\b)\s*/i).filter(Boolean);
+        if (!team && !p1 && !p2) return;
+        if (!raw) return skipped.push({ team, why: "no payment date" });
+        const d = parseDate(raw, fmt);
+        if (!d) return skipped.push({ team, why: `can't read date “${raw}”` });
+        const yes = c => c !== -1 && /^(y|yes|ja|j|true|1|x|✓|✔)/i.test((r[c] || "").trim());
+        const pk = ck1 !== -1 && yes(ck1) && (ck2 === -1 || yes(ck2)); // one "both Pakistani?" column, or one per player
+        paid.push({ team: team || `${p1} & ${p2}`, p1, p2, d, raw, order: i, pk });
+      });
+      paid.sort((x, y) => x.d - y.d || x.order - y.order); // ties keep the CSV order
+      let inLeague, waiting;
+      if (paid.length > max) {
+        // §1.1: full Pakistani pairs get the places first, then the others – each group in payment order
+        const prio = paid.filter(p => p.pk).concat(paid.filter(p => !p.pk));
+        const chosen = new Set(prio.slice(0, max));
+        inLeague = paid.filter(p => chosen.has(p)); // numbered in payment order
+        waiting = prio.slice(max);
+      } else {
+        inLeague = paid; waiting = [];
+      }
+      const fmtD = d => d.toLocaleString("en-GB", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+      let html = `<table class="pairs-table"><tr><th>#</th><th>Team</th><th>Players</th><th>Paid</th></tr>` +
+        inLeague.map((p, i) => `<tr><td class="n">#${i + 1}</td><td><b>${escH(p.team)}</b>${p.pk ? " 🇵🇰" : ""}</td><td>${escH(p.p1)} &amp; ${escH(p.p2)}</td><td>${fmtD(p.d)}</td></tr>`).join("") +
+        (waiting.length ? `<tr><td colspan="4" class="note" style="padding-top:12px"><b>Waiting list</b> (over the maximum of ${max})</td></tr>` +
+          waiting.map((p, i) => `<tr class="wait"><td>W${i + 1}</td><td>${escH(p.team)}${p.pk ? " 🇵🇰" : ""}</td><td>${escH(p.p1)} &amp; ${escH(p.p2)}</td><td>${fmtD(p.d)}</td></tr>`).join("") : "") +
+        `</table>`;
+      if (skipped.length) html += `<div class="warn-box">Not imported (${skipped.length}): ${skipped.map(s => `${escH(s.team || "(no team name)")} – ${s.why}`).join(" · ")}</div>`;
+      if (inLeague.length < 8) html += `<div class="warn-box">Only ${inLeague.length} paid pairs – the league needs at least 8 (§1.2).</div>`;
+      if (results.length || cup.rounds.length) html += `<div class="warn-box">⚠️ Results or cup rounds already exist. New pair numbers would no longer match them – only import before the season starts.</div>`;
+      $("csv-preview").innerHTML = html;
+      if (inLeague.length >= 2) {
+        importList = inLeague.map((p, i) => ({ id: i + 1, name: p.team, players: [p.p1, p.p2] }));
+        $("pairs-save").disabled = false;
+      }
+    }
+
+    $("csv-file").addEventListener("change", async e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      csv = parseCSV(await file.text());
+      flash("pairs-msg", "");
+      if (!csv.rows.length) return flash("pairs-msg", "❌ The file has no rows.", false);
+      fillMapping();
+    });
+    ["map-team", "map-p1", "map-p2", "map-paid", "map-pk1", "map-pk2", "map-datefmt", "map-max"].forEach(id => $(id).addEventListener("change", buildPreview));
+
+    async function savePairs(list, message, msgId = "pairs-msg") {
+      if ((results.length || cup.rounds.length) && !confirm("Results or cup rounds already exist – changing the pairs will mix them up. Continue?")) return;
+      if (await persist("pairs", list, message, msgId)) {
+        // "Last updated" on the Participants tab
+        const next = { ...siteSettings, participantsUpdated: new Date().toISOString() };
+        if (await persist("settings", next, "participants updated", msgId)) siteSettings = next;
+        try { localStorage.setItem("gppl-local-pairs", JSON.stringify(list)); localStorage.removeItem(DRAFT_KEY); } catch {}
+        flash(msgId, $(msgId).textContent + " Reloading…");
+        setTimeout(() => window.top.location.reload(), 1200);
+      }
+    }
+    $("pairs-save").addEventListener("click", () => {
+      if (!importList) return;
+      setDraft(importList);
+      flash("pairs-msg", `✅ ${importList.length} pairs ready – not public yet. Press “Publish” under Current pairs.`);
+      $("panel-pairs").scrollIntoView({ behavior: "smooth" });
+    });
+    $("pairs-reset").addEventListener("click", () => {
+      if (!confirm("Remove all pairs? (You still need to publish afterwards.)")) return;
+      setDraft([]);
+      flash("pairs-msg", "All pairs removed – press “Publish” under Current pairs to update the website.");
+    });
+
+    // ---------- settings ----------
+    function fillSettings() {
+      const c = STORE.ghConfig() || {};
+      $("gh-owner").value = c.owner || "";
+      $("gh-repo").value = c.repo || "";
+      $("gh-branch").value = c.branch || "main";
+      $("gh-token").value = c.token || "";
+    }
+    $("gh-save").addEventListener("click", async () => {
+      const cfg = { owner: $("gh-owner").value.trim(), repo: $("gh-repo").value.trim(), branch: $("gh-branch").value.trim() || "main", token: $("gh-token").value.trim() };
+      if (!cfg.owner || !cfg.repo || !cfg.token) return flash("gh-msg", "❌ Fill in owner, repository and token.", false);
+      STORE.setGhConfig(cfg);
+      flash("gh-msg", "Testing…");
+      try {
+        const res = await STORE.testConnection();
+        flash("gh-msg", res === "ok" ? "✅ Connected – saves now go to GitHub." : "❌ " + res, res === "ok");
+      } catch (e) { flash("gh-msg", "❌ " + e.message, false); }
+      renderBanner();
+      await reload();
+    });
+    $("gh-clear").addEventListener("click", async () => {
+      STORE.setGhConfig(null); fillSettings(); renderBanner();
+      flash("gh-msg", "Disconnected – the token was removed from this browser.");
+      await reload();
+    });
+    $("download-data").addEventListener("click", () => STORE.downloadAll());
+    $("clear-local").addEventListener("click", async () => {
+      STORE.clearLocal();
+      flash("local-msg", "Local test data cleared.");
+      await reload();
+    });
+
+    // ---------- tabs ----------
+    document.querySelectorAll(".subnav button").forEach(btn => btn.addEventListener("click", async () => {
+      document.querySelectorAll(".subnav button").forEach(b => b.classList.toggle("active", b === btn));
+      document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "panel-" + btn.dataset.panel));
+      // keep cup data in sync between the results panel and the draw
+      if (btn.dataset.panel === "draw") {
+        try { await $("draw-frame").contentWindow.refreshCup(); } catch {}
+      }
+      if (btn.dataset.panel === "cup") await reload();
+    }));
+
+    // keep the embedded draw as tall as its content
+    setInterval(() => {
+      const frame = $("draw-frame");
+      if (!frame.offsetParent) return;
+      try {
+        const h = frame.contentDocument.documentElement.scrollHeight;
+        if (h && Math.abs(frame.offsetHeight - h) > 4) frame.style.height = Math.max(h, 720) + "px";
+      } catch {}
+    }, 500);
+
+    let matchdayChosen = false;
+    async function reload() {
+      results = await STORE.load("results", []);
+      cup = await STORE.load("cup", { rounds: [] });
+      if (!cup.rounds) cup.rounds = [];
+      // start on the current matchday (only on first load – don't jump while an admin is working)
+      if (!matchdayChosen) { $("md").value = defaultMatchday(); matchdayChosen = true; }
+      siteSettings = await STORE.load("settings", {});
+      fillMatches(); renderResultList(); renderCup(); fillRegistration(); renderCurrentPairs();
+    }
+
+    requireAdmin(async () => {
+      fillMatchdays(); fillSettings(); renderBanner();
+      await reload();
+    });
+  </script>
+</body>
+</html>
