@@ -4,7 +4,13 @@ const GPPL = (() => {
   const DAY = 86400000;
   const pairById = Object.fromEntries(LEAGUE.pairs.map(p => [p.id, p]));
   const pairName = id => (pairById[id] ? pairById[id].name : "?");
-  const start = new Date(LEAGUE.startDate + "T00:00:00");
+  let start = new Date(LEAGUE.startDate + "T00:00:00");
+  // the league start date (Admin → League results): sets every matchday date; none = dates and Schedule hidden
+  function setStartDate(iso) {
+    const ok = /^\d{4}-\d{2}-\d{2}$/.test(iso || "");
+    if (ok) { LEAGUE.startDate = iso; start = new Date(iso + "T00:00:00"); }
+    LEAGUE.datesConfirmed = LEAGUE.scheduleVisible = ok && LEAGUE.scheduleReleased !== false;
+  }
   const fmt = d => d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 
   function matchdayWindow(md) {
@@ -14,8 +20,23 @@ const GPPL = (() => {
   }
 
   // single round-robin, circle method
-  function buildFixtures(ids) {
-    const list = ids.slice();
+  // seeded random numbers: the same seed always gives the same draw
+  function seeded(seed) {
+    return () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function shuffle(arr, rnd) {
+    for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+    return arr;
+  }
+  // round robin; with a draw seed the pairs and the matchday order are shuffled
+  function buildFixtures(ids, seed) {
+    const rnd = Number.isInteger(seed) ? seeded(seed) : null;
+    const list = rnd ? shuffle(ids.slice(), rnd) : ids.slice();
     if (list.length % 2) list.push(null);
     const n = list.length, rounds = [];
     for (let r = 0; r < n - 1; r++) {
@@ -27,9 +48,9 @@ const GPPL = (() => {
       rounds.push(games);
       list.splice(1, 0, list.pop());
     }
-    return rounds;
+    return rnd ? shuffle(rounds, rnd) : rounds;
   }
-  const fixtures = buildFixtures(LEAGUE.pairs.map(p => p.id));
+  const fixtures = buildFixtures(LEAGUE.pairs.map(p => p.id), LEAGUE.drawSeed);
 
   const samePair = (r, a, b) => (r.a === a && r.b === b) || (r.a === b && r.b === a);
   const findResult = (results, a, b) => results.find(r => samePair(r, a, b));
@@ -105,7 +126,49 @@ const GPPL = (() => {
     return rows.sort((x, y) =>
       y.pts - x.pts || y.h2h - x.h2h || y.w - x.w ||
       (y.sf - y.sa) - (x.sf - x.sa) || (y.gf - y.ga) - (x.gf - x.ga) ||
-      pairName(x.id).localeCompare(pairName(y.id)));
+      x.id - y.id); // finally (and before any result): registration order = seed
+  }
+
+  // "19:00" + 90 minutes → "19:00–20:30" (matches are booked for 60, 90 or 120 minutes; 90 if not set)
+  function timeRange(e) {
+    if (!e || !e.time) return "";
+    const [h, m] = e.time.split(":").map(Number), end = h * 60 + m + (+e.duration || 90);
+    return `${e.time}–${String(Math.floor(end / 60) % 24).padStart(2, "0")}:${String(end % 60).padStart(2, "0")}`;
+  }
+
+  // ---------- milestones ----------
+  // How far a pair is with its league matches. `schedule` = dates and results waiting (private,
+  // from the gatekeeper). Each milestone: by the end of matchday `md`, at least `min` matches played.
+  function milestoneProgress(results, schedule, id, now = Date.now()) {
+    const total = fixtures.reduce((n, g) => n + g.filter(([a, b]) => a === id || b === id).length, 0);
+    const mine = fixtures.flat().filter(([a, b]) => a === id || b === id);
+    const key = (a, b) => `L:${Math.min(a, b)}-${Math.max(a, b)}`;
+    let played = 0, waiting = 0;
+    const planned = []; // dates of scheduled matches without a result yet
+    mine.forEach(([a, b]) => {
+      const e = (schedule || {})[key(a, b)] || {};
+      if (findResult(results, a, b)) played++;
+      else if (e.pending) waiting++;
+      else if (e.date) planned.push(new Date(`${e.date}T${e.time || "12:00"}:00`).getTime());
+    });
+    const list = ((LEAGUE.milestonesByPairs || {})[LEAGUE.pairs.length] || []).map((m, i) => {
+      const deadline = matchdayWindow(m.md).to.getTime() + DAY - 1; // end of that matchday
+      const required = m.min === "all" ? total : Math.min(m.min, total);
+      return { n: i + 1, md: m.md, required, deadline, all: m.min === "all", passed: now > deadline };
+    });
+    // the next milestone still to reach (or, once all upcoming ones are reached, the next one by date)
+    const next = list.find(m => !m.passed && played < m.required) || list.find(m => !m.passed) || null;
+    list.forEach(m => {
+      if (played >= m.required) m.status = "reached";
+      else if (m.passed) m.status = "missed";
+      else if (m === next) {
+        const possible = played + waiting + planned.filter(t => t <= m.deadline).length;
+        // "behind" only in the last matchday before the deadline – earlier there's still time to plan
+        m.status = possible >= m.required ? "on-track" : m.deadline - now > LEAGUE.matchdayLengthDays * DAY ? "open" : "behind";
+      } else m.status = "upcoming";
+      m.missing = Math.max(0, m.required - played);
+    });
+    return { total, played, waiting, scheduled: planned.length, milestones: list, next };
   }
 
   // ---------- cup ----------
@@ -220,7 +283,7 @@ const GPPL = (() => {
   }
 
   return {
-    DAY, start, fmt, pairById, pairName, matchdayWindow, fixtures, findResult, samePair,
+    DAY, get start() { return start; }, setStartDate, fmt, pairById, pairName, matchdayWindow, fixtures, findResult, samePair, milestoneProgress, timeRange,
     evaluate, scoreText, rankStandings, cupFullSets, cupWinner, cupLoser, cupNextStage, mainRounds, roundName, addFinalIfDue,
     cleanWords, wordsToSeed, seededShuffle, drawFromOrder, verifyRound,
   };

@@ -5,11 +5,15 @@
 //  - Without a GitHub connection, saves stay in this browser and are downloaded as a file.
 
 const STORE = (() => {
-  const FILES = { results: "data/results.json", cup: "data/cup.json", settings: "data/settings.json", pairs: "data/pairs.json" };
+  const FILES = { results: "data/results.json", cup: "data/cup.json", settings: "data/settings.json", pairs: "data/pairs.json", matches: "data/matches.json", gallery: "data/gallery.json" };
   const LOCAL_KEY = key => `gppl-local-${key}`;
 
   function ghConfig() {
-    try { return JSON.parse(localStorage.getItem("gppl-gh") || "null"); } catch { return null; }
+    let c = null;
+    try { c = JSON.parse(localStorage.getItem("gppl-gh") || "null"); } catch {}
+    // the staging site works on the private repository (its "staging" branch); the public one only has the live site
+    if (c && /gppl-staging/.test(location.hostname)) c = { ...c, repo: "gppl-site", branch: "staging" };
+    return c;
   }
   function setGhConfig(cfg) {
     try {
@@ -85,6 +89,10 @@ const STORE = (() => {
       return "local";
     }
     const c = ghConfig();
+    // the staging copy of the site must never write to the live site's branch
+    if (/gppl-staging/.test(location.hostname) && (c.branch || "main") !== "staging") {
+      throw new Error('This is the staging site – set the GitHub branch to "staging" in Settings.');
+    }
     const path = FILES[key];
     let sha;
     const current = await ghRequest(path);
@@ -118,7 +126,7 @@ const STORE = (() => {
   // download the current data files (e.g. to upload them to GitHub by hand)
   async function downloadAll() {
     for (const key of Object.keys(FILES)) {
-      const data = await load(key, key === "cup" ? { rounds: [] } : key === "settings" ? {} : []);
+      const data = await load(key, key === "cup" ? { rounds: [] } : key === "settings" || key === "matches" ? {} : []);
       download(FILES[key].split("/").pop(), JSON.stringify(data, null, 2) + "\n");
     }
   }

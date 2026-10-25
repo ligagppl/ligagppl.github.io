@@ -13,12 +13,48 @@ const LEAGUE = {
   // Pre-season: only registration and rules. During the season, use e.g.:
   // ["home", "rules", "schedule", "table", "cup", "participants", "gallery", "verify", "admin"]
   // Tabs not listed are hidden; #admin always stays reachable by its link.
+  // Register and Participants leave the menu automatically once registration is closed (Admin → Registration)
+  // or the league start date is set (Admin → League results); Participants stays reachable from Home.
   visibleTabs: ["rules", "participants", "team"],
 
-  startDate: "2026-11-09",
+  // Member area gatekeeper (Cloudflare Worker) – empty = member area closed
+  // Venues suggested first when teams set a match (My team → Set Date / Venue). Format: "Name, street, postcode city".
+  // All are on Playtomic, except the PadelCity venues (they book through their own app).
+  venues: [
+    "PadelCity Tucherpark, Am Eisbach 5, 80538 München",
+    "PadelCity Frankfurter Ring, Taunusstraße 40, 80807 München",
+    "PadelCity Erding, Schollbach 17, 85435 Erding",
+    "PadelCity Neufahrn (Alpha Club), Auweg 100, 85375 Neufahrn bei Freising",
+    "Casa Padel Pineapple Park, Arnulfstraße 195, 80634 München",
+    "Casa Padel Johanneskirchen, Musenbergstraße 40, 81929 München",
+    "Lucky Star Padel @ Das Anders, Moosacher Straße 70, 80809 München",
+    "Padel Seasons, Paul-Ehrlich-Weg 6, 80999 München",
+    "PadelPit, Heiglhofstraße 25, 81377 München",
+    "Münchner Sportclub e.V., Eberwurzstraße 28, 80935 München",
+    "ESV Sportfreunde Neuaubing, Centa-Hafenbrädl-Straße 8, 81249 München",
+    "Scheck Club Padel + Pickleball, Münchner Straße 15, 85774 Unterföhring",
+    "TC Unterföhring, Jahnstraße 7, 85774 Unterföhring",
+    "Padelon München, Verdistraße 45, 85591 Vaterstetten",
+    "Padel Factoría, Zeppelinstraße 4, 85748 Garching",
+    "STK Padel Campus, Am See 3, 85748 Garching",
+    "Casa Padel Agrob Campus, Münchener Straße 101, 85737 Ismaning",
+    "Sport Raschke, Ahornring 74, 82024 Taufkirchen",
+    "Padel Garden TC Puchheim, Bürgermeister-Ertl-Straße 3, 82178 Puchheim",
+    "Padel Cube (SV Ampermoching), Alternstraße 33, 85241 Hebertshausen",
+    "Padel Finsing bei BattleKart, Am Steinfeld 3, 85464 Finsing",
+    "TC Blau-Weiß Neufahrn, Am Sportplatz 18, 85375 Neufahrn bei Freising",
+    "Padel Neufahrn, Käthe-Winkelmann-Platz 1, 85375 Neufahrn bei Freising",
+  ],
+
+  memberApi: "https://gppl-members.gppl-members.workers.dev",
+  memberMode: "signin",   // "signin" = 🎾 My team only signs teams in (before the season) – "Schedule coming soon"
+  // Cloudflare Turnstile site key for the My team login (public) – empty = no security check
+  turnstileSiteKey: "",
+
+  startDate: "2026-11-02",
   matchdayLengthDays: 10,
-  // false = the start date isn't final yet: the website shows no dates (only "Matchday 1, 2, …").
-  // Set to true once the start date is fixed.
+  // Dates and the Schedule tab are shown once the start date is set in Admin → League results
+  // (data/settings.json → startDate, which then overrides startDate above).
   datesConfirmed: false,
 
   // Milestones per number of pairs: minimum number of matches each pair must have played

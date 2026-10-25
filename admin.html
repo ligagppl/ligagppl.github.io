@@ -31,6 +31,88 @@
     .reslist .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--line); flex-wrap: wrap; }
     .reslist .row:last-child { border-bottom: 0; }
     .small { padding: 5px 10px; font-size: .85rem; }
+    .subnav button.has-disputes { border-color: var(--loss); color: var(--loss); }
+    .subnav button.has-disputes.active { background: var(--loss); color: #fff; }
+    #panel-disputes h3 { margin: 20px 0 10px; }
+    #panel-gallery h3 { margin: 20px 0 10px; }
+    .btn[hidden] { display: none !important; }
+    .btn:disabled, input:disabled { opacity: .45; cursor: not-allowed; }
+    .gl-card { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+    .gl-img { flex: 0 0 200px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--line) 40%, transparent); border-radius: 10px; overflow: hidden; }
+    .gl-img img { width: 100%; display: block; }
+    .gl-body { flex: 1 1 240px; display: flex; flex-direction: column; gap: 8px; }
+    .gl-body label { display: flex; flex-direction: column; gap: 4px; }
+    .gl-cap { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; }
+    .dp-card { border-left: 5px solid var(--line); }
+    .dp-card.dp-disputed { border-left-color: var(--loss); }
+    .dp-card.dp-waiting { border-left-color: var(--green-2); }
+    .dp-head { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+    .dp-chip { font-weight: 700; }
+    .dp-board { display: grid; grid-template-columns: minmax(0, 1fr) repeat(var(--sets, 3), 58px); gap: 8px; align-items: center; max-width: 560px; margin: 12px 0; }
+    .dp-bh { font-size: .75rem; color: var(--muted); font-weight: 600; text-align: center; }
+    .dp-team { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .dp-team > span { display: flex; flex-direction: column; min-width: 0; }
+    .dp-logo { width: 44px; height: 44px; flex: none; object-fit: contain; }
+    .dp-logo.ph { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; background: color-mix(in srgb, var(--line) 50%, transparent); }
+    .dp-g { text-align: center; font-size: 1.2rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .dp-g.win { color: var(--text); font-weight: 800; }
+    .dp-facts { display: flex; flex-direction: column; gap: 4px; font-size: .92rem; }
+    .dp-note { margin-top: 2px; padding: 8px 12px; border-radius: 8px; background: color-mix(in srgb, var(--loss) 10%, var(--card)); font-style: italic; }
+    .dp-btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+    .dp-photo img { max-width: 100%; max-height: 360px; border-radius: 10px; margin-top: 10px; }
+    .dp-board input { width: 100%; text-align: center; font-size: 1.05rem; padding: 7px 4px; }
+    #due-list .dp-card, .md-editor .dp-card { margin: 10px 0 0; }
+    .md-day { border-top: 1px solid var(--line); padding: 8px 0; }
+    .md-day summary { cursor: pointer; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .md-img-btn { margin-left: auto; }
+    .md-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+    .md-pair { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; }
+    .md-a, .md-b { display: flex; align-items: center; gap: 8px; min-width: 0; }
+    .md-b { justify-content: flex-end; text-align: right; }
+    .md-a .dp-logo, .md-b .dp-logo { width: 32px; height: 32px; }
+    .md-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .md-row.is-done { opacity: .75; }
+    .md-teams { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
+    .md-teams .dp-logo { width: 32px; height: 32px; }
+    .md-state { font-size: .88rem; }
+    .md-match { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .md-when { font-size: .85rem; color: var(--muted); padding-left: 2px; }
+    .md-share { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .upd-ul { margin: 6px 0 10px; padding-left: 20px; font-size: .9rem; }
+    .md-row .btn { justify-self: start; }
+    @media (max-width: 480px) { .md-pair { font-size: .9rem; } }
+    .ms-row { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(120px, 1fr) minmax(0, 1.4fr) auto; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px dashed var(--line); }
+    .ms-bar { position: relative; height: 22px; border-radius: 999px; background: color-mix(in srgb, var(--line) 60%, transparent); overflow: hidden; }
+    .ms-fill { position: absolute; inset: 0 auto 0 0; background: color-mix(in srgb, var(--green-2) 55%, transparent); border-radius: 999px; }
+    .ms-num { position: relative; display: block; text-align: center; font-size: .78rem; font-weight: 700; line-height: 22px; }
+    .ms-next { display: flex; flex-direction: column; font-size: .88rem; }
+    .ms-chip { font-weight: 700; font-size: .88rem; white-space: nowrap; }
+    .ms-missed .ms-fill { background: color-mix(in srgb, var(--loss) 50%, transparent); }
+    .ms-behind .ms-fill { background: color-mix(in srgb, #e0a100 55%, transparent); }
+    @media (max-width: 640px) { .ms-row { grid-template-columns: 1fr auto; } .ms-bar, .ms-next { grid-column: 1 / -1; } }
+    .dl-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0 10px 10px; border-bottom: 1px dashed var(--line); border-left: 4px solid var(--line); }
+    .dl-row .md-pair { grid-column: 1 / -1; }
+    .dl-info { display: flex; flex-direction: column; gap: 2px; font-size: .9rem; min-width: 0; }
+    .dl-chip { font-weight: 700; font-size: .9rem; white-space: nowrap; }
+    .dl-over { border-left-color: var(--loss); }
+    .dl-soon { border-left-color: #e0a100; }
+    .dl-ok { border-left-color: var(--green-2); }
+    .dl-dispute { border-left-color: var(--loss); }
+    .mb-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+    .mb-team { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+    .mb-team.has-code { border-color: color-mix(in srgb, var(--win) 45%, var(--line)); }
+    .mb-logo { width: 64px; height: 64px; flex: none; object-fit: contain; }
+    .mb-logo.ph { display: inline-flex; align-items: center; justify-content: center; font-size: 1.6rem; border-radius: 50%; background: color-mix(in srgb, var(--line) 50%, transparent); }
+    .mb-team-info { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .mb-team-info .btn { align-self: flex-start; margin-top: 6px; }
+    .mb-team-state { font-size: .82rem; font-weight: 600; }
+    .mb-newcode { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; padding: 8px; border-radius: 8px; background: color-mix(in srgb, var(--ball) 25%, var(--card)); }
+    .mb-code { font-size: 1.1rem; font-weight: 800; letter-spacing: .08em; }
+    .mb-nophone { font-size: .8rem; color: #a05a00; }
+    .mb-bulk { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+    .mb-queue { padding: 14px; border-radius: 12px; margin-bottom: 14px; background: color-mix(in srgb, var(--ball) 22%, var(--card)); border: 2px solid var(--ball); }
+    .mb-queue ol { margin: 10px 0 0; padding-left: 20px; font-size: .88rem; }
+    .mb-queue li.done { color: var(--muted); text-decoration: line-through; }
     .cupmatch-edit { border: 1px solid var(--line); border-radius: 10px; padding: 10px; margin-bottom: 10px; }
     .done { color: var(--win); font-weight: 700; }
     .pairs-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
@@ -62,6 +144,9 @@
       <button data-panel="draw">🎱 Live draw</button>
       <button data-panel="registration">Registration</button>
       <button data-panel="pairs">Pairs</button>
+      <button data-panel="disputes">❗ Disputes</button>
+      <button data-panel="members">👥 Member area</button>
+      <button data-panel="gallery">📸 Gallery</button>
       <button data-panel="settings">Settings</button>
     </div>
     <div id="banner" class="banner"></div>
@@ -69,7 +154,47 @@
     <!-- LEAGUE -->
     <div class="panel active" id="panel-league">
       <div class="card">
-        <h3 style="margin-top:0">Enter a league result</h3>
+        <h3 style="margin-top:0">📅 League start date</h3>
+        <p class="note">Once a start date is set, the matchday dates and the <b>Schedule</b> tab appear on the website. Clear it to hide the schedule again. A <b>new start date reshuffles the league draw</b>. <b>🔒 Lock</b> keeps the start date (and the draw) fixed until the end of the season.</p>
+        <div class="form-row"><label for="start-date">First day of matchday 1</label><input type="date" id="start-date"></div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="start-date-save">Save</button><button class="btn ghost" id="start-date-clear">Clear</button><button class="btn ghost" id="start-date-lock" hidden>🔒 Lock</button></div>
+        <p class="note" id="start-date-status"></p>
+        <div id="release-box" class="note"></div>
+        <div class="msg" id="start-date-msg"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">⏱ Result deadlines</h3>
+        <p class="note">Matches that were played (date &amp; time passed) but have no confirmed result yet. A result must be entered within <b>48 hours</b> of the match, and the opponent then has <b>48 hours</b> to confirm or dispute (after that it counts automatically). Over the limit = contact the pairs (Rules §11).</p>
+        <div id="dl-list"></div>
+      </div>
+      <div class="card" id="upd-card">
+        <h3 style="margin-top:0">📰 Results update</h3>
+        <p class="note">All confirmed results (league &amp; cup) that weren't in a shared update yet – as one image for the WhatsApp group.</p>
+        <div id="upd-list"></div>
+        <div class="msg" id="upd-msg"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">⏰ Results due</h3>
+        <p class="note">Matches whose date has passed and that have no official result yet. Results the teams entered themselves are in <b>❗ Disputes</b> until they're confirmed.</p>
+        <div class="msg" id="due-msg"></div>
+        <div id="due-list"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">🏁 Milestone progress</h3>
+        <p class="note">League matches played per pair against the milestones (Rules §2). “On track” counts results waiting for confirmation and matches already scheduled before the deadline.</p>
+        <div id="ms-view"></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
+          <h3 style="margin:0">📋 Matches per matchday</h3>
+          <button class="btn ghost small" id="md-images-all">🖼️ Download all matchday images</button></div>
+        <p class="note">Each matchday can be saved as an image for WhatsApp – with the teams, results so far and the dates set.</p>
+        <div class="msg" id="md-img-msg"></div>
+        <div id="md-view"></div>
+      </div>
+      <details class="card">
+        <summary><b>Enter any league result (form)</b></summary>
+        <h3>Enter a league result</h3>
         <div class="form-row"><label for="md">Matchday</label><select id="md"></select></div>
         <div class="form-row"><label for="match">Match</label><select id="match"></select></div>
         <div class="form-row"><label>Score</label>
@@ -86,7 +211,7 @@
           <button class="btn ghost" id="delete-result">Delete result</button>
         </div>
         <div class="msg" id="league-msg"></div>
-      </div>
+      </details>
       <div class="card reslist">
         <h3 style="margin-top:0">Entered results</h3>
         <div id="result-list"></div>
@@ -96,7 +221,7 @@
     <!-- CUP -->
     <div class="panel" id="panel-cup">
       <div class="card">
-        <p style="margin:0">Enter cup scores here (full sets). New rounds are drawn in the <b>🔒 Draw</b> tab – it picks up the winners and lucky-loser candidates automatically.</p>
+        <p style="margin:0">Enter cup results here. Round 1 and the quarter-finals end with a match tie-break, the semi-finals and the final are 3 full sets. New rounds are drawn in the <b>🎱 Live draw</b> tab – it picks up the winners and lucky-loser candidates automatically.</p>
       </div>
       <div class="msg" id="cup-msg" style="margin:0 0 10px"></div>
       <div id="cup-list"></div>
@@ -220,6 +345,55 @@
     </div>
 
     <!-- SETTINGS -->
+    <!-- DISPUTES -->
+    <div class="panel" id="panel-disputes">
+      <p class="note" style="margin-top:0">Results the teams entered in <a href="index.html#team" target="_top"><b>🎾 My team</b></a>. They count once the opponent confirms them, or automatically after 48 hours – disputed ones wait for your decision.</p>
+      <div class="msg" id="dp-msg"></div>
+      <div id="dp-list"><div class="card muted">Loading…</div></div>
+      <button class="btn ghost small" id="dp-auto" style="margin-top:12px">Run the 48-hour auto-confirm now</button>
+    </div>
+
+    <!-- MEMBER AREA -->
+    <div class="panel" id="panel-members">
+      <div class="card">
+        <h3 style="margin-top:0">Connection</h3>
+        <p class="note">Teams log in on the <a href="index.html#team" target="_top"><b>🎾 My team</b></a> tab with their team code. Changes go through the GPPL gatekeeper: <code id="mb-api"></code></p>
+        <div class="form-row"><label for="mb-key">Admin key</label><input id="mb-key" type="password" autocomplete="off" placeholder="from the gatekeeper setup"></div>
+        <button class="btn" id="mb-connect">Save &amp; load</button>
+        <div class="msg" id="mb-msg"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">📞 WhatsApp numbers</h3>
+        <p class="note">Used only for the 📲 button that sends a team its code. Stored only in the gatekeeper – never on the website or in GitHub. Import them from the registration export (Google Sheet → File → Download → CSV). The numbers themselves are never shown here – the team cards only say when one is missing.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input type="file" id="ph-file" accept=".csv,text/csv">
+          <button class="btn ghost small" id="ph-clear">🗑️ Delete all numbers</button></div>
+        <div class="msg" id="ph-msg"></div>
+        <div id="ph-preview" class="reslist"></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Team codes</h3>
+        <p class="note">Create a code per team and send it privately (e.g. WhatsApp) to both players. A code is shown only once – “Reset” makes a new one and logs out every phone that used the old code.</p>
+        <div class="mb-bulk">
+          <button class="btn" id="mb-create-all">🔑 Create codes for all teams without one</button>
+          <button class="btn ghost small" id="mb-reset-all">Reset all codes</button>
+        </div>
+        <div id="mb-queue"></div>
+        <div id="mb-code" class="msg"></div>
+        <div id="mb-teams" class="muted reslist">Enter the admin key above.</div>
+      </div>
+      <div class="card">
+        <h3 style="margin-top:0">Activity</h3>
+        <div id="mb-log" class="muted reslist">–</div>
+      </div>
+    </div>
+
+    <!-- GALLERY: matchday photos the teams uploaded → public Gallery tab -->
+    <div class="panel" id="panel-gallery">
+      <p class="note" style="margin-top:0">Matchday photos from confirmed results. <b>Publish</b> puts a photo on the public <a href="index.html#gallery" target="_top">📸 Gallery</a> (Rules §12) – live in about a minute. Photos stay private until you publish them.</p>
+      <div class="msg" id="gl-msg"></div>
+      <div id="gl-list"><div class="card muted">Loading…</div></div>
+    </div>
+
     <div class="panel" id="panel-settings">
       <div class="card">
         <h3 style="margin-top:0">Save to GitHub</h3>
@@ -255,11 +429,13 @@
     </div>
   </main>
 
-  <script src="assets/data.js?v=25"></script>
-  <script src="assets/pairs-loader.js?v=2"></script>
-  <script src="assets/league.js?v=3"></script>
-  <script src="assets/store.js"></script>
+  <script src="assets/data.js?v=41"></script>
+  <script src="assets/pairs-loader.js?v=5"></script>
+  <script src="assets/league.js?v=8"></script>
+  <script src="assets/store.js?v=5"></script>
   <script src="assets/lock.js?v=2"></script>
+  <script src="assets/members-admin.js?v=14" defer></script>
+  <script src="assets/share-image.js?v=16"></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;
@@ -376,19 +552,318 @@
 
     function readLeague() {
       const { a, b } = currentMatch();
-      const link = $("link").value.trim();
-      const wo = $("wo").value;
+      return buildLeague(a, b, [[num($("s1-a")), num($("s1-b"))], [num($("s2-a")), num($("s2-b"))], [num($("tb-a")), num($("tb-b"))]], $("wo").value, $("link").value.trim());
+    }
+
+    // checks a league score (sets from pair a's view) and returns the result to save
+    function buildLeague(a, b, [s1, s2, tb], wo, link) {
       if (wo) return { a, b, walkover: wo === "both" ? "both" : +wo, ...(link ? { link } : {}) };
-      const s1 = [num($("s1-a")), num($("s1-b"))], s2 = [num($("s2-a")), num($("s2-b"))], tb = [num($("tb-a")), num($("tb-b"))];
       if (s1.includes(null) || s2.includes(null)) throw new Error("Enter set 1 and set 2.");
-      if (!validSet(s1) || !validSet(s2)) throw new Error("A set must end 6–0…6–4, 7–5 or 7–6.");
+      [s1, s2].forEach((s, i) => { if (!validSet(s)) throw new Error(`Set ${i + 1}: ${s[0]}-${s[1]} is not a finished set – a set ends 6-0 … 6-4, 7-5 or 7-6.`); });
       const split = (s1[0] > s1[1]) !== (s2[0] > s2[1]);
       const hasTb = !tb.includes(null);
-      if (split && !hasTb) throw new Error("Sets are 1–1 – enter the match tie-break.");
-      if (!split && (tb[0] !== null || tb[1] !== null)) throw new Error("No match tie-break at 2–0 – clear those fields.");
-      if (split && !validTieBreak(tb)) throw new Error("Match tie-break: first to 10, win by 2 (e.g. 10–8, 12–10).");
+      if (split && !hasTb) throw new Error("Sets are 1-1 – enter the match tie-break.");
+      if (!split && (tb[0] !== null || tb[1] !== null)) throw new Error("The match was over after 2 sets – clear the match tie-break.");
+      if (split && !validTieBreak(tb)) throw new Error(`Tie-break: ${tb[0]}-${tb[1]} isn't possible – first to 10, win by 2 (e.g. 10-7, 12-10).`);
       return { a, b, sets: split ? [s1, s2, tb] : [s1, s2], ...(link ? { link } : {}) };
     }
+
+    // ---------- league: due results + matches per matchday (cards like the members see) ----------
+    let schedule = {}; // dates, venues and waiting/disputed results – private in the gatekeeper, fetched with the admin key (👥 Member area)
+    async function mergePending() {
+      const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
+      if (!api || !key) return;
+      try {
+        const res = await fetch(api + "/admin/open", { headers: { Authorization: `Admin ${key}` } });
+        if (!res.ok) return;
+        const d = await res.json();
+        schedule = d.schedule || {};
+        d.open.forEach(o => (schedule[o.key] = { ...(schedule[o.key] || {}), pending: o }));
+      } catch {}
+    }
+    const lkey = (a, b) => `L:${Math.min(a, b)}-${Math.max(a, b)}`;
+    const escA = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+    function teamLogo(id) {
+      const l = (LEAGUE.logos || {})[name(id)], src = l && (typeof l === "string" ? l : l.src);
+      return src ? `<img class="dp-logo" src="${escA(src)}" alt="">` : `<span class="dp-logo ph" aria-hidden="true">🎾</span>`;
+    }
+    const playersOf = id => (GPPL.pairById[id] ? GPPL.pairById[id].players.filter(Boolean).map(escA).join(" & ") : "");
+    // row 1 of a match: first pair left, "vs" in the middle, second pair right (like the public schedule)
+    const pairLine = (a, b) => `<span class="md-pair"><span class="md-a">${teamLogo(a)}<b>${escA(name(a))}</b></span><span class="muted">vs</span><span class="md-b"><b>${escA(name(b))}</b>${teamLogo(b)}</span></span>`;
+    const teamHtml = id => `<span class="dp-team">${teamLogo(id)}<span><b>${escA(name(id))}</b><span class="note">${playersOf(id)}</span></span></span>`;
+    const whenText = e => e && e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + escA(GPPL.timeRange(e)) : ""}${e.court ? ` · 📍 <a href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(e.court)}" target="_blank" rel="noopener">${escA(e.court)}</a>` : ""}` : "";
+    const isPast = e => !!(e && e.date) && new Date(`${e.date}T${e.time || "23:59"}:00`).getTime() < Date.now();
+    const scoreFor = (sets, ra, a) => (ra === a ? sets : sets.map(([x, y]) => [y, x]));
+
+    // editable score card for a league match [a, b] (a = first pair of the fixture)
+    function editorCard(a, b, md) {
+      const e = schedule[lkey(a, b)] || {}, p = e.pending, r = GPPL.findResult(results, a, b);
+      const pre = r && r.sets ? scoreFor(r.sets, r.a, a) : p ? scoreFor(p.sets, p.a, a) : [];
+      // a team entered the score: waiting for the opponent or disputed (decided in ❗ Disputes) → read-only here
+      const waiting = !r && !!p;
+      const input = (i, side) => waiting
+        ? `<span class="dp-g ${pre[i] && pre[i][side] > pre[i][1 - side] ? "win" : ""}" style="grid-row:${side + 2};grid-column:${i + 2}">${pre[i] ? pre[i][side] : ""}</span>`
+        : `<input type="number" min="0" max="${i === 2 ? 99 : 7}" data-s="${i}${side}" value="${pre[i] ? pre[i][side] : ""}" style="grid-row:${side + 2};grid-column:${i + 2}" aria-label="Set ${i + 1} ${escA(name(side ? b : a))}">`;
+      return `<div class="card dp-card ${p && p.status === "disputed" ? "dp-disputed" : p ? "dp-waiting" : ""}" data-edit-a="${a}" data-edit-b="${b}">
+        <div class="dp-head"><span class="note">Matchday ${md}</span><span class="note">${whenText(e) || "No date set"}</span></div>
+        ${p && !r ? `<p class="note">${p.status === "disputed" ? `❗ ${escA(name(p.by))} entered this score and ${escA(name(p.disputedBy))} disputed it – decide or correct it in the ❗ Disputes tab.`
+          : `⏳ ${escA(name(p.by))} entered this score – waiting for ${escA(name(p.by === p.a ? p.b : p.a))} to confirm. It counts automatically 48 hours after it was entered.`}</p>` : ""}
+        <div class="dp-board" style="--sets:3">${["Set 1", "Set 2", "Tie-break"].map((l, i) => `<span class="dp-bh" style="grid-row:1;grid-column:${i + 2}">${l}</span>`).join("")}
+          <span style="grid-row:2;grid-column:1">${teamHtml(a)}</span><span style="grid-row:3;grid-column:1">${teamHtml(b)}</span>
+          ${[0, 1, 2].map(i => input(i, 0) + input(i, 1)).join("")}</div>
+        ${waiting ? `</div>` : `
+        <div class="form-row"><label>Walkover</label><select data-wo>
+          <option value="">No walkover</option><option value="${a}">${escA(name(a))} wins by walkover</option><option value="${b}">${escA(name(b))} wins by walkover</option>
+          <option value="both">Both pairs at fault / no photo – −1 each</option></select></div>
+        <div class="form-row"><label>Playtomic link</label><input type="url" data-link placeholder="optional – https://app.playtomic.io/…" value="${escA((r && r.link) || (p && p.link) || "")}"></div>
+        <div class="dp-btns"><button class="btn" data-save-league>${r ? "Update result" : "Save result"}</button><span class="msg"></span></div></div>`}`;
+    }
+
+    function renderDue() {
+      const due = [];
+      fixtureList.forEach((games, i) => games.forEach(([a, b]) => {
+        if (!GPPL.findResult(results, a, b) && isPast(schedule[lkey(a, b)])) due.push(editorCard(a, b, i + 1));
+      }));
+      $("due-list").innerHTML = due.join("") || '<p class="muted">Nothing due – every match whose date has passed has a result. 🎉</p>';
+    }
+
+    let mdOpen = null; // matchday shown open in the per-matchday view
+    function renderMatchdays() {
+      const cur = defaultMatchday();
+      $("md-view").innerHTML = fixtureList.map((games, i) => {
+        const md = i + 1, done = games.filter(([a, b]) => GPPL.findResult(results, a, b)).length;
+        const disputed = games.filter(([a, b]) => ((schedule[lkey(a, b)] || {}).pending || {}).status === "disputed").length;
+        // played matches at the end of the matchday
+        const ordered = games.filter(([a, b]) => !GPPL.findResult(results, a, b)).concat(games.filter(([a, b]) => GPPL.findResult(results, a, b)));
+        const rows = ordered.map(([a, b]) => {
+          const r = GPPL.findResult(results, a, b), e = schedule[lkey(a, b)] || {}, p = e.pending;
+          const state = r ? `✅ <b>${GPPL.scoreText(r, a)}</b>`
+            : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}`
+            : e.date && isPast(e) ? "⏰ Result due" : "";
+          return `<div class="md-row ${r ? "is-done" : ""}">${pairLine(a, b)}
+            <span class="md-info">${!r ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}
+              ${e.date && !r && !p ? `<span class="md-share"><button class="btn ghost small" data-match-share="${lkey(a, b)}|${a}|${b}|Matchday ${md}">📤 Share</button><button class="btn ghost small" data-match-img="${lkey(a, b)}|${a}|${b}|Matchday ${md}">⬇️ Image</button></span>` : ""}
+              ${r ? `<span class="md-share"><button class="btn ghost small" data-win="L|${a}|${b}|${md}|share">🏆 Share</button><button class="btn ghost small" data-win="L|${a}|${b}|${md}|img">⬇️ Image</button></span>` : ""}</span>
+            <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p ? "View" : "Enter result"}</button></div>`;
+        }).join("");
+        return `<details class="md-day" data-md="${md}" ${md === (mdOpen || cur) ? "open" : ""}><summary><b>Matchday ${md}</b>
+          <span class="note">${done}/${games.length} played${disputed ? ` · ❗ ${disputed} disputed` : ""}${md === cur ? " · current" : ""}</span>
+          <button class="btn ghost small md-img-btn" data-md-image="${md}">🖼️ Image</button>
+          <button class="btn ghost small" data-md-share="${md}">📤 WhatsApp</button></summary>${rows}<div class="md-editor"></div></details>`;
+      }).join("") || '<p class="muted">No pairs yet.</p>';
+    }
+
+    const MS_LABEL = { reached: "✅ Reached", "on-track": "🟢 On track", open: "⚪ To plan", behind: "🟠 Behind", missed: "🔴 Missed", upcoming: "Later" };
+    const dayShort = t => new Date(t).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+    function renderMilestones() {
+      const rows = LEAGUE.pairs.map(p => ({ p, pr: GPPL.milestoneProgress(results, schedule, p.id) }));
+      if (!rows.length || !rows[0].pr.milestones.length) { $("ms-view").innerHTML = '<p class="muted">No milestones for this number of pairs.</p>'; return; }
+      // pairs that need attention first
+      const rank = pr => { const m = pr.next || pr.milestones[pr.milestones.length - 1]; return ({ missed: 0, behind: 1, open: 2, "on-track": 3, upcoming: 4, reached: 5 })[pr.milestones.some(x => x.status === "missed") ? "missed" : m.status]; };
+      rows.sort((x, y) => rank(x.pr) - rank(y.pr) || x.pr.played - y.pr.played);
+      $("ms-view").innerHTML = rows.map(({ p, pr }) => {
+        const m = pr.next, missed = pr.milestones.filter(x => x.status === "missed");
+        const status = missed.length ? "missed" : m ? m.status : "reached";
+        return `<div class="ms-row ms-${status}"><span class="md-teams">${teamLogo(p.id)}<b>${escA(p.name)}</b></span>
+          <span class="ms-bar"><span class="ms-fill" style="width:${pr.total ? (100 * pr.played / pr.total).toFixed(0) : 0}%"></span><span class="ms-num">${pr.played}/${pr.total} played</span></span>
+          <span class="ms-next">${m ? `Milestone ${m.n}: ${m.all ? "all" : m.required} by ${dayShort(m.deadline)}${m.missing ? ` · <b>${m.missing} to go</b>` : ""}` : "All milestones passed"}
+            <span class="note">${[pr.waiting ? `⏳ ${pr.waiting} waiting` : "", pr.scheduled ? `📅 ${pr.scheduled} scheduled` : "", ...pr.milestones.filter(x => x.status === "reached" && x !== m).map(x => `✅ milestone ${x.n} reached`), ...missed.map(x => `🔴 missed milestone ${x.n} (${x.missing} short)`)].filter(Boolean).join(" · ")}</span></span>
+          <span class="ms-chip">${MS_LABEL[status]}</span></div>`;
+      }).join("");
+    }
+
+    // ---------- matchday images (WhatsApp) ----------
+    function matchdayImage(md) {
+      const games = fixtureList[md - 1] || [], { from, to } = GPPL.matchdayWindow(md);
+      const rows = games.map(([a, b], i) => {
+        const r = GPPL.findResult(results, a, b), e = schedule[lkey(a, b)] || {};
+        const sub = r ? "" : e.date ? `📅 ${new Date(e.date + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}${e.time ? " · " + GPPL.timeRange(e) : ""}${e.court ? " · 📍 " + e.court.split(",")[0] : ""}` : "";
+        return { label: `MATCH ${i + 1}`, a, b, center: r ? GPPL.scoreText(r, a) : "vs", sub, winner: r ? GPPL.evaluate(r).winner : null };
+      });
+      return GPPLImage.render({
+        title: `📅 Matchday ${md}`,
+        subtitle: LEAGUE.datesConfirmed !== false ? `${GPPL.fmt(from)} – ${GPPL.fmt(to)}` : "",
+        rows, footer: "Schedule, table & results: ligagppl.github.io",
+      });
+    }
+    const mdShareCache = {}; // images made for sharing (Safari needs a second tap)
+    const mdFile = md => `GPPL Matchday ${String(md).padStart(2, "0")}.png`;
+    document.getElementById("panel-league").addEventListener("click", async e => {
+      const one = e.target.closest("[data-md-image]");
+      if (one) {
+        e.preventDefault(); // don't open/close the matchday
+        one.disabled = true;
+        GPPLImage.download(await matchdayImage(+one.dataset.mdImage), mdFile(+one.dataset.mdImage));
+        one.disabled = false;
+      }
+      const share = e.target.closest("[data-md-share]");
+      if (share) {
+        e.preventDefault();
+        const md = +share.dataset.mdShare, ready = !!mdShareCache[md];
+        const blob = mdShareCache[md] || (mdShareCache[md] = await matchdayImage(md));
+        const file = new File([blob], mdFile(md), { type: "image/png" });
+        // the device's share menu → WhatsApp → pick the contact or group (image already attached)
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try { await navigator.share({ files: [file] }); share.textContent = "📤 WhatsApp"; }
+          catch (err) {
+            // Safari only opens the share menu right after a tap – the image took a moment, so tap once more
+            if (err.name === "NotAllowedError" && !ready) share.textContent = "📤 Ready – tap again";
+          }
+        } else {
+          // no share menu here (e.g. Firefox): save the image and open WhatsApp's chat picker to attach it
+          GPPLImage.download(blob, mdFile(md));
+          window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(`📅 GPPL – Matchday ${md}`)}`, "_blank", "noopener");
+          flash("md-img-msg", "Image saved – attach it in the WhatsApp chat that just opened (this browser can't share images directly).");
+        }
+      }
+      if (e.target.id === "md-images-all") {
+        e.target.disabled = true;
+        for (let md = 1; md <= fixtureList.length; md++) {
+          flash("md-img-msg", `Making matchday ${md} of ${fixtureList.length}…`);
+          GPPLImage.download(await matchdayImage(md), mdFile(md));
+          await new Promise(r => setTimeout(r, 400)); // browsers ignore downloads fired too quickly
+        }
+        flash("md-img-msg", `✅ ${fixtureList.length} images downloaded (your browser may ask once to allow several downloads).`);
+        e.target.disabled = false;
+      }
+    });
+
+    // scheduled match → image to post in WhatsApp (league rows and cup rows)
+    const matchImgCache = {};
+    document.addEventListener("click", async e => {
+      const b = e.target.closest("[data-match-share],[data-match-img]");
+      if (!b) return;
+      const [key, a, bb, label] = (b.dataset.matchShare || b.dataset.matchImg).split("|");
+      const file = `GPPL ${label.replace("GPPC Cup · ", "")} – ${GPPL.pairName(+a)} vs ${GPPL.pairName(+bb)}.png`;
+      const blob = matchImgCache[key] || (matchImgCache[key] = await GPPLImage.matchImage({ label, a: +a, b: +bb, e: schedule[key] }));
+      if (b.dataset.matchImg) return GPPLImage.download(blob, file);
+      GPPLImage.share(blob, file, () => (b.textContent = "📤 Ready – tap again"));
+    });
+
+    // ---------- winner banners and the results update ----------
+    // every confirmed result with what's needed to draw it: key (L:a-b / C:ri:mi), label, pairs, result
+    function confirmedResults() {
+      const list = [];
+      fixtureList.forEach((games, i) => games.forEach(([a, b]) => {
+        const r = GPPL.findResult(results, a, b);
+        if (r) list.push({ key: lkey(a, b), label: `Matchday ${i + 1}`, a, b, r, fullSets: false });
+      }));
+      cup.rounds.forEach((rd, ri) => (rd.matches || []).forEach((m, mi) => {
+        if (m.sets || m.walkover) list.push({ key: `C:${ri}:${mi}`, label: `GPPC Cup · ${rd.name}`, a: m.a, b: m.b, r: m, fullSets: GPPL.cupFullSets(rd) });
+      }));
+      return list;
+    }
+    const today = () => new Date().toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+    let updItems = [];
+    function renderUpdate() {
+      const shared = new Set(siteSettings.sharedResults || []);
+      updItems = confirmedResults().filter(x => !shared.has(x.key));
+      $("upd-list").innerHTML = updItems.length
+        ? `<p><b>${updItems.length} new result${updItems.length === 1 ? "" : "s"}</b> since the last update:</p><ul class="upd-ul">${updItems.map(x =>
+            `<li>${escA(x.label)}: ${escA(name(x.a))} <b>${x.r.walkover ? "W/O" : GPPL.scoreText(x.r, x.a, !x.fullSets)}</b> ${escA(name(x.b))}</li>`).join("")}</ul>
+          <div class="dp-btns"><button class="btn" data-upd="share">📤 Share update</button><button class="btn ghost" data-upd="img">⬇️ Download</button>
+          <button class="btn ghost small" data-upd="done">✅ Mark as shared</button></div>`
+        : '<p class="muted">Nothing new since the last update.</p>';
+    }
+    document.getElementById("upd-card").addEventListener("click", async e => {
+      const b = e.target.closest("[data-upd]");
+      if (!b || !updItems.length) return;
+      const file = `GPPL results ${new Date().toISOString().slice(0, 10)}.png`;
+      if (b.dataset.upd === "done") {
+        if (!confirm(`Mark these ${updItems.length} result(s) as shared? The next update starts after them.`)) return;
+        const next = { ...siteSettings, sharedResults: [...new Set((siteSettings.sharedResults || []).concat(updItems.map(x => x.key)))], sharedResultsAt: new Date().toISOString() };
+        if (await persist("settings", next, "results update shared", "upd-msg")) { siteSettings = next; renderUpdate(); }
+        return;
+      }
+      const since = siteSettings.sharedResultsAt && new Date(siteSettings.sharedResultsAt).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+      updBlob = updBlob || await GPPLImage.resultsImage(updItems, today(), since);
+      if (b.dataset.upd === "img") GPPLImage.download(updBlob, file);
+      else await GPPLImage.share(updBlob, file, () => (b.textContent = "📤 Ready – tap again"));
+      flash("upd-msg", "Shared? Press “✅ Mark as shared” so the next update only has newer results.");
+    });
+    let updBlob = null;
+
+    // 🏆 winner banner for one confirmed match (league row or cup row)
+    document.addEventListener("click", async e => {
+      const b = e.target.closest("[data-win]");
+      if (!b) return;
+      const [type, x, y, md, act] = b.dataset.win.split("|");
+      let item;
+      if (type === "L") item = confirmedResults().find(r => r.key === lkey(+x, +y));
+      else item = confirmedResults().find(r => r.key === `C:${x}:${y}`);
+      if (!item) return;
+      const file = `GPPL ${item.label.replace("GPPC Cup · ", "")} – ${name(item.a)} vs ${name(item.b)} result.png`;
+      const blob = await GPPLImage.winnerImage(item);
+      if (act === "img") return GPPLImage.download(blob, file);
+      GPPLImage.share(blob, file, () => (b.textContent = "🏆 Ready – tap again"));
+    });
+
+    // ---------- result deadlines: played matches without a confirmed result ----------
+    const H48 = 48 * 3600000;
+    const left = ms => { const h = Math.floor(Math.abs(ms) / 3600000), m = Math.floor(Math.abs(ms) / 60000) % 60; return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h` : `${h}h ${String(m).padStart(2, "0")}m`; };
+    function renderDeadlines() {
+      const now = Date.now(), rows = [];
+      const add = (key, a, b, label, e, hasResult) => {
+        if (hasResult || !e || !e.date || !e.time) return;
+        const end = new Date(`${e.date}T${e.time}:00`).getTime() + (+e.duration || 90) * 60000;
+        if (end > now) return; // not played yet
+        const p = e.pending;
+        let step, due;
+        if (p && p.status === "disputed") { step = "❗ Disputed – your decision (❗ Disputes)"; due = null; }
+        else if (p) { step = `⏳ ${name(p.by)} entered ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)} – waiting for ${name(p.by === p.a ? p.b : p.a)} to confirm`; due = Date.parse(p.at) + H48; }
+        else { step = "📝 No result entered yet"; due = end + H48; }
+        const ms = due === null ? null : due - now;
+        const level = ms === null ? "dispute" : ms < 0 ? "over" : ms < 12 * 3600000 ? "soon" : "ok";
+        rows.push({ key, a, b, label, step, ms, level, played: end, auto: !!p && p.status !== "disputed" });
+      };
+      fixtureList.forEach((games, i) => games.forEach(([a, b]) => add(lkey(a, b), a, b, `Matchday ${i + 1}`, schedule[lkey(a, b)], !!GPPL.findResult(results, a, b))));
+      cup.rounds.forEach((rd, ri) => (rd.matches || []).forEach((m, mi) => add(`C:${ri}:${mi}`, m.a, m.b, `GPPC Cup · ${rd.name}`, schedule[`C:${ri}:${mi}`], !!(m.sets || m.walkover))));
+      const order = { over: 0, dispute: 1, soon: 2, ok: 3 };
+      rows.sort((x, y) => order[x.level] - order[y.level] || (x.ms ?? 0) - (y.ms ?? 0));
+      const chip = r => r.level === "dispute" ? "❗ Waiting for you"
+        : r.level === "over" ? (r.auto ? "✅ Counts automatically now" : `🔴 ${left(r.ms)} over`)
+        : `${r.level === "soon" ? "🟠" : "🟢"} ${left(r.ms)} left`;
+      $("dl-list").innerHTML = rows.length ? rows.map(r => `<div class="dl-row dl-${r.level}">
+          ${pairLine(r.a, r.b)}
+          <span class="dl-info"><span class="note">${escA(r.label)} · played ${new Date(r.played).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}</span>
+            <span>${escA(r.step)}</span></span>
+          <span class="dl-chip">${chip(r)}</span></div>`).join("")
+        : '<p class="muted">Nothing open – every played match has a confirmed result. 🎉</p>';
+    }
+
+    function renderLeagueViews() {
+      updBlob = null;
+      renderDeadlines();
+      renderUpdate();
+      Object.keys(matchImgCache).forEach(k => delete matchImgCache[k]);
+      Object.keys(mdShareCache).forEach(k => delete mdShareCache[k]); // results/dates may have changed
+      renderDue(); renderMilestones(); renderMatchdays();
+    }
+
+    document.getElementById("panel-league").addEventListener("click", async e => {
+      const open = e.target.closest("[data-open-editor]");
+      if (open) {
+        const [ab, md] = open.dataset.openEditor.split("|"), [a, b] = ab.split("-").map(Number);
+        const box = open.closest(".md-day").querySelector(".md-editor");
+        mdOpen = +md;
+        box.innerHTML = box.dataset.for === ab ? "" : editorCard(a, b, +md);
+        box.dataset.for = box.innerHTML ? ab : "";
+        return;
+      }
+      const save = e.target.closest("[data-save-league]");
+      if (!save) return;
+      const card = save.closest("[data-edit-a]"), a = +card.dataset.editA, b = +card.dataset.editB, msg = save.nextElementSibling;
+      const val = k => { const el = card.querySelector(`[data-s="${k}"]`); return el.value === "" ? null : +el.value; };
+      let r;
+      try { r = buildLeague(a, b, [0, 1, 2].map(i => [val(`${i}0`), val(`${i}1`)]), card.querySelector("[data-wo]").value, card.querySelector("[data-link]").value.trim()); }
+      catch (err) { msg.textContent = "❌ " + err.message; msg.className = "msg err"; return; }
+      const next = results.filter(x => !GPPL.samePair(x, a, b)).concat(r);
+      save.disabled = true;
+      if (await persist("results", next, `result ${name(a)} vs ${name(b)}`, "league-msg")) {
+        results = next; fillMatches(); renderResultList(); renderLeagueViews();
+        flash("due-msg", `✅ ${name(a)} vs ${name(b)} saved – live in about a minute.`);
+      } else { save.disabled = false; msg.textContent = $("league-msg").textContent; msg.className = "msg err"; }
+    });
 
     function renderResultList() {
       if (!results.length) { $("result-list").innerHTML = '<p class="muted">No results yet.</p>'; return; }
@@ -419,7 +894,7 @@
       try { r = readLeague(); } catch (e) { return flash("league-msg", "❌ " + e.message, false); }
       const next = results.filter(x => !GPPL.samePair(x, r.a, r.b)).concat(r);
       if (await persist("results", next, `result ${name(r.a)} vs ${name(r.b)}`, "league-msg")) {
-        const saved = $("league-msg").textContent; results = next; fillMatches(); renderResultList(); flash("league-msg", saved);
+        const saved = $("league-msg").textContent; results = next; fillMatches(); renderResultList(); renderLeagueViews(); flash("league-msg", saved);
       }
     });
     $("delete-result").addEventListener("click", async () => {
@@ -428,7 +903,7 @@
       if (!confirm(`Delete the result ${name(a)} vs ${name(b)}?`)) return;
       const next = results.filter(x => !GPPL.samePair(x, a, b));
       if (await persist("results", next, `delete ${name(a)} vs ${name(b)}`, "league-msg")) {
-        const saved = $("league-msg").textContent; results = next; fillMatches(); renderResultList(); flash("league-msg", saved);
+        const saved = $("league-msg").textContent; results = next; fillMatches(); renderResultList(); renderLeagueViews(); flash("league-msg", saved);
       }
     });
 
@@ -439,7 +914,7 @@
         el.innerHTML = '<div class="card muted">No cup rounds yet – run the first draw in the 🔒 Draw tab.</div>';
         return;
       }
-      // newest round first
+      // newest round first – rows like the league view, the score card opens below the row
       const latest = cup.rounds.length - 1;
       const badge = ri => (ri === latest ? ' <span class="pill">Current</span>' : "");
       const list = cup.rounds.map((r, ri) => {
@@ -447,26 +922,30 @@
           return `<div class="card"><h3 style="margin-top:0">🍀 ${r.name}${badge(ri)}</h3>
             <p>Back in the cup: <b>${r.lucky.map(name).join(", ")}</b></p></div>`;
         }
-        return `<div class="card"><h3 style="margin-top:0">${r.name}${badge(ri)}</h3>` + r.matches.map((m, mi) => {
-          const w = GPPL.cupWinner(m);
-          return `<div class="cupmatch-edit" data-r="${ri}" data-m="${mi}">
-            <div style="margin-bottom:6px"><b>${name(m.a)}</b> vs <b>${name(m.b)}</b> ${w ? `· <span class="done">🏆 ${name(w)}</span>` : m.walkover === "both" ? '· <span class="muted">both out</span>' : ""}</div>
-            <div class="sets">
-              <span></span><span>${name(m.a)}</span><span>${name(m.b)}</span>
-              ${[0, 1, 2].map(si => `<span class="head">${si === 2 && !GPPL.cupFullSets(r) ? "Tie-break" : `Set ${si + 1}`}</span>` + [m.a, m.b].map((p, pi) =>
-                `<input type="number" min="0" max="${si === 2 && !GPPL.cupFullSets(r) ? 99 : 7}" data-s="${si}" data-p="${pi}" aria-label="Set ${si + 1} ${name(p)}" value="${m.sets && m.sets[si] ? m.sets[si][pi] : ""}">`).join("")).join("")}
-            </div>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center">
-              <select data-wo style="width:auto">
-                <option value="">No walkover</option>
-                <option value="${m.a}" ${m.walkover === m.a ? "selected" : ""}>${name(m.a)} wins by walkover</option>
-                <option value="${m.b}" ${m.walkover === m.b ? "selected" : ""}>${name(m.b)} wins by walkover</option>
-                <option value="both" ${m.walkover === "both" ? "selected" : ""}>Both at fault – both out</option>
-              </select>
-              <button class="btn small" data-save>Save</button>
-            </div></div>`;
-        }).join("") + `${r.byes && r.byes.length ? `<p class="note">Bye: ${r.byes.map(name).join(", ")}</p>` : ""}</div>`;
+        const done = r.matches.filter(m => GPPL.cupWinner(m) || m.walkover === "both").length;
+        return `<div class="card"><h3 style="margin-top:0">${r.name}${badge(ri)} <span class="note">${done}/${r.matches.length} played</span></h3>` +
+          r.matches.map((m, mi) => [m, mi]).sort(([x], [y]) => !!(x.sets || x.walkover) - !!(y.sets || y.walkover)).map(([m, mi]) => {
+            const e = schedule[`C:${ri}:${mi}`] || {}, p = e.pending, has = m.sets || m.walkover;
+            const state = has ? (m.walkover === "both" ? "✅ Both out (walkover)" : m.walkover ? `✅ ${escA(name(m.walkover))} by walkover` : `✅ <b>${GPPL.scoreText(m, m.a, !GPPL.cupFullSets(r))}</b>`)
+              : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, m.a, !GPPL.cupFullSets(r))}`
+              : e.date && isPast(e) ? "⏰ Result due" : "";
+            return `<div class="md-row ${has ? "is-done" : ""}">${pairLine(m.a, m.b)}
+              <span class="md-info">${!has ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}
+                ${e.date && !has && !p ? `<span class="md-share"><button class="btn ghost small" data-match-share="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">📤 Share</button><button class="btn ghost small" data-match-img="C:${ri}:${mi}|${m.a}|${m.b}|GPPC Cup · ${escA(r.name)}">⬇️ Image</button></span>` : ""}
+                ${has ? `<span class="md-share"><button class="btn ghost small" data-win="C|${ri}|${mi}||share">🏆 Share</button><button class="btn ghost small" data-win="C|${ri}|${mi}||img">⬇️ Image</button></span>` : ""}</span>
+              <button class="btn ghost small" data-open-cup="${ri}:${mi}">${has ? "Edit" : p ? "View" : "Enter result"}</button></div>
+              <div class="md-editor" data-cup-editor="${ri}:${mi}"></div>`;
+          }).join("") + `${r.byes && r.byes.length ? `<p class="note">Bye: ${r.byes.map(name).join(", ")}</p>` : ""}</div>`;
       }).reverse().join("");
+
+      // cup matches whose date has passed and that have no result yet
+      const due = [];
+      cup.rounds.forEach((r, ri) => (r.matches || []).forEach((m, mi) => {
+        if (!(m.sets || m.walkover) && isPast(schedule[`C:${ri}:${mi}`])) due.push(cupEditorCard(ri, mi));
+      }));
+      const dueHtml = `<div class="card"><h3 style="margin-top:0">⏰ Cup results due</h3>
+        <p class="note">Cup matches whose date has passed and that have no result yet.</p>
+        ${due.join("") || '<p class="muted">Nothing due. 🎉</p>'}</div>`;
 
       // actions on top: 3rd-place match once both semi-finals are done, undo the latest round
       const semis = GPPL.mainRounds(cup).find(r => r.name === "Semi-finals");
@@ -481,9 +960,9 @@
         extra += `<button class="btn" id="create-final">Create the final: ${name(ns.entrants[0])} vs ${name(ns.entrants[1])}</button> `;
       }
       extra += `<button class="btn ghost" id="undo-round">Delete latest round (${cup.rounds[latest].name})</button>`;
-      el.innerHTML = `<div class="card">${extra}</div>` + list;
-
-      el.querySelectorAll("[data-save]").forEach(btn => btn.addEventListener("click", () => saveCupMatch(btn.closest(".cupmatch-edit"))));
+      el.innerHTML = dueHtml + list + `<div class="card">${extra}</div>`;
+      renderUpdate(); // a saved cup result can be part of the next results update
+      renderDeadlines();
       const third = $("add-third");
       if (third) third.addEventListener("click", async () => {
         const [m1, m2] = semis.matches;
@@ -506,13 +985,51 @@
       });
     }
 
+    // score card for cup match ri/mi – same look as the league card; read-only while a team's result waits
+    function cupEditorCard(ri, mi) {
+      const r = cup.rounds[ri], m = r.matches[mi], full = GPPL.cupFullSets(r);
+      const e = schedule[`C:${ri}:${mi}`] || {}, p = e.pending, has = !!(m.sets || m.walkover), waiting = !has && !!p;
+      const pre = m.sets || (p ? scoreFor(p.sets, p.a, m.a) : []);
+      const cell = (i, side) => waiting
+        ? `<span class="dp-g ${pre[i] && pre[i][side] > pre[i][1 - side] ? "win" : ""}" style="grid-row:${side + 2};grid-column:${i + 2}">${pre[i] ? pre[i][side] : ""}</span>`
+        : `<input type="number" min="0" max="${i === 2 && !full ? 99 : 7}" data-s="${i}" data-p="${side}" value="${pre[i] ? pre[i][side] : ""}" style="grid-row:${side + 2};grid-column:${i + 2}" aria-label="Set ${i + 1} ${escA(name(side ? m.b : m.a))}">`;
+      return `<div class="card dp-card cupmatch-edit ${p && !has ? (p.status === "disputed" ? "dp-disputed" : "dp-waiting") : ""}" data-r="${ri}" data-m="${mi}">
+        <div class="dp-head"><span class="note">GPPC Cup · ${escA(r.name)}${full ? " · 3 full sets" : ""}</span><span class="note">${whenText(e) || "No date set"}</span></div>
+        ${waiting ? `<p class="note">${p.status === "disputed"
+          ? `❗ ${escA(name(p.by))} entered this score and ${escA(name(p.disputedBy))} disputed it – decide or correct it in the ❗ Disputes tab.`
+          : `⏳ ${escA(name(p.by))} entered this score – waiting for ${escA(name(p.by === p.a ? p.b : p.a))} to confirm. It counts automatically 48 hours after it was entered.`}</p>` : ""}
+        <div class="dp-board" style="--sets:3">${["Set 1", "Set 2", full ? "Set 3" : "Tie-break"].map((l, i) => `<span class="dp-bh" style="grid-row:1;grid-column:${i + 2}">${l}</span>`).join("")}
+          <span style="grid-row:2;grid-column:1">${teamHtml(m.a)}</span><span style="grid-row:3;grid-column:1">${teamHtml(m.b)}</span>
+          ${[0, 1, 2].map(i => cell(i, 0) + cell(i, 1)).join("")}</div>
+        ${waiting ? "" : `<div class="form-row"><label>Walkover</label><select data-wo>
+          <option value="">No walkover</option>
+          <option value="${m.a}" ${m.walkover === m.a ? "selected" : ""}>${escA(name(m.a))} wins by walkover</option>
+          <option value="${m.b}" ${m.walkover === m.b ? "selected" : ""}>${escA(name(m.b))} wins by walkover</option>
+          <option value="both" ${m.walkover === "both" ? "selected" : ""}>Both at fault – both out</option></select></div>
+        <div class="form-row"><label>Playtomic link</label><input type="url" data-link placeholder="optional – https://app.playtomic.io/…" value="${escA(m.link || "")}"></div>
+        <div class="dp-btns"><button class="btn" data-save>${has ? "Update result" : "Save result"}</button></div>`}</div>`;
+    }
+    document.getElementById("panel-cup").addEventListener("click", e => {
+      const open = e.target.closest("[data-open-cup]");
+      if (open) {
+        const [ri, mi] = open.dataset.openCup.split(":").map(Number);
+        const box = document.querySelector(`[data-cup-editor="${ri}:${mi}"]`);
+        box.innerHTML = box.innerHTML ? "" : cupEditorCard(ri, mi);
+        return;
+      }
+      const save = e.target.closest("[data-save]");
+      if (save) saveCupMatch(save.closest(".cupmatch-edit"));
+    });
+
     async function saveCupMatch(box) {
       const ri = +box.dataset.r, mi = +box.dataset.m;
       const next = structuredClone(cup);
       const m = next.rounds[ri].matches[mi];
       const fullSets = GPPL.cupFullSets(next.rounds[ri]);
       const wo = box.querySelector("[data-wo]").value;
-      delete m.sets; delete m.walkover;
+      const link = (box.querySelector("[data-link]") || {}).value;
+      delete m.sets; delete m.walkover; delete m.link;
+      if (link && link.trim()) m.link = link.trim();
       if (wo) m.walkover = wo === "both" ? "both" : +wo;
       else {
         const sets = [];
@@ -521,14 +1038,14 @@
           if (x === "" && y === "") continue;
           if (x === "" || y === "") return flash("cup-msg", `❌ Set ${si + 1} is incomplete.`, false);
           if (si === 2 && !fullSets) {
-            if (!validTieBreak([+x, +y])) return flash("cup-msg", "❌ Match tie-break: first to 10, win by 2 (e.g. 10–8, 12–10).", false);
-          } else if (!validSet([+x, +y])) return flash("cup-msg", `❌ Set ${si + 1}: a set must end 6–0…6–4, 7–5 or 7–6.`, false);
+            if (!validTieBreak([+x, +y])) return flash("cup-msg", `❌ Tie-break: ${x}-${y} isn't possible – first to 10, win by 2 (e.g. 10-7, 12-10).`, false);
+          } else if (!validSet([+x, +y])) return flash("cup-msg", `❌ Set ${si + 1}: ${x}-${y} is not a finished set – a set ends 6-0 … 6-4, 7-5 or 7-6.`, false);
           sets.push([+x, +y]);
         }
         m.sets = sets;
-        if (!GPPL.cupWinner(m)) return flash("cup-msg", "❌ No winner yet – a pair needs 2 sets.", false);
+        if (!GPPL.cupWinner(m)) return flash("cup-msg", sets.length < 2 ? "❌ Enter set 1 and set 2." : `❌ Sets are 1-1 – enter ${fullSets ? "set 3" : "the match tie-break"}.`, false);
         const wins = sets.map(([x, y]) => x > y);
-        if (sets.length === 3 && wins[0] === wins[1]) return flash("cup-msg", "❌ The match was over after 2 sets – remove set 3.", false);
+        if (sets.length === 3 && wins[0] === wins[1]) return flash("cup-msg", `❌ The match was over after 2 sets – clear ${fullSets ? "set 3" : "the match tie-break"}.`, false);
       }
       syncFinalWithSemis(next);
       const finalAdded = GPPL.addFinalIfDue(next);
@@ -642,10 +1159,89 @@
       if (await persist("settings", next, `GPPL logo animation: ${mode}`, "site-logo-anim-msg")) siteSettings = next;
     });
 
+    // 🔒 the start date (and with it the draw) can be locked until the last matchday is over
+    const seasonEnd = () => GPPL.matchdayWindow(fixtureList.length).to;
+    const startLocked = () => !!siteSettings.startDateLocked && !!siteSettings.startDate && Date.now() < seasonEnd().getTime() + GPPL.DAY;
+    function fillStartDate() {
+      $("start-date").value = siteSettings.startDate || "";
+      const locked = startLocked();
+      ["start-date", "start-date-save", "start-date-clear"].forEach(id => ($(id).disabled = locked));
+      $("start-date-lock").hidden = locked || !siteSettings.startDate;
+      $("start-date-status").textContent = locked ? `🔒 Locked until the end of the season (${GPPL.fmt(seasonEnd())}).` : "";
+    }
+    async function saveStartDate(value) {
+      if (startLocked()) return flash("start-date-msg", "❌ The start date is locked until the end of the season.", false);
+      const next = { ...siteSettings };
+      // a new start date = a new league draw (the pairings of every matchday change)
+      const reshuffle = !!value && value !== siteSettings.startDate;
+      if (reshuffle && !confirm(`Set the league start to ${value}?\n\nThis also reshuffles the league draw – the pairings of every matchday change.` +
+        (results.length ? `\n\n⚠️ ${results.length} result(s) are already entered – they keep counting, but may move to other matchdays.` : ""))) return;
+      if (value) next.startDate = value; else delete next.startDate;
+      const seed = reshuffle ? crypto.getRandomValues(new Uint32Array(1))[0] >>> 1 : null;
+      // with the member area, the draw stays private in the gatekeeper until the schedule is released
+      const gk = memberApi();
+      if (reshuffle && !gk) next.drawSeed = seed;
+      if (await persist("settings", next, value ? `league start ${value}${reshuffle ? " – new draw" : ""}` : "league start date cleared", "start-date-msg")) {
+        siteSettings = next; fillStartDate();
+        if (reshuffle && gk) {
+          try { await memberCall("/admin/draw-seed", { seed }); }
+          catch (e) { return flash("start-date-msg", "❌ Start date saved, but the new draw couldn't be stored in the gatekeeper: " + e.message, false); }
+        }
+        // the draw is built when the page loads – reload to show the new one
+        if (reshuffle) { flash("start-date-msg", $("start-date-msg").textContent + " New draw – reloading…"); setTimeout(() => location.reload(), 1500); return; }
+        // new dates everywhere on this page right away
+        GPPL.setStartDate(value);
+        fillMatchdays(); fillMatches(); renderResultList(); renderLeagueViews(); renderCup();
+        flash("start-date-msg", $("start-date-msg").textContent + (value ? " The schedule is now shown." : " The schedule is hidden."));
+      }
+    }
+    $("start-date-save").addEventListener("click", () => {
+      const v = $("start-date").value;
+      if (!v) return flash("start-date-msg", "❌ Pick a date first – or use Clear.", false);
+      saveStartDate(v);
+    });
+    $("start-date-clear").addEventListener("click", () => { if (confirm("Clear the start date? The schedule and the matchday dates are hidden again.")) saveStartDate(""); });
+    // the gatekeeper (👥 Member area) with the admin key
+    function memberApi() {
+      const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
+      return api && key ? { api, key } : null;
+    }
+    async function memberCall(path, body) {
+      const gk = memberApi();
+      const res = await fetch(gk.api + path, { method: body ? "POST" : "GET", headers: { Authorization: `Admin ${gk.key}`, ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+      return data;
+    }
+    // the schedule stays private until every team has logged in to 🎾 My team once
+    async function renderRelease() {
+      const box = $("release-box"), gk = memberApi();
+      if (!gk) { box.innerHTML = ""; return; }
+      try {
+        const st = await memberCall("/status");
+        box.innerHTML = st.released ? `✅ <b>Schedule published</b> on the website${siteSettings.scheduleReleasedAt ? ` since ${new Date(siteSettings.scheduleReleasedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : ""} – ${st.signedIn} of ${st.teams} teams have logged in.`
+          : `🔒 <b>Schedule private</b> until every team has logged in to 🎾 My team once – <b>${st.signedIn} of ${st.teams}</b> so far (see 👥 Member area).
+             <div style="margin-top:6px"><button class="btn ghost small" id="release-now">📢 Publish schedule now</button></div>`;
+      } catch (e) { box.textContent = "Schedule release: " + e.message; }
+    }
+    document.addEventListener("click", async e => {
+      if (!e.target.closest("#release-now")) return;
+      if (!confirm("Publish the schedule now – even though not every team has logged in yet?")) return;
+      try { await memberCall("/admin/release", {}); flash("start-date-msg", "✅ Schedule published – live on the website in about a minute."); siteSettings = await STORE.load("settings", siteSettings); renderRelease(); }
+      catch (err) { flash("start-date-msg", "❌ " + err.message, false); }
+    });
+    $("start-date-lock").addEventListener("click", async () => {
+      if (!siteSettings.startDate) return;
+      if (!confirm(`Lock the start date (${siteSettings.startDate})?\n\nIt can't be changed or cleared until the end of the season (${GPPL.fmt(seasonEnd())}) – the draw stays as it is.`)) return;
+      const next = { ...siteSettings, startDateLocked: true };
+      if (await persist("settings", next, "league start date locked", "start-date-msg")) { siteSettings = next; fillStartDate(); }
+    });
+
     function renderCurrentPairs() {
       renderManual();
       fillLogoAnim();
       fillSiteLogoAnim();
+      fillStartDate(); renderRelease();
       const draft = getDraft(), list = workingPairs(), pub = LEAGUE.pairs;
       const changed = !!draft && (draft.length !== pub.length || draft.some((p, i) => !sameTeam(p, pub[i])));
       if (draft && !changed) { try { localStorage.removeItem(DRAFT_KEY); } catch {} }
@@ -834,7 +1430,7 @@
       const c = STORE.ghConfig() || {};
       $("gh-owner").value = c.owner || "";
       $("gh-repo").value = c.repo || "";
-      $("gh-branch").value = c.branch || "main";
+      $("gh-branch").value = c.branch || (/gppl-staging/.test(location.hostname) ? "staging" : "main");
       $("gh-token").value = c.token || "";
     }
     $("gh-save").addEventListener("click", async () => {
@@ -890,7 +1486,9 @@
       // start on the current matchday (only on first load – don't jump while an admin is working)
       if (!matchdayChosen) { $("md").value = defaultMatchday(); matchdayChosen = true; }
       siteSettings = await STORE.load("settings", {});
-      fillMatches(); renderResultList(); renderCup(); fillRegistration(); renderCurrentPairs();
+      schedule = {};
+      await mergePending();
+      fillMatches(); renderResultList(); renderLeagueViews(); renderCup(); fillRegistration(); renderCurrentPairs();
     }
 
     requireAdmin(async () => {

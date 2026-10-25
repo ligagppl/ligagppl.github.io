@@ -1,10 +1,10 @@
 // GPPL website – reads settings from data.js and results/cup from /data/*.json
 
-const { pairById, pairName, fmt, matchdayWindow, fixtures, DAY, start } = GPPL;
+const { pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
 let results = [], cup = { rounds: [] };
 
 const sign = n => (n > 0 ? "+" + n : String(n));
-const datesOn = LEAGUE.datesConfirmed !== false; // dates hidden until the start date is fixed
+let datesOn = LEAGUE.datesConfirmed !== false; // dates hidden until the start date is set (Admin → League results)
 
 // matchday running today (null before the season starts / after it ends)
 function currentMatchday() {
@@ -21,8 +21,8 @@ function renderStandings() {
   const rows = GPPL.rankStandings(results);
   let html = `<table><tr><th>#</th><th class="left">Pair</th><th>P</th><th>W</th><th>L</th><th>Sets</th><th>Games</th><th>Pts</th></tr>`;
   rows.forEach((r, i) => {
-    html += `<tr class="${i < 2 ? "top" : ""}"><td>${i + 1}</td>
-      <td class="left"><b>${pairName(r.id)}</b><br><span class="note">${pairById[r.id].players.join(" & ")}</span></td>
+    html += `<tr class="${i < 2 ? "top" : ""}"><td>${results.length && i < 3 ? `<span class="medal-rank">${["🥇", "🥈", "🥉"][i]}</span>` : i + 1}</td>
+      <td class="left"><span class="tbl-team">${teamLogo(r.id)}<b>${pairName(r.id)}</b></span></td>
       <td>${r.p}</td><td>${r.w}</td><td>${r.l}</td>
       <td>${sign(r.sf - r.sa)}</td><td>${sign(r.gf - r.ga)}</td><td class="pts">${r.pts}</td></tr>`;
   });
@@ -37,9 +37,20 @@ function matchRow(a, b) {
     const w = GPPL.evaluate(r).winner; // null when both pairs were at fault
     if (w === a) wa = "w"; else if (w === b) wb = "w";
   }
-  return `<div class="match"><span class="a ${wa}">${pairName(a)}</span>
-    <span class="score">${score}</span><span class="${wb}">${pairName(b)}</span></div>`;
+  const cup = '<span class="win-mark" title="Winner">🏆</span>'; // small trophy next to the winner, on the score side
+  return `<div class="match"><span class="a ${wa}">${teamLogo(a)}<span class="tn">${pairName(a)}</span>${wa ? cup : ""}</span>
+    <span class="score">${score}</span><span class="b ${wb}">${wb ? cup : ""}<span class="tn">${pairName(b)}</span>${teamLogo(b)}</span></div>`;
 }
+
+// small still logo next to a team name (a ball for teams without one yet)
+function teamLogo(id) {
+  const l = (LEAGUE.logos || {})[pairName(id)];
+  const src = l && (typeof l === "string" ? l : l.src);
+  return src ? `<img class="mlogo" src="${src}" alt="" loading="lazy">` : `<span class="mlogo ph" aria-hidden="true">🎾</span>`;
+}
+
+// matches with a result first, then the open ones (in draw order); dates and venues are private (🎾 My team)
+const playedFirst = games => games.filter(([a, b]) => GPPL.findResult(results, a, b)).concat(games.filter(([a, b]) => !GPPL.findResult(results, a, b)));
 
 function renderSchedule() {
   const cur = currentMatchday();
@@ -55,26 +66,60 @@ function renderSchedule() {
     return `<div class="card md ${md === cur ? "current" : ""}">${cup}
       <div class="md-head"><h3>Matchday ${md}</h3>
       <span class="note">${datesOn ? `${fmt(from)} – ${fmt(to)}` : "dates follow"}${md === cur ? ' · <span class="pill">Current</span>' : ""}</span></div>
-      ${games.map(([a, b]) => matchRow(a, b)).join("")}${ms}</div>`;
+      ${playedFirst(games).map(([a, b]) => matchRow(a, b)).join("")}${ms}</div>`;
   }).join("");
 }
 
 function renderHome() {
   const total = fixtures.reduce((n, g) => n + g.length, 0);
   const last = matchdayWindow(fixtures.length).to;
-  const leader = GPPL.rankStandings(results)[0];
+  // the Top 3 only means something once every pair has played at least once
+  const ranked = GPPL.rankStandings(results), started = ranked.filter(r => r.p > 0).length;
+  const top = ranked.length && started === ranked.length ? ranked.slice(0, 3) : [];
   document.getElementById("home-stats").innerHTML = `
-    <div class="card"><div class="note">Pairs</div><div style="font-size:1.8rem;font-weight:700">${LEAGUE.pairs.length}</div></div>
+    <div class="card"><div class="note">Pairs</div><div style="font-size:1.8rem;font-weight:700">${LEAGUE.pairs.length}</div>
+      ${tabAllowed("participants") ? `<a href="#participants">👥 See all teams →</a>` : ""}</div>
     <div class="card"><div class="note">Matches played</div><div style="font-size:1.8rem;font-weight:700">${results.length} / ${total}</div></div>
-    <div class="card"><div class="note">Season</div><div style="font-size:1.1rem;font-weight:700">${datesOn ? `${fmt(start)} – ${fmt(last)}` : "Dates follow"}</div></div>
-    <div class="card"><div class="note">Leader</div><div style="font-size:1.1rem;font-weight:700">${results.length ? pairName(leader.id) : "–"}</div></div>`;
-  const cur = currentMatchday();
-  const md = cur || (Date.now() < start.getTime() ? 1 : fixtures.length);
-  const label = cur ? "Current" : md === 1 ? "First" : "Last";
-  const { from, to } = matchdayWindow(md);
-  document.getElementById("home-next").innerHTML =
-    `<h3 style="margin-top:0">${label} matchday: ${md} ${datesOn ? `<span class="note">(${fmt(from)} – ${fmt(to)})</span>` : ""}</h3>` +
-    (fixtures[md - 1] || []).map(([a, b]) => matchRow(a, b)).join("");
+    <div class="card"><div class="note">Season</div><div style="font-size:1.1rem;font-weight:700">${datesOn ? `${fmt(GPPL.start)} – ${fmt(last)}` : "Dates follow"}</div></div>
+    <div class="card top3-card"><div class="note">Top 3</div>
+      ${top.length ? `<div class="top3">${top.map((r, i) => `<span>${["🥇", "🥈", "🥉"][i]} ${teamLogo(r.id)}<span class="top3-name"><b>${pairName(r.id)}</b>
+          <span class="note">${r.p} played · ${r.w} W · ${r.l} L · <b>${r.pts} pts</b></span></span></span>`).join("")}</div>`
+        : `<div class="top3-wait"><b>${started} of ${ranked.length}</b> pairs have played</div><span class="note">The Top 3 appears once every pair has played at least one match.</span>`}</div>`;
+  renderMatchdayCard();
+}
+
+// which matchday is running (or when the season starts) and how many of its matches are played
+function renderMatchdayCard() {
+  const el = document.getElementById("home-md"), cur = currentMatchday();
+  if (!datesOn) {
+    el.innerHTML = `<h3 style="margin-top:0">📅 Matchdays</h3><p class="muted">The dates are announced soon.</p>`;
+    // start date set, but the schedule waits until every team has logged in to My team once
+    const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
+    if (settings.startDate && LEAGUE.scheduleReleased === false && api) {
+      fetch(api + "/status").then(r => r.json()).then(st => {
+        if (st.released) return;
+        el.innerHTML = `<h3 style="margin-top:0">📅 The schedule is almost ready</h3>
+          <p>It's published once every team has logged in to <a href="#team">🎾 My team</a> – <b>${st.signedIn} of ${st.teams}</b> teams so far.</p>
+          <div class="md-now-bar"><span style="width:${st.teams ? Math.round(100 * st.signedIn / st.teams) : 0}%"></span></div>`;
+      }).catch(() => {});
+    }
+    return;
+  }
+  if (!cur) {
+    const before = Date.now() < GPPL.start.getTime(), md = before ? 1 : fixtures.length, { from, to } = matchdayWindow(md);
+    el.innerHTML = before
+      ? `<h3 style="margin-top:0">📅 The season starts on ${from.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</h3><p class="muted">Matchday 1 runs ${fmt(from)} – ${fmt(to)}. Agree on dates with your opponents and set them in <a href="#team">🎾 My team</a>.</p>`
+      : `<h3 style="margin-top:0">🏁 The league season is over</h3><p class="muted">Thanks for playing – see the final table.</p>`;
+    return;
+  }
+  const { from, to } = matchdayWindow(cur), games = fixtures[cur - 1] || [];
+  const played = games.filter(([a, b]) => GPPL.findResult(results, a, b)).length;
+  const daysLeft = Math.max(0, Math.ceil((to.getTime() + DAY - Date.now()) / DAY));
+  el.innerHTML = `<div class="md-now"><div><span class="pill">In progress</span>
+      <h3 style="margin:8px 0 2px">Matchday ${cur} of ${fixtures.length}</h3>
+      <span class="note">${fmt(from)} – ${fmt(to)} · ${daysLeft === 1 ? "last day" : `${daysLeft} days left`}</span></div>
+      <div class="md-now-count"><b>${played}/${games.length}</b><span class="note">matches played</span></div></div>
+    <div class="md-now-bar"><span style="width:${games.length ? (100 * played / games.length).toFixed(0) : 0}%"></span></div>`;
 }
 
 function renderCup() {
@@ -88,22 +133,32 @@ function renderCup() {
     ? `<div class="card" style="text-align:center"><div style="font-size:2rem">🏆</div><h3 style="margin:4px 0">GPPC Cup champions</h3><div style="font-size:1.3rem;font-weight:800">${pairName(ns.champion)}</div></div>` : "";
   const seedLine = (r, i) => r.words
     ? `<p class="note">🔐 Seed words: “${r.words}” · <a href="#verify" data-verify="${i}">Verify</a></p>` : "";
-  el.innerHTML = champ + `<div class="bracket">` + cup.rounds.map((r, ri) => {
+  // latest round first; every match as a small score board (logos, sets, winner) like in 🎾 My team
+  const board = (m, r, ri, mi) => {
+    const w = GPPL.cupWinner(m), full = GPPL.cupFullSets(r);
+    const sets = m.sets || [], cols = Math.max(sets.length, 2);
+    const row = (id, side) => `<span class="cb-team ${w === id ? "w" : ""}">${teamLogo(id)}<span>${pairName(id)}</span>${w === id ? " 🏆" : ""}</span>` +
+      Array.from({ length: cols }, (_, i) => `<span class="cb-g ${sets[i] && sets[i][side] > sets[i][1 - side] ? "win" : ""}">${sets[i] ? sets[i][side] : ""}</span>`).join("");
+    const foot = m.walkover === "both" ? "Walkover – both pairs out"
+      : m.walkover ? `Walkover – ${pairName(m.walkover)} goes through`
+      : sets.length ? (full ? "3 full sets" : sets.length === 3 ? "3rd set: match tie-break" : "")
+      : "Not played yet";
+    return `<div class="cupboard"><span class="note cb-no">Match ${mi + 1}</span>
+      <div class="cb-grid" style="--cols:${cols}">${row(m.a, 0)}${row(m.b, 1)}</div>
+      ${foot ? `<span class="note">${foot}</span>` : ""}</div>`;
+  };
+  el.innerHTML = champ + cup.rounds.map((r, ri) => [r, ri]).reverse().map(([r, ri]) => {
     if (r.type === "lucky") {
       return `<div class="card"><h3 style="margin-top:0">🍀 ${r.name}</h3><p>Back in the cup: <b>${r.lucky.map(pairName).join(", ")}</b></p>${seedLine(r, ri)}</div>`;
     }
-    return `<div class="card"><h3 style="margin-top:0">${r.name}</h3>
-      ${r.matches.map(m => {
-        const w = GPPL.cupWinner(m);
-        const score = m.walkover === "both" ? "W/O – both out" : m.walkover ? "W/O" : m.sets && m.sets.length ? GPPL.scoreText(m, m.a, !GPPL.cupFullSets(r)) : "";
-        return `<div class="cupmatch">
-          <div><span class="${w === m.a ? "w" : ""}">${pairName(m.a)}</span><span class="note">${score}</span></div>
-          <div><span class="${w === m.b ? "w" : ""}">${pairName(m.b)}</span></div></div>`;
-      }).join("")}
-      ${r.byes && r.byes.length ? `<p class="note">Bye: ${r.byes.map(pairName).join(", ")}</p>` : ""}
+    const done = r.matches.filter(m => GPPL.cupWinner(m) || m.walkover === "both").length;
+    return `<div class="card"><div class="cup-head"><h3 style="margin:0">${r.third ? "🥉 " : r.name === "Final" ? "🏆 " : ""}${r.name}</h3>
+        <span class="note">${done}/${r.matches.length} played${GPPL.cupFullSets(r) ? " · 3 full sets" : ""}</span></div>
+      <div class="cup-matches">${r.matches.map((m, mi) => board(m, r, ri, mi)).join("")}</div>
+      ${r.byes && r.byes.length ? `<p class="note">🎟️ Bye: ${r.byes.map(pairName).join(", ")}</p>` : ""}
       ${seedLine(r, ri)}
     </div>`;
-  }).join("") + `</div>`;
+  }).join("");
 }
 
 // ---------- Verify draw ----------
@@ -222,7 +277,7 @@ function renderParticipants() {
   const count = `<div class="card part-count"><span class="fee-amount">${pairs.length}</span>
     <span><b>${pairs.length === 1 ? "team" : "teams"} registered</b><span class="note">Minimum ${min} · maximum ${max} (tentative) – places in order of payment (§1.1)</span>${updatedLine}</span></div>`;
   if (!pairs.length) {
-    el.innerHTML = count + `<div class="card muted">No confirmed pairs yet. 🎾</div>`;
+    el.innerHTML = count + `<div class="card muted">No confirmed pairs yet. <a href="#register">Register now</a> 🎾</div>`;
     return;
   }
   const logos = LEAGUE.logos || {};
@@ -273,19 +328,106 @@ function renderParticipants() {
   window.addEventListener("load", () => Object.values(LEAGUE.logos || {}).forEach(l => { if (l && l.anim) new Image().src = l.anim; }));
 })();
 
+// matchday photos published from Admin → 📸 Gallery (data/gallery.json, newest first), then the fixed ones in data.js
+let gallery = [];
 function renderGallery() {
   const el = document.getElementById("gallery-grid");
-  if (!LEAGUE.gallery.length) {
+  const list = (Array.isArray(gallery) ? gallery : []).concat(LEAGUE.gallery || []);
+  if (!list.length) {
     el.innerHTML = `<div class="card muted">Photos will appear here during the season 📸</div>`;
     return;
   }
-  el.innerHTML = `<div class="gallery">` + LEAGUE.gallery.map(g =>
-    `<figure><img src="${g.src}" alt="${g.caption || ""}" loading="lazy"><figcaption>${g.caption || ""}</figcaption></figure>`).join("") + `</div>`;
+  el.innerHTML = `<div class="gallery">` + list.map(g =>
+    `<figure><img src="${esc(g.src)}" alt="${esc(g.caption)}" loading="lazy"><figcaption>${esc(g.caption)}</figcaption></figure>`).join("") + `</div>`;
 }
 
 // registration settings come from data/settings.json (Admin → Registration), fallback data.js
 let settings = {};
 const esc = t => String(t ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+// "Saturday, 24 October 2026, 23:59:59" → that moment in German time (Europe/Berlin)
+function parseDeadline(text) {
+  const months = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+  const m = String(text || "").toLowerCase().match(/(\d{1,2})\.?\s+([a-z]+)\s+(\d{4})\D+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  const mon = m ? months.findIndex(x => x.startsWith(m[2].slice(0, 3))) : -1;
+  if (mon < 0) return null;
+  const wall = Date.UTC(+m[3], mon, +m[1], +m[4], +m[5], +(m[6] || 0));
+  // Berlin's UTC offset at that time (handles summer/winter time)
+  const p = Object.fromEntries(new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/Berlin", hourCycle: "h23",
+    year: "numeric", month: "numeric", day: "numeric", hour: "numeric", minute: "numeric", second: "numeric" })
+    .formatToParts(new Date(wall)).map(x => [x.type, +x.value]));
+  const offset = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - wall;
+  return new Date(wall - offset);
+}
+
+function countdownHtml(deadline) {
+  const end = parseDeadline(deadline);
+  return end ? `<div class="countdown" data-end="${end.getTime()}" aria-live="off"></div>` : "";
+}
+
+// ticks every second; registration countdowns are re-rendered with the page
+setInterval(function tick() {
+  document.querySelectorAll(".countdown[data-end]").forEach(el => {
+    const left = Math.max(0, +el.dataset.end - Date.now()), s = Math.floor(left / 1000);
+    const parts = [[Math.floor(s / 86400), "days"], [Math.floor(s / 3600) % 24, "hrs"], [Math.floor(s / 60) % 60, "min"], [s % 60, "sec"]];
+    el.innerHTML = left ? parts.map(([n, l]) => `<div><b>${String(n).padStart(2, "0")}</b><small>${l}</small></div>`).join("")
+      : `<b class="cd-over">The registration deadline has passed</b>`;
+  });
+  return tick;
+}(), 1000);
+
+function renderRegister() {
+  if (!document.getElementById("register-body")) return; // the live site has no Register page any more
+  const reg = { ...LEAGUE.registration, ...(settings.registration || {}) };
+  const status = reg.status || (reg.open ? "open" : "soon");
+  const banner = {
+    soon: `<div class="reg-banner soon"><b>Registration opens soon</b><span>Watch the GPPL WhatsApp group 📲</span></div>`,
+    open: `<div class="reg-banner open"><b>Registration is open</b><span>Deadline: ${esc(reg.deadline)}</span>${countdownHtml(reg.deadline)}</div>`,
+    closed: `<div class="reg-banner closed"><b>Registration is closed</b><span>Thanks to everyone who registered – see you on court!</span></div>`,
+  }[status] || "";
+  // once registration is closed, the banner is all there is to say
+  if (status === "closed") { document.getElementById("register-body").innerHTML = banner; return; }
+  // the fee as a big amount ("€30 per pair" → "€30" + "per pair")
+  const feeMatch = String(reg.fee || "").match(/^\s*(\S*\d\S*)\s*(.*)$/);
+  const feeCard = `<div class="card fee-card">
+    <div class="fee-main"><span class="fee-label">Entry fee</span>
+      ${feeMatch ? `<span class="fee-amount">${esc(feeMatch[1])}</span><span class="fee-unit">${esc(feeMatch[2])}</span>` : `<span class="fee-unit">${esc(reg.fee)}</span>`}
+      ${status === "open" && reg.paymentUrl ? `<span class="note">${esc(reg.paymentNote)}</span>` : ""}</div>
+    ${status === "open" && reg.paymentUrl ? `<a class="btn" href="${esc(reg.paymentUrl)}" target="_blank" rel="noopener">Pay via PayPal pool</a>` : ""}</div>`;
+  const perks = `<div class="card perks">
+    <div><span class="perk-icon">🗓️</span><b>Play at your own pace</b><ul>
+      <li><b>10 days per matchday</b> – plenty of time to find a day, time and court that suit both pairs.</li>
+      <li><b>The whole league schedule from day one</b> – you know all your opponents in advance and play at your own pace.</li>
+      <li><b>Scheduling conflict with an opponent?</b> Ideally you follow the matchday order – but if dates clash, you can play your matches in any order.</li>
+      <li><b>Busy week or travelling?</b> Take a matchday off and catch up later – as long as you reach the milestones:</li></ul>
+      <div class="ms-slot"></div>
+      <span class="note">The milestones might change after the registration deadline, depending on the start date. Details in the <a href="#rules">Rules</a> (§2).</span></div></div>
+    <div class="card perks">
+    <div><span class="perk-icon">🏆</span><b>GPPC Cup – a fresh draw every round</b><ul>
+      <li>Every pair plays in the cup.</li>
+      <li>Each round is drawn randomly just before it starts.</li>
+      <li>Anyone can verify the draw.</li></ul></div></div>`;
+  let html = banner + feeCard + perks + `<div class="card">
+    <p><b>Registration deadline:</b> ${esc(reg.deadline)}</p>
+    <p class="note">${status === "open" && reg.paymentUrl ? "" : esc(reg.paymentNote) + " "}A registration only counts once it's paid – the time of payment is the time of registration.
+    Places are first come, first served – one organizer pair may be exempt from this.</p></div>`;
+  if (status === "open") {
+    const url = reg.formUrl || "";
+    const embeddable = /docs\.google\.com\/forms\/.+\/viewform/.test(url);
+    const openUrl = embeddable ? url.replace(/[?&]embedded=true/, "").replace(/\?$/, "") : url;
+    if (!url) html += `<div class="card muted">The registration form will appear here.</div>`;
+    else {
+      html += `<div class="card form-card"><b>Registration form</b>
+        <a class="btn ${embeddable ? "ghost" : ""}" href="${esc(openUrl)}" target="_blank" rel="noopener">Open the form in a new tab</a></div>`;
+      if (embeddable) html += `<iframe class="form" src="${esc(url.includes("embedded=true") ? url : url + (url.includes("?") ? "&" : "?") + "embedded=true")}" loading="lazy">Loading…</iframe>`;
+    }
+  }
+  document.getElementById("register-body").innerHTML = html;
+  // the milestones table, taken straight from the rulebook (§2)
+  const ms = document.querySelector("#rb-2 .rb-milestones");
+  const slot = document.querySelector("#register-body .ms-slot");
+  if (ms && slot) slot.appendChild(ms.closest(".rb-table-wrap").cloneNode(true));
+}
 
 // printing the page (e.g. "Save as PDF") → a sensible file name instead of the page/browser title
 let titleBeforePrint = document.title;
@@ -371,7 +513,7 @@ document.documentElement.classList.add("tabs-ready"); // the menu is hidden unti
 
 function showTab() {
   let id = (location.hash || "#" + (visibleTabs ? visibleTabs[0] : "home")).slice(1);
-  if (!tabAllowed(id) || !document.getElementById(id)) {
+  if (!tabAllowed(id) || !document.getElementById(id) || (id === "register" && registrationOver())) {
     id = visibleTabs ? visibleTabs[0] : "home";
     history.replaceState(null, "", "#" + id);
   }
@@ -407,6 +549,7 @@ async function loadData() {
   cup = await pick("cup", { rounds: [] });
   if (!cup.rounds) cup.rounds = [];
   settings = await pick("settings", {});
+  gallery = await pick("gallery", []);
 }
 
 // GPPL logo in the header: still by default, animates on hover / tap
@@ -423,13 +566,39 @@ const siteLogo = (() => {
   return { apply() { always = settings.siteLogoAnimation === "always" && !reduce; set(playing); } };
 })();
 
+// once registration is closed, Register and Participants leave the menu (the pages still open from links)
+function registrationOver() {
+  const reg = { ...LEAGUE.registration, ...(settings.registration || {}) };
+  // …also once the league start date is set (the season is on)
+  return (reg.status || (reg.open ? "open" : "soon")) === "closed" || !!LEAGUE.scheduleVisible;
+}
+function updateMenu() {
+  const closed = registrationOver();
+  if (closed && location.hash === "#register") location.hash = "#home"; // Register is gone – Participants still opens from Home
+  // Participants only leaves the menu where Home links to it
+  ["register", ...(tabAllowed("home") ? ["participants"] : [])].forEach(id => {
+    const a = document.querySelector(`#nav a[href="#${id}"]`);
+    if (a) a.hidden = closed;
+  });
+  // the Schedule tab appears once the league start date is set (Admin → League results)
+  const sched = document.querySelector('#nav a[href="#schedule"]');
+  if (sched) sched.hidden = !LEAGUE.scheduleVisible;
+  if (!LEAGUE.scheduleVisible && location.hash === "#schedule") location.hash = "#" + (visibleTabs ? visibleTabs[0] : "home");
+}
+
 function renderData() {
+  // a start date saved in Admin moves every matchday date at once (the schedule only once it's released)
+  if (settings.scheduleReleased) LEAGUE.scheduleReleased = true;
+  GPPL.setStartDate(settings.startDate);
+  datesOn = LEAGUE.datesConfirmed;
   siteLogo.apply();
+  updateMenu();
   renderHome();
   renderSchedule();
   renderStandings();
   renderCup();
   renderVerifySelect();
+  renderRegister();
   renderParticipants();
 }
 
