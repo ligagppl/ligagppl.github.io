@@ -93,13 +93,13 @@ function renderMatchdayCard() {
   const el = document.getElementById("home-md"), cur = currentMatchday();
   if (!datesOn) {
     el.innerHTML = `<h3 style="margin-top:0">📅 Matchdays</h3><p class="muted">The dates are announced soon.</p>`;
-    // start date set, but the schedule waits until every team has logged in to My team once
+    // start date set, but the schedule waits until the organizers publish it
     const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
     if (settings.startDate && LEAGUE.scheduleReleased === false && api) {
       fetch(api + "/status").then(r => r.json()).then(st => {
         if (st.released) return;
         el.innerHTML = `<h3 style="margin-top:0">📅 The schedule is almost ready</h3>
-          <p>It's published once every team has logged in to <a href="#team">🎾 My team</a> – <b>${st.signedIn} of ${st.teams}</b> teams so far.</p>
+          <p>It's published soon – <b>${st.signedIn} of ${st.teams}</b> teams have logged in to <a href="#team">🎾 My team</a> so far.</p>
           <div class="md-now-bar"><span style="width:${st.teams ? Math.round(100 * st.signedIn / st.teams) : 0}%"></span></div>`;
       }).catch(() => {});
     }

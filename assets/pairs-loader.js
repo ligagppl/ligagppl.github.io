@@ -42,8 +42,8 @@
   }
   const startDate = settings && /^\d{4}-\d{2}-\d{2}$/.test(settings.startDate || "") ? settings.startDate : null;
   if (startDate) LEAGUE.startDate = startDate;
-  // With the member area, the schedule stays private until every team has logged in once (the gatekeeper
-  // then releases it). The admin pages always see it.
+  // With the member area, the schedule stays private until the organizers publish it (Admin → League results).
+  // The admin pages always see it.
   const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
   const adminPage = /\/(admin|draw)\.html$/.test(location.pathname);
   LEAGUE.scheduleReleased = !api || adminPage || !!(settings && settings.scheduleReleased);

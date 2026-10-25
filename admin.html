@@ -430,7 +430,7 @@
   </main>
 
   <script src="assets/data.js?v=41"></script>
-  <script src="assets/pairs-loader.js?v=5"></script>
+  <script src="assets/pairs-loader.js?v=7"></script>
   <script src="assets/league.js?v=8"></script>
   <script src="assets/store.js?v=5"></script>
   <script src="assets/lock.js?v=2"></script>
@@ -1213,20 +1213,21 @@
       if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
       return data;
     }
-    // the schedule stays private until every team has logged in to 🎾 My team once
+    // the schedule stays private until the organizers publish it (and shows how many teams have logged in)
     async function renderRelease() {
       const box = $("release-box"), gk = memberApi();
       if (!gk) { box.innerHTML = ""; return; }
       try {
         const st = await memberCall("/status");
         box.innerHTML = st.released ? `✅ <b>Schedule published</b> on the website${siteSettings.scheduleReleasedAt ? ` since ${new Date(siteSettings.scheduleReleasedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}` : ""} – ${st.signedIn} of ${st.teams} teams have logged in.`
-          : `🔒 <b>Schedule private</b> until every team has logged in to 🎾 My team once – <b>${st.signedIn} of ${st.teams}</b> so far (see 👥 Member area).
-             <div style="margin-top:6px"><button class="btn ghost small" id="release-now">📢 Publish schedule now</button></div>`;
+          : `🔒 <b>Schedule private</b> – it's published when you press the button. <b>${st.signedIn} of ${st.teams}</b> teams have logged in to 🎾 My team so far (see 👥 Member area).
+             <div style="margin-top:6px"><button class="btn ghost small" id="release-now" data-all="${st.signedIn >= st.teams ? 1 : ""}">📢 Publish schedule</button></div>`;
       } catch (e) { box.textContent = "Schedule release: " + e.message; }
     }
     document.addEventListener("click", async e => {
-      if (!e.target.closest("#release-now")) return;
-      if (!confirm("Publish the schedule now – even though not every team has logged in yet?")) return;
+      const b = e.target.closest("#release-now");
+      if (!b) return;
+      if (!confirm(b.dataset.all ? "Publish the schedule on the website?" : "Publish the schedule – even though not every team has logged in yet?")) return;
       try { await memberCall("/admin/release", {}); flash("start-date-msg", "✅ Schedule published – live on the website in about a minute."); siteSettings = await STORE.load("settings", siteSettings); renderRelease(); }
       catch (err) { flash("start-date-msg", "❌ " + err.message, false); }
     });

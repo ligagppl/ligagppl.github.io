@@ -102,7 +102,7 @@
   // my matches: league (by matchday) and cup
   function myMatches() {
     const me = state.team, list = [];
-    // the league schedule stays private until every team has logged in once (then the gatekeeper releases it)
+    // the league schedule stays private until the organizers publish it
     if (LEAGUE.scheduleReleased !== false) GPPL.fixtures.forEach((games, i) => games.forEach(([a, b]) => {
       if (a !== me && b !== me) return;
       const [x, y] = a < b ? [a, b] : [b, a];
@@ -184,7 +184,7 @@
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
       <h3>🏆 GPPC Cup</h3>${playedLast(matches.filter(m => m.group === "cup" && !todo.includes(m))).map(card).join("") || `<div class="card muted">No cup match for you right now.</div>`}
-      <h3>📅 League</h3>${playedLast(matches.filter(m => m.group === "league" && !todo.includes(m))).map(card).join("") || `<div class="card muted">${LEAGUE.scheduleReleased === false ? "The league schedule appears here once every team has logged in to 🎾 My team." : "The league schedule appears here after the draw."}</div>`}
+      <h3>📅 League</h3>${playedLast(matches.filter(m => m.group === "league" && !todo.includes(m))).map(card).join("") || `<div class="card muted">${LEAGUE.scheduleReleased === false ? "The league schedule appears here once it's published – coming soon." : "The league schedule appears here after the draw."}</div>`}
       <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`;
   }
 
