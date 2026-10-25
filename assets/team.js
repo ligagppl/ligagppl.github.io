@@ -33,7 +33,7 @@
     if (path === "/photo" || path.startsWith("/photo?")) return res;
     const data = await res.json().catch(() => ({}));
     if (res.status === 401 && path !== "/login") { ls.set(TOKEN_KEY, null); state = null; }
-    if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+    if (!res.ok) { const err = new Error(data.error || `Error ${res.status}`); err.needsRules = !!data.needsRules; throw err; }
     return data;
   }
 
@@ -150,8 +150,9 @@
     if (!state) { el.innerHTML = `<div class="card muted">Loading…</div>`; return; }
     const pair = state.pairs.find(p => p.id === state.team) || { name: `#${state.team}`, players: [] };
     // compulsory: the team agrees to the current rulebook (again after every change of the rules)
-    const rb = rulebook();
-    if (!state.rulesAccepted || state.rulesAccepted.version !== rb.text) {
+    // the gatekeeper decides (data/settings.json → rulesVersion); the version line on the Rules page is the fallback
+    const rb = rulebook(state.rulesVersion);
+    if (state.needsRules || !state.rulesAccepted || (!state.rulesVersion && state.rulesAccepted.version !== rb.text)) {
       el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team">${esc(pair.name)}</b>
           <span class="muted">${players(state.team)}</span></div></div>
           <div class="tm-me-btns"><button class="btn ghost small" data-act="logout">Log out</button></div></div>
@@ -337,8 +338,8 @@
   }
 
   // the rulebook version line ("Version 1.1 · Effective from 23 October 2026") – changes whenever the rules do
-  function rulebook() {
-    const text = ((document.querySelector(".rb-version") || {}).textContent || "").trim();
+  function rulebook(text) {
+    text = text || ((document.querySelector(".rb-version") || {}).textContent || "").trim();
     const m = /Version\s+([\d.]+).*?from\s+(.+)$/.exec(text);
     return { text, version: m ? m[1] : "", date: m ? m[2] : "" };
   }
@@ -392,6 +393,8 @@
       state = await call("/me");
       msg = { key, text: okText, ok: true };
     } catch (e) {
+      // the rules changed meanwhile (e.g. a page open since before) → back to the "agree to the rules" screen
+      if (e.needsRules) { msg = { key: "rules", text: e.message, ok: false }; form = null; state = await call("/me").catch(() => state); return render(); }
       // keep everything the player typed (and the chosen photo) – only show the message
       msg = { key, text: e.message, ok: false };
       const kept = [...el.querySelectorAll("form[data-key]")].map(f => ({ id: f.dataset.key + "|" + f.dataset.submit,
@@ -468,7 +471,8 @@
     if (kind === "rules") {
       try {
         if (!f.elements.ok.checked) throw new Error("Please tick the box to agree to the rules.");
-        state.rulesAccepted = (await call("/accept-rules", { version: rulebook().text })).rulesAccepted;
+        await call("/accept-rules", {});
+        state = await call("/me"); // only now the team's data is sent
         msg = LEAGUE.memberMode === "signin" ? null : { key: "top", text: "Thanks – welcome to the GPPL! 🎾", ok: true };
       } catch (err) { msg = { key: "rules", text: err.message, ok: false }; }
       return render();
