@@ -53,6 +53,15 @@
     return data;
   }
 
+  // has the team agreed to the current rules? (the gatekeeper's rulesVersion)
+  let rulesVersion = null;
+  function rulesState(t) {
+    const a = t.rulesAccepted;
+    if (!a) return t.firstLogin ? "⚠️ Rules not agreed yet" : "📜 Rules not agreed yet";
+    if (rulesVersion && a.version !== rulesVersion) return `⚠️ Agreed to an older version of the rules (${when(a.at)})`;
+    return `📜 Rules agreed (${when(a.at)})`;
+  }
+
   // "L:3-7" / "C:1:0" → readable match name
   function matchName(key, cup) {
     let m = /^L:(\d+)-(\d+)$/.exec(key);
@@ -67,7 +76,8 @@
     $("mb-api").textContent = api() || "(not set – LEAGUE.memberApi in data.js)";
     if (!api() || !get(KEY)) return;
     try {
-      const [{ teams }, { log }, ph] = await Promise.all([call("/admin/teams"), call("/admin/log"), call("/admin/phones")]);
+      const [{ teams, rulesVersion: rv }, { log }, ph] = await Promise.all([call("/admin/teams"), call("/admin/log"), call("/admin/phones")]);
+      rulesVersion = rv || null;
       phones = ph.phones || {};
       const cup = await STORE.load("cup", { rounds: [] });
       $("mb-teams").className = "mb-teams";
@@ -78,6 +88,7 @@
           ${logo(t.name)}<div class="mb-team-info"><span class="note">#${t.id}</span><b>${esc(t.name)}</b>
           <span class="note">${players(t.id)}</span>
           <span class="mb-team-state">${t.hasCode ? `✅ Code since ${when(t.created)}` : "No code yet"} · ${t.firstLogin ? `🎾 Logged in (first: ${when(t.firstLogin)})` : "⏳ Not logged in yet"}</span>
+          <span class="mb-team-state">${rulesState(t)}</span>
           ${msg ? `<span class="mb-newcode"><code class="mb-code">${lastCode.code}</code>
             <button class="btn ghost small" data-copy="${lastCode.code}">Copy</button>
             ${sendButton(msg, [0, 1].filter(i => nums[i]).map(i => ({ name: (pl[i] || `Player ${i + 1}`).split(" ")[0], url: `https://api.whatsapp.com/send?phone=${nums[i]}&text=${encodeURIComponent(msg)}` })))}
