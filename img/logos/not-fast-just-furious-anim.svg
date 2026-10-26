@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Not Fast, Just Furious logo – raging tortoise (animated)">
+  <defs>
+    <path id="top" d="M34 120 A86 86 0 0 1 206 120" fill="none"/>
+    <path id="bot" d="M34 120 A86 86 0 0 0 206 120" fill="none"/>
+  </defs>
+  <circle cx="120" cy="120" r="116" fill="#0f1a12"/>
+  <circle cx="120" cy="120" r="106" fill="none" stroke="#7cb342" stroke-width="3"/>
+<g><animateTransform attributeName="transform" type="rotate" values="0 168 128;-28 168 128;14 168 128;0 168 128;0 168 128" keyTimes="0;0.3;0.45;0.6;1" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1" dur="2.4s" repeatCount="indefinite"/>  <!-- racket raised, mid-swing -->
+  <g transform="translate(-2 16) rotate(28 166 92)">
+    <ellipse cx="166" cy="70" rx="17" ry="21" fill="#e63946" stroke="#0d0d0d" stroke-width="3"/>
+    <g fill="#0d0d0d" opacity=".85"><circle cx="159" cy="61" r="2.6"/><circle cx="166" cy="59" r="2.6"/><circle cx="173" cy="61" r="2.6"/><circle cx="156" cy="69" r="2.6"/><circle cx="163" cy="68" r="2.6"/><circle cx="170" cy="68" r="2.6"/><circle cx="176" cy="69" r="2.6"/><circle cx="159" cy="77" r="2.6"/><circle cx="166" cy="77" r="2.6"/><circle cx="173" cy="77" r="2.6"/><circle cx="163" cy="84" r="2.6"/><circle cx="170" cy="84" r="2.6"/></g>
+    <rect x="161" y="90" width="10" height="34" rx="4" fill="#2a2a2a" stroke="#0d0d0d" stroke-width="3"/>
+  </g>
+</g><g opacity="0"><animate attributeName="opacity" values="0;0;1;0;0" keyTimes="0;0.4;0.48;0.7;1" dur="2.4s" repeatCount="indefinite"/>  <!-- speed lines – all effort, no speed -->
+  <path d="M192 80 C200 88 202 98 200 108" fill="none" stroke="#e9eef0" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>
+</g>  <!-- legs -->
+  <g fill="#7cb342" stroke="#0d0d0d" stroke-width="2.5">
+    <rect x="84" y="140" width="16" height="18" rx="6"/><rect x="130" y="140" width="16" height="18" rx="6"/>
+  </g>
+  <!-- shell -->
+  <path d="M70 142 C70 104 92 84 118 84 C146 84 164 104 164 142 Z" fill="#4c8c3a" stroke="#0d0d0d" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M91 124 l7 -4 l7 4 l0 8 l-7 4 l-7 -4 Z" fill="none" stroke="#2f5d27" stroke-width="2"/><path d="M110 124 l7 -4 l7 4 l0 8 l-7 4 l-7 -4 Z" fill="none" stroke="#2f5d27" stroke-width="2"/><path d="M129 124 l7 -4 l7 4 l0 8 l-7 4 l-7 -4 Z" fill="none" stroke="#2f5d27" stroke-width="2"/><path d="M100 108 l7 -4 l7 4 l0 8 l-7 4 l-7 -4 Z" fill="none" stroke="#2f5d27" stroke-width="2"/><path d="M119 108 l7 -4 l7 4 l0 8 l-7 4 l-7 -4 Z" fill="none" stroke="#2f5d27" stroke-width="2"/><path d="M110 92 l7 -4 l7 4 l0 8 l-7 4 l-7 -4 Z" fill="none" stroke="#2f5d27" stroke-width="2"/>
+  <path d="M66 142 L168 142" stroke="#0d0d0d" stroke-width="3" stroke-linecap="round"/>
+  <path d="M68 142 C80 150 154 150 166 142" fill="#d9c27a" stroke="#0d0d0d" stroke-width="2.5"/>
+  <!-- arm holding the racket -->
+  <path d="M150 120 C158 116 164 120 170 128" stroke="#7cb342" stroke-width="9" stroke-linecap="round" fill="none"/>
+  <path d="M150 120 C158 116 164 120 170 128" stroke="#0d0d0d" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".4"/>
+<g><animateTransform attributeName="transform" type="translate" values="0 0;-2 -2;1 1;0 0;0 0" keyTimes="0;0.3;0.45;0.6;1" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1;0.42 0 0.58 1" dur="2.4s" repeatCount="indefinite"/>  <!-- furious head with headband -->
+  <g>
+    <path d="M44 126 C40 108 50 96 64 96 C78 96 84 108 82 122 C80 134 70 140 60 140 C52 140 46 134 44 126 Z" fill="#7cb342" stroke="#0d0d0d" stroke-width="3"/>
+    <path d="M44 108 C56 102 72 102 82 108 L82 115 C72 110 56 110 45 115 Z" fill="#e63946" stroke="#0d0d0d" stroke-width="2"/>
+    <path d="M42 112 L32 106 M42 114 L30 116" stroke="#e63946" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="57" cy="124" r="5.5" fill="#fff" stroke="#0d0d0d" stroke-width="2"/><circle cx="58" cy="125" r="2.4" fill="#0d0d0d"/>
+    <circle cx="71" cy="124" r="5.5" fill="#fff" stroke="#0d0d0d" stroke-width="2"/><circle cx="70" cy="125" r="2.4" fill="#0d0d0d"/>
+    <path d="M50 117 L61 121 M78 117 L67 121" stroke="#0d0d0d" stroke-width="3" stroke-linecap="round"/>
+    <path d="M58 135 C62 131 68 131 72 135" fill="none" stroke="#0d0d0d" stroke-width="2.4" stroke-linecap="round"/>
+  </g>
+</g><g opacity="0"><animate attributeName="opacity" values="0;1;1;0;0;0" keyTimes="0;0.1;0.6;0.85;0.9;1" dur="2.4s" repeatCount="indefinite"/><g><animateTransform attributeName="transform" type="translate" values="0 -8.41441;0 -10;0 6;0 -8.41441" keyTimes="0;0.899;0.9;1" calcMode="linear" dur="2.4s" repeatCount="indefinite"/><g transform="translate(38 96) scale(0.7)" fill="#e9eef0" stroke="#0d0d0d" stroke-width="2"><circle cx="-5" cy="2" r="6"/><circle cx="4" cy="-3" r="7"/><circle cx="8" cy="5" r="5"/></g></g></g><g opacity="0"><animate attributeName="opacity" values="0;1;0;0;1;0" keyTimes="0;0.1;0.35;0.4;0.6;1" dur="2.4s" repeatCount="indefinite"/><g><animateTransform attributeName="transform" type="translate" values="0 -0.406406;0 -10;0 6;0 -0.406406" keyTimes="0;0.399;0.4;1" calcMode="linear" dur="2.4s" repeatCount="indefinite"/><g transform="translate(50 86) scale(0.55)" fill="#e9eef0" stroke="#0d0d0d" stroke-width="2"><circle cx="-5" cy="2" r="6"/><circle cx="4" cy="-3" r="7"/><circle cx="8" cy="5" r="5"/></g></g></g>
+  <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="17" letter-spacing="3" fill="#eaf5df">
+    <textPath href="#top" startOffset="50%" text-anchor="middle">NOT FAST,</textPath>
+  </text>
+  <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="15" letter-spacing="2.5" fill="#eaf5df">
+    <textPath href="#bot" startOffset="50%" text-anchor="middle">JUST FURIOUS</textPath>
+  </text>
+  <g fill="#7cb342"><circle cx="21" cy="120" r="3.5"/><circle cx="219" cy="120" r="3.5"/></g>
+</svg>

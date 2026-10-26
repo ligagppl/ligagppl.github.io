@@ -101,6 +101,7 @@ const LEAGUE = {
     "Smashistan": { src: "img/logos/smashistan.svg?v=1", anim: "img/logos/smashistan-anim.svg?v=1" },
     "Padel to the Metal": { src: "img/logos/padel-to-the-metal.svg?v=1", anim: "img/logos/padel-to-the-metal-anim.svg?v=1" },
     "Spin Reapers": { src: "img/logos/spin-reapers.svg?v=1", anim: "img/logos/spin-reapers-anim.svg?v=1" },
+    "Not Fast, Just Furious": { src: "img/logos/not-fast-just-furious.svg?v=1", anim: "img/logos/not-fast-just-furious-anim.svg?v=1" },
   },
 
   // ----------------------------------------------------------
