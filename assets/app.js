@@ -125,11 +125,11 @@ function renderMatchdayCard() {
 function renderCup() {
   const el = document.getElementById("cup-rounds");
   if (!cup.rounds.length) {
-    // once the dates are published: the draw is on the first day of the first cup window
+    // once the dates are published: the draw happens in the week before the first cup window starts
     const first = ((LEAGUE.cupWindowsByPairs || {})[LEAGUE.pairs.length] || [])[0];
     const when = first && datesOn ? matchdayWindow(first.from) : null;
     el.innerHTML = `<div class="card muted">${when
-      ? `The cup draw is on <b>${fmt(when.from)}</b> – ${esc(first.round)} is played in matchdays ${first.from}–${first.to} (${fmt(when.from)} – ${fmt(matchdayWindow(first.to).to)}).`
+      ? `The cup draw is between <b>${fmt(new Date(when.from.getTime() - 7 * DAY))} and ${fmt(when.from)}</b> – ${esc(first.round)} is played in matchdays ${first.from}–${first.to} (${fmt(when.from)} – ${fmt(matchdayWindow(first.to).to)}).`
       : "The cup draw hasn't happened yet – it starts in the second half of the league."}</div>`;
     return;
   }
