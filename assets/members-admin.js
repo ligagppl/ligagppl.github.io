@@ -55,9 +55,15 @@
 
   // has the team agreed to the current rules? (the gatekeeper's rulesVersion)
   let rulesVersion = null;
+  // the day the current rules took effect ("… Effective from 26 October 2026")
+  const rulesSince = () => { const m = /from\s+(\d{1,2} \w+ \d{4})/.exec(rulesVersion || ""); const d = m && new Date(m[1]); return d && !isNaN(d) ? d : null; };
+  const agreedNow = t => !!t.rulesAccepted && (!rulesVersion || t.rulesAccepted.version === rulesVersion);
+  // logged in since the current rules took effect (else: not since the change)
+  const loggedInSince = t => { const since = rulesSince(); return !!t.lastLogin && (!since || new Date(t.lastLogin) >= since); };
   function rulesState(t) {
     const a = t.rulesAccepted;
-    if (!a) return t.firstLogin ? "⚠️ Rules not agreed yet" : "❓ Rules not agreed yet";
+    if (!agreedNow(t) && !loggedInSince(t)) return a ? "❓ Not logged in since the rules changed – not agreed yet" : "❓ Rules not agreed yet";
+    if (!a) return "⚠️ Rules not agreed yet";
     if (rulesVersion && a.version !== rulesVersion) return `⚠️ Agreed to an older version of the rules (${when(a.at)})`;
     return `✅ Rules agreed (${when(a.at)})`;
   }
@@ -81,9 +87,9 @@
       phones = ph.phones || {};
       const cup = await STORE.load("cup", { rounds: [] });
       $("mb-teams").className = "mb-teams";
-      // while some teams haven't agreed to the current rules, they come first (then the rest, in seed order)
-      const agreedNow = t => !!t.rulesAccepted && (!rulesVersion || t.rulesAccepted.version === rulesVersion);
-      const ordered = teams.filter(t => !agreedNow(t)).concat(teams.filter(agreedNow));
+      // not logged in since the rules changed (and not agreed) → logged in but not agreed → agreed; each in seed order
+      const group = t => (agreedNow(t) ? 2 : loggedInSince(t) ? 1 : 0);
+      const ordered = teams.slice().sort((x, y) => group(x) - group(y) || x.id - y.id);
       $("mb-teams").innerHTML = ordered.length ? ordered.map(t => {
         const pl = (GPPL.pairById[t.id] || { players: [] }).players, nums = phones[t.id] || [];
         const msg = lastCode && lastCode.team === t.id ? codeMessage(t.name, lastCode.code) : "";
