@@ -327,6 +327,7 @@
         <div class="tm-venue"><label for="court-${m.key}">Court / venue</label>
           <input id="court-${m.key}" name="court" maxlength="160" autocomplete="off" value="${esc(entry.court || "")}" placeholder="Pick a club or search an address…">
           <div class="tm-sugg" hidden></div></div>
+        <label class="tm-check"><input type="checkbox" name="agreed" required> <span>Confirmed with our opponents – they agreed to this date, time and venue</span></label>
         <div class="tm-btns"><button class="btn small" type="submit">Save</button>
           <button class="btn ghost small" type="button" data-act="form" data-form="${m.key}|schedule">Cancel</button>
           ${entry.date ? `<button class="btn ghost small" type="button" data-act="unschedule" data-key="${m.key}">Remove date</button>` : ""}</div>
