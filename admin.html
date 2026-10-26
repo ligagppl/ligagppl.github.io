@@ -1474,6 +1474,7 @@
     document.querySelectorAll(".subnav button").forEach(btn => btn.addEventListener("click", async () => {
       document.querySelectorAll(".subnav button").forEach(b => b.classList.toggle("active", b === btn));
       document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "panel-" + btn.dataset.panel));
+      history.replaceState(null, "", "#" + btn.dataset.panel); // a reload comes back to this tab
       // keep cup data in sync between the results panel and the draw
       if (btn.dataset.panel === "draw") {
         try { await $("draw-frame").contentWindow.refreshCup(); } catch {}
@@ -1504,9 +1505,17 @@
       fillMatches(); renderResultList(); renderLeagueViews(); renderCup(); fillRegistration(); renderCurrentPairs();
     }
 
+    // after a reload: open the tab from the address (admin.html#members …) again
+    function restoreTab() {
+      const b = document.querySelector(`.subnav button[data-panel="${CSS.escape(location.hash.slice(1))}"]`);
+      if (b && !b.classList.contains("active")) b.click();
+    }
+
     requireAdmin(async () => {
       fillMatchdays(); fillSettings(); renderBanner();
       await reload();
+      // the member-area tabs get their handlers from a deferred script – wait for the page to finish loading
+      if (document.readyState === "complete") restoreTab(); else window.addEventListener("load", restoreTab);
     });
   </script>
 </body>
