@@ -48,7 +48,11 @@ const GPPL = (() => {
       rounds.push(games);
       list.splice(1, 0, list.pop());
     }
-    return rnd ? shuffle(rounds, rnd) : rounds;
+    const ordered = rnd ? shuffle(rounds, rnd) : rounds;
+    // with an odd number of pairs, LEAGUE.firstBye (a pair id) has its matchday off on matchday 1
+    const off = ordered.findIndex(g => !g.some(([x, y]) => x === LEAGUE.firstBye || y === LEAGUE.firstBye));
+    if (ids.length % 2 && ids.includes(LEAGUE.firstBye) && off > 0) [ordered[0], ordered[off]] = [ordered[off], ordered[0]];
+    return ordered;
   }
   const fixtures = LEAGUE.noDraw ? [] : buildFixtures(LEAGUE.pairs.map(p => p.id), LEAGUE.drawSeed);
 

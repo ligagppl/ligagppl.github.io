@@ -113,7 +113,7 @@
       if (a !== me && b !== me) return;
       const [x, y] = a < b ? [a, b] : [b, a];
       const win = GPPL.matchdayWindow(i + 1);
-      list.push({ key: `L:${x}-${y}`, a: x, b: y, opp: a === me ? b : a, fullSets: false, group: "league",
+      list.push({ key: `L:${x}-${y}`, a: x, b: y, opp: a === me ? b : a, fullSets: false, group: "league", md: i + 1,
         label: `Matchday ${i + 1}` + (LEAGUE.datesConfirmed !== false ? ` · ${GPPL.fmt(win.from)} – ${GPPL.fmt(win.to)}` : ""),
         official: GPPL.findResult(state.results, x, y) });
     }));
@@ -190,7 +190,7 @@
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
       <h3>🏆 GPPC Cup</h3>${playedLast(matches.filter(m => m.group === "cup" && !todo.includes(m))).map(card).join("") || `<div class="card muted">No cup match for you right now.</div>`}
-      <h3>📅 League</h3>${playedLast(matches.filter(m => m.group === "league" && !todo.includes(m))).map(card).join("") || `<div class="card muted">${LEAGUE.scheduleReleased === false ? "The league schedule appears here once it's published – coming soon." : "The league schedule appears here after the draw."}</div>`}
+      <h3>📅 League</h3>${leagueCards(matches.filter(m => m.group === "league" && !todo.includes(m))) || `<div class="card muted">${LEAGUE.scheduleReleased === false ? "The league schedule appears here once it's published – coming soon." : "The league schedule appears here after the draw."}</div>`}
       <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`;
   }
 
@@ -275,6 +275,19 @@
 
   function msgHtml(key) {
     return msg && msg.key === key ? `<div class="msg ${msg.ok ? "" : "err"}">${msg.ok ? "✅ " : "❌ "}${esc(msg.text)}</div>` : "";
+  }
+
+  // the league cards, with the matchday my team has off (13 pairs → one bye each) in its place
+  function leagueCards(list) {
+    const cards = playedLast(list).map(m => ({ md: m.official ? Infinity : m.md, html: card(m) }));
+    const md = GPPL.fixtures.findIndex(g => !g.some(([a, b]) => a === state.team || b === state.team)) + 1;
+    if (md && LEAGUE.scheduleReleased !== false && cards.length) {
+      const win = GPPL.matchdayWindow(md), at = cards.findIndex(c => c.md > md);
+      cards.splice(at < 0 ? cards.length : at, 0, { html: `<div class="card tm-match tm-bye">
+        <div class="tm-head"><span class="tm-label">Matchday ${md}${LEAGUE.datesConfirmed !== false ? ` · ${GPPL.fmt(win.from)} – ${GPPL.fmt(win.to)}` : ""}</span><span class="tm-chip">😎 No match</span></div>
+        <p>This matchday is off for your team. You can play any of your upcoming matches during it – or take a rest.</p></div>` });
+    }
+    return cards.map(c => c.html).join("");
   }
 
   function card(m) {

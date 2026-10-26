@@ -53,6 +53,7 @@ const LEAGUE = {
 
   startDate: "2026-11-02",
   matchdayLengthDays: 10,
+  firstBye: 13,      // pair id with the matchday off on matchday 1 (the organizers' pair, The Slicing Duo)
   // Dates and the Schedule tab are shown once the start date is set in Admin → League results
   // (data/settings.json → startDate, which then overrides startDate above).
   datesConfirmed: false,
