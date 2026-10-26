@@ -96,7 +96,7 @@
         return `<div class="mb-team ${t.hasCode ? "has-code" : ""}">
           ${logo(t.name)}<div class="mb-team-info"><span class="note">#${t.id}</span><b>${esc(t.name)}</b>
           <span class="note">${players(t.id)}</span>
-          <span class="mb-team-state">${t.hasCode ? `✅ Code since ${when(t.created)}` : "No code yet"} · ${t.firstLogin ? `🎾 Logged in (first: ${when(t.firstLogin)}${t.lastLogin && t.lastLogin !== t.firstLogin ? ` · last: ${when(t.lastLogin)}` : ""})` : "⏳ Not logged in yet"}</span>
+          <span class="mb-team-state">${t.hasCode ? `✅ Code since ${when(t.created)}` : "No code yet"} · ${t.lastLogin || t.firstLogin ? `🎾 Last login: ${when(t.lastLogin || t.firstLogin)}` : "⏳ Not logged in yet"}</span>
           <span class="mb-team-state">${rulesState(t)}</span>
           ${msg ? `<span class="mb-newcode"><code class="mb-code">${lastCode.code}</code>
             <button class="btn ghost small" data-copy="${lastCode.code}">Copy</button>
