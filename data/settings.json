@@ -12,5 +12,8 @@
   "siteLogoAnimation": "always",
   "rulesVersion": "Version 1.2 · Effective from 26 October 2026",
   "startDate": "2026-11-01",
-  "startDateLocked": true
+  "startDateLocked": true,
+  "scheduleReleased": true,
+  "scheduleReleasedAt": "2026-10-26T20:41:47.871Z",
+  "drawSeed": 1823004009
 }
