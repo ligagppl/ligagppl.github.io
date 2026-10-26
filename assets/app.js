@@ -125,14 +125,19 @@ function renderMatchdayCard() {
 function renderCup() {
   const el = document.getElementById("cup-rounds");
   if (!cup.rounds.length) {
-    el.innerHTML = `<div class="card muted">The cup draw hasn't happened yet – it starts in the second half of the league.</div>`;
+    // once the dates are published: the draw is on the first day of the first cup window
+    const first = ((LEAGUE.cupWindowsByPairs || {})[LEAGUE.pairs.length] || [])[0];
+    const when = first && datesOn ? matchdayWindow(first.from) : null;
+    el.innerHTML = `<div class="card muted">${when
+      ? `The cup draw is on <b>${fmt(when.from)}</b> – ${esc(first.round)} is played in matchdays ${first.from}–${first.to} (${fmt(when.from)} – ${fmt(matchdayWindow(first.to).to)}).`
+      : "The cup draw hasn't happened yet – it starts in the second half of the league."}</div>`;
     return;
   }
   const ns = GPPL.cupNextStage(cup);
   const champ = ns.type === "done"
     ? `<div class="card" style="text-align:center"><div style="font-size:2rem">🏆</div><h3 style="margin:4px 0">GPPC Cup champions</h3><div style="font-size:1.3rem;font-weight:800">${pairName(ns.champion)}</div></div>` : "";
   const seedLine = (r, i) => r.words
-    ? `<p class="note">🔐 Seed words: “${r.words}” · <a href="#verify" data-verify="${i}">Verify</a></p>` : "";
+    ? `<p class="note">🔐 Seed words: “${r.words}”${verifyOn ? ` · <a href="#verify" data-verify="${i}">Verify</a>` : ""}</p>` : "";
   // latest round first; every match as a small score board (logos, sets, winner) like in 🎾 My team
   const board = (m, r, ri, mi) => {
     const w = GPPL.cupWinner(m), full = GPPL.cupFullSets(r);
@@ -164,8 +169,10 @@ function renderCup() {
 // ---------- Verify draw ----------
 const verifiableRounds = () => cup.rounds.map((r, i) => ({ r, i })).filter(x => x.r.words);
 let verifyPick = null; // round index chosen via a "Verify" link on the cup tab
+const verifyOn = !!document.getElementById("verify"); // the Verify draw page can be left out of the site
 
 function renderVerifySelect() {
+  if (!verifyOn) return;
   const sel = document.getElementById("v-round");
   const before = sel.value;
   const keep = verifyPick !== null ? String(verifyPick) : before;
@@ -250,11 +257,13 @@ function runVerify() {
   </div>`;
 }
 
-document.getElementById("v-round").addEventListener("change", () => fillVerifyForm(true));
-document.getElementById("v-type").addEventListener("change", () => {
-  document.getElementById("v-lucky-row").hidden = document.getElementById("v-type").value !== "lucky";
-});
-document.getElementById("v-run").addEventListener("click", runVerify);
+if (verifyOn) {
+  document.getElementById("v-round").addEventListener("change", () => fillVerifyForm(true));
+  document.getElementById("v-type").addEventListener("change", () => {
+    document.getElementById("v-lucky-row").hidden = document.getElementById("v-type").value !== "lucky";
+  });
+  document.getElementById("v-run").addEventListener("click", runVerify);
+}
 // "Verify" links on the cup tab
 document.addEventListener("click", e => {
   const link = e.target.closest("[data-verify]");
@@ -509,7 +518,9 @@ if (visibleTabs) {
     if (id && !tabAllowed(id) && !a.classList.contains("rb-ref")) a.replaceWith(document.createTextNode(a.textContent));
   });
 }
-document.documentElement.classList.add("tabs-ready"); // the menu is hidden until it is filtered (no flash of all tabs)
+// the menu stays hidden until updateMenu has sorted out Schedule / Register / Participants (no flash of tabs)
+{ const s = document.querySelector('#nav a[href="#schedule"]'); if (s) s.hidden = !LEAGUE.scheduleVisible; }
+setTimeout(() => document.documentElement.classList.add("tabs-ready"), 3000); // in case the data never arrives
 
 function showTab() {
   let id = (location.hash || "#" + (visibleTabs ? visibleTabs[0] : "home")).slice(1);
@@ -584,6 +595,7 @@ function updateMenu() {
   const sched = document.querySelector('#nav a[href="#schedule"]');
   if (sched) sched.hidden = !LEAGUE.scheduleVisible;
   if (!LEAGUE.scheduleVisible && location.hash === "#schedule") location.hash = "#" + (visibleTabs ? visibleTabs[0] : "home");
+  document.documentElement.classList.add("tabs-ready");
 }
 
 function renderData() {
