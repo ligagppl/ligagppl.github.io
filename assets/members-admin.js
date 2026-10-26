@@ -57,7 +57,7 @@
   let rulesVersion = null;
   function rulesState(t) {
     const a = t.rulesAccepted;
-    if (!a) return t.firstLogin ? "⚠️ Rules not agreed yet" : "❔ Rules not agreed yet";
+    if (!a) return t.firstLogin ? "⚠️ Rules not agreed yet" : "❓ Rules not agreed yet";
     if (rulesVersion && a.version !== rulesVersion) return `⚠️ Agreed to an older version of the rules (${when(a.at)})`;
     return `✅ Rules agreed (${when(a.at)})`;
   }
