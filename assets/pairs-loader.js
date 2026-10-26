@@ -61,5 +61,7 @@
       if (Number.isInteger(seed)) LEAGUE.drawSeed = seed;
     } catch {}
   }
+  // With the member area, there is no league draw at all until a start date has made one (Admin → League results)
+  LEAGUE.noDraw = !!api && !Number.isInteger(LEAGUE.drawSeed);
   LEAGUE.datesConfirmed = LEAGUE.scheduleVisible = !!startDate && LEAGUE.scheduleReleased;
 })();

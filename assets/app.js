@@ -71,7 +71,7 @@ function renderSchedule() {
 }
 
 function renderHome() {
-  const total = fixtures.reduce((n, g) => n + g.length, 0);
+  const n = LEAGUE.pairs.length, total = fixtures.length ? fixtures.reduce((s, g) => s + g.length, 0) : n * (n - 1) / 2; // before the draw: everyone plays everyone once
   const last = matchdayWindow(fixtures.length).to;
   // the Top 3 only means something once every pair has played at least once
   const ranked = GPPL.rankStandings(results), started = ranked.filter(r => r.p > 0).length;

@@ -36,6 +36,7 @@
     #panel-disputes h3 { margin: 20px 0 10px; }
     #panel-gallery h3 { margin: 20px 0 10px; }
     .btn[hidden] { display: none !important; }
+    .card[hidden], details.card[hidden] { display: none !important; }
     .btn:disabled, input:disabled { opacity: .45; cursor: not-allowed; }
     .gl-card { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
     .gl-img { flex: 0 0 200px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--line) 40%, transparent); border-radius: 10px; overflow: hidden; }
@@ -162,6 +163,10 @@
         <div id="release-box" class="note"></div>
         <div class="msg" id="start-date-msg"></div>
       </div>
+      <div class="card" id="no-draw" hidden>
+        <h3 style="margin-top:0">🎲 No league draw yet</h3>
+        <p class="note" style="margin-bottom:0">Set the league start date above – that makes the draw (randomly shuffled). Until then there are no matchdays, pairings or milestones anywhere.</p>
+      </div>
       <div class="card">
         <h3 style="margin-top:0">⏱ Result deadlines</h3>
         <p class="note">Matches that were played (date &amp; time passed) but have no confirmed result yet. A result must be entered within <b>48 hours</b> of the match, and the opponent then has <b>48 hours</b> to confirm or dispute (after that it counts automatically). Over the limit = contact the pairs (Rules §11).</p>
@@ -173,18 +178,18 @@
         <div id="upd-list"></div>
         <div class="msg" id="upd-msg"></div>
       </div>
-      <div class="card">
+      <div class="card needs-draw">
         <h3 style="margin-top:0">⏰ Results due</h3>
         <p class="note">Matches whose date has passed and that have no official result yet. Results the teams entered themselves are in <b>❗ Disputes</b> until they're confirmed.</p>
         <div class="msg" id="due-msg"></div>
         <div id="due-list"></div>
       </div>
-      <div class="card">
+      <div class="card needs-draw">
         <h3 style="margin-top:0">🏁 Milestone progress</h3>
         <p class="note">League matches played per pair against the milestones (Rules §2). “On track” counts results waiting for confirmation and matches already scheduled before the deadline.</p>
         <div id="ms-view"></div>
       </div>
-      <div class="card">
+      <div class="card needs-draw">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap">
           <h3 style="margin:0">📋 Matches per matchday</h3>
           <button class="btn ghost small" id="md-images-all">🖼️ Download all matchday images</button></div>
@@ -192,7 +197,7 @@
         <div class="msg" id="md-img-msg"></div>
         <div id="md-view"></div>
       </div>
-      <details class="card">
+      <details class="card needs-draw">
         <summary><b>Enter any league result (form)</b></summary>
         <h3>Enter a league result</h3>
         <div class="form-row"><label for="md">Matchday</label><select id="md"></select></div>
@@ -212,7 +217,7 @@
         </div>
         <div class="msg" id="league-msg"></div>
       </details>
-      <div class="card reslist">
+      <div class="card reslist needs-draw">
         <h3 style="margin-top:0">Entered results</h3>
         <div id="result-list"></div>
       </div>
@@ -430,8 +435,8 @@
   </main>
 
   <script src="assets/data.js?v=44"></script>
-  <script src="assets/pairs-loader.js?v=7"></script>
-  <script src="assets/league.js?v=8"></script>
+  <script src="assets/pairs-loader.js?v=8"></script>
+  <script src="assets/league.js?v=10"></script>
   <script src="assets/store.js?v=5"></script>
   <script src="assets/lock.js?v=2"></script>
   <script src="assets/members-admin.js?v=14" defer></script>
@@ -831,7 +836,14 @@
         : '<p class="muted">Nothing open – every played match has a confirmed result. 🎉</p>';
     }
 
+    // no draw yet (no start date) → the league views are hidden
+    function showDrawState() {
+      document.querySelectorAll(".needs-draw").forEach(c => (c.hidden = !fixtureList.length));
+      $("no-draw").hidden = !!fixtureList.length;
+    }
+
     function renderLeagueViews() {
+      showDrawState();
       updBlob = null;
       renderDeadlines();
       renderUpdate();

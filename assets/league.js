@@ -50,7 +50,7 @@ const GPPL = (() => {
     }
     return rnd ? shuffle(rounds, rnd) : rounds;
   }
-  const fixtures = buildFixtures(LEAGUE.pairs.map(p => p.id), LEAGUE.drawSeed);
+  const fixtures = LEAGUE.noDraw ? [] : buildFixtures(LEAGUE.pairs.map(p => p.id), LEAGUE.drawSeed);
 
   const samePair = (r, a, b) => (r.a === a && r.b === b) || (r.a === b && r.b === a);
   const findResult = (results, a, b) => results.find(r => samePair(r, a, b));
