@@ -25,11 +25,17 @@
 
   async function call(path, body) {
     const token = ls.get(TOKEN_KEY);
-    const res = await fetch(api() + path, {
-      method: body ? "POST" : "GET",
-      headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body ? { "Content-Type": "application/json" } : {}) },
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    let res;
+    try {
+      res = await fetch(api() + path, {
+        method: body ? "POST" : "GET",
+        headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), ...(body ? { "Content-Type": "application/json" } : {}) },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+    } catch {
+      // the request never reached the gatekeeper ("Failed to fetch" / "Load failed")
+      throw new Error("Can't reach the GPPL server from this device. Something here is probably blocking it – e.g. a company laptop or network, a VPN, an ad blocker or a privacy extension. Try another browser or network (e.g. your phone's hotspot), or use your phone.");
+    }
     if (path === "/photo" || path.startsWith("/photo?")) return res;
     const data = await res.json().catch(() => ({}));
     if (res.status === 401 && path !== "/login") { ls.set(TOKEN_KEY, null); state = null; }
