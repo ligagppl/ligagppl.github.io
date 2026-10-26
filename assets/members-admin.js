@@ -81,7 +81,10 @@
       phones = ph.phones || {};
       const cup = await STORE.load("cup", { rounds: [] });
       $("mb-teams").className = "mb-teams";
-      $("mb-teams").innerHTML = teams.length ? teams.map(t => {
+      // while some teams haven't agreed to the current rules, they come first (then the rest, in seed order)
+      const agreedNow = t => !!t.rulesAccepted && (!rulesVersion || t.rulesAccepted.version === rulesVersion);
+      const ordered = teams.filter(t => !agreedNow(t)).concat(teams.filter(agreedNow));
+      $("mb-teams").innerHTML = ordered.length ? ordered.map(t => {
         const pl = (GPPL.pairById[t.id] || { players: [] }).players, nums = phones[t.id] || [];
         const msg = lastCode && lastCode.team === t.id ? codeMessage(t.name, lastCode.code) : "";
         return `<div class="mb-team ${t.hasCode ? "has-code" : ""}">
