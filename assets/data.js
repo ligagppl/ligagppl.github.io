@@ -15,7 +15,7 @@ const LEAGUE = {
   // Tabs not listed are hidden; #admin always stays reachable by its link.
   // Register and Participants leave the menu automatically once registration is closed (Admin → Registration)
   // or the league start date is set (Admin → League results); Participants stays reachable from Home.
-  visibleTabs: ["home", "rules", "participants", "team"],
+  visibleTabs: ["home", "rules", "schedule", "table", "cup", "team", "participants", "gallery", "verify"],
 
   // Member area gatekeeper (Cloudflare Worker) – empty = member area closed
   // Venues suggested first when teams set a match (My team → Set Date / Venue). Format: "Name, street, postcode city".
