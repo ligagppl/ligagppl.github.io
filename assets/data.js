@@ -102,7 +102,7 @@ const LEAGUE = {
     "Padel to the Metal": { src: "img/logos/padel-to-the-metal.svg?v=1", anim: "img/logos/padel-to-the-metal-anim.svg?v=1" },
     "Spin Reapers": { src: "img/logos/spin-reapers.svg?v=1", anim: "img/logos/spin-reapers-anim.svg?v=1" },
     "Not Fast, Just Furious": { src: "img/logos/not-fast-just-furious.svg?v=1", anim: "img/logos/not-fast-just-furious-anim.svg?v=1" },
-    "The Slicing Duo": { src: "img/logos/the-slicing-duo.webp?v=1", anim: "img/logos/the-slicing-duo-anim.webp?v=1" },
+    "The Slicing Duo": { src: "img/logos/the-slicing-duo.webp?v=2", anim: "img/logos/the-slicing-duo-anim.webp?v=2" },
   },
 
   // ----------------------------------------------------------
