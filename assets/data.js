@@ -67,11 +67,15 @@ const LEAGUE = {
     12: [{ from: 6, to: 7, round: "Round 1" },
          { from: 8, to: 9, round: "Quarter-finals", draw: "lucky loser draw + quarter-final draw" },
          { from: 10, to: 11, round: "Semi-finals" }],
+    13: [{ from: 6, to: 8, round: "Round 1" },
+         { from: 9, to: 10, round: "Quarter-finals", draw: "lucky loser draw + quarter-final draw" },
+         { from: 11, to: 13, round: "Semi-finals" }],
   },
 
   milestonesByPairs: {
     8:  [{ md: 3, min: 2 }, { md: 6, min: 4 }, { md: 7, min: "all" }],
     12: [{ md: 4, min: 2 }, { md: 8, min: 6 }, { md: 11, min: "all" }],
+    13: [{ md: 4, min: 2 }, { md: 7, min: 5 }, { md: 10, min: 8 }, { md: 13, min: "all" }],
   },
 
   // ----------------------------------------------------------
