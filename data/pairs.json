@@ -133,26 +133,26 @@
   },
   {
     "id": 12,
-    "name": "Smashistan",
-    "players": [
-      "Awais Ilyas",
-      "Partner"
-    ],
-    "links": [
-      "https://app.playtomic.com/profile/user/9870505",
-      null
-    ]
-  },
-  {
-    "id": 13,
     "name": "TBD",
     "players": [
       "Nabeel Sheikh",
       "Ali Raza"
     ],
     "links": [
-      null,
-      null
+      "https://app.playtomic.com/profile/user/15659006",
+      "https://app.playtomic.com/profile/user/16126277"
+    ]
+  },
+  {
+    "id": 13,
+    "name": "Another TBD",
+    "players": [
+      "Gh. Nasir",
+      "Junaid Usman"
+    ],
+    "links": [
+      "https://app.playtomic.com/profile/user/13770524",
+      "https://app.playtomic.com/profile/user/9206688"
     ]
   }
 ]
