@@ -142,6 +142,7 @@
     <div class="subnav">
       <button data-panel="league" class="active">League results</button>
       <button data-panel="cup">Cup results</button>
+      <button data-panel="scheduled">📅 Scheduled</button>
       <button data-panel="draw">🎱 Live draw</button>
       <button data-panel="registration">Registration</button>
       <button data-panel="pairs">Pairs</button>
@@ -220,6 +221,15 @@
       <div class="card reslist needs-draw">
         <h3 style="margin-top:0">Entered results</h3>
         <div id="result-list"></div>
+      </div>
+    </div>
+
+    <!-- SCHEDULED MATCHES -->
+    <div class="panel" id="panel-scheduled">
+      <div class="card">
+        <h3 style="margin-top:0">📅 Scheduled matches</h3>
+        <p class="note">Every league and cup match with a date set and no confirmed result yet – soonest first, whatever the matchday.</p>
+        <div id="sched-list"></div>
       </div>
     </div>
 
@@ -434,7 +444,7 @@
     </div>
   </main>
 
-  <script src="assets/data.js?v=50"></script>
+  <script src="assets/data.js?v=51"></script>
   <script src="assets/pairs-loader.js?v=9"></script>
   <script src="assets/league.js?v=11"></script>
   <script src="assets/store.js?v=5"></script>
@@ -842,6 +852,31 @@
       $("no-draw").hidden = !!fixtureList.length;
     }
 
+    // all matches with a date and no official result, by date (league and cup together)
+    function renderScheduled() {
+      if (!localStorage.getItem("gppl-member-admin")) {
+        $("sched-list").innerHTML = '<p class="muted">Dates and venues are private – enter the admin key in <b>👥 Member area</b> to see them.</p>';
+        return;
+      }
+      const list = [];
+      fixtureList.forEach((games, i) => games.forEach(([a, b]) => {
+        const key = lkey(a, b), e = schedule[key];
+        if (e && e.date && !GPPL.findResult(results, a, b)) list.push({ key, a, b, e, label: `Matchday ${i + 1}` });
+      }));
+      (cup.rounds || []).forEach((r, ri) => (r.matches || []).forEach((m, mi) => {
+        const key = `C:${ri}:${mi}`, e = schedule[key];
+        if (e && e.date && !(m.sets || m.walkover || m.winner)) list.push({ key, a: m.a, b: m.b, e, label: `GPPC Cup · ${r.name}` });
+      }));
+      list.sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
+      $("sched-list").innerHTML = list.map(({ key, a, b, e, label }) => {
+        const p = e.pending;
+        const state = p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}` : isPast(e) ? "⏰ Result due" : "";
+        return `<div class="md-row">${pairLine(a, b)}
+          <span class="md-info"><span class="md-when">${whenText(e)}</span><span class="note">${escA(label)}</span>${state ? `<span class="md-state">${state}</span>` : ""}</span>
+          ${p ? "" : `<span class="md-share"><button class="btn ghost small" data-match-share="${key}|${a}|${b}|${escA(label)}">📤 Share</button></span>`}</div>`;
+      }).join("") || '<p class="muted">No match has a date yet.</p>';
+    }
+
     function renderLeagueViews() {
       showDrawState();
       updBlob = null;
@@ -849,7 +884,7 @@
       renderUpdate();
       Object.keys(matchImgCache).forEach(k => delete matchImgCache[k]);
       Object.keys(mdShareCache).forEach(k => delete mdShareCache[k]); // results/dates may have changed
-      renderDue(); renderMilestones(); renderMatchdays();
+      renderDue(); renderMilestones(); renderMatchdays(); renderScheduled();
     }
 
     document.getElementById("panel-league").addEventListener("click", async e => {
