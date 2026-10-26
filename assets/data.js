@@ -47,7 +47,7 @@ const LEAGUE = {
   ],
 
   memberApi: "https://gppl-members.gppl-members.workers.dev",
-  memberMode: "signin",   // "signin" = 🎾 My team only signs teams in (before the season) – "Schedule coming soon"
+  memberMode: "",   // "signin" = 🎾 My team only signs teams in (before the season) – "Schedule coming soon"
   // Cloudflare Turnstile site key for the My team login (public) – empty = no security check
   turnstileSiteKey: "",
 
