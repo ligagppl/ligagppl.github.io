@@ -11,5 +11,6 @@
   "logoAnimation": "hover",
   "siteLogoAnimation": "always",
   "rulesVersion": "Version 1.2 · Effective from 26 October 2026",
-  "startDate": "2026-11-01"
+  "startDate": "2026-11-01",
+  "startDateLocked": true
 }
