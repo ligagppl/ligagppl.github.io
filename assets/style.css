@@ -556,14 +556,16 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tm-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0 4px; }
 .tm-tabs button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
 .tm-tabs button.active { background: var(--green); color: #fff; border-color: var(--green); }
-.tm-up-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-.tm-up-label { font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
-.tm-up-vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
-.tm-up-vs .tm-tc:last-child { justify-content: flex-end; text-align: right; flex-direction: row-reverse; }
-.tm-up-x { color: var(--muted); font-weight: 700; }
-.tm-up .tm-when { margin: 8px 0 0; }
-.tm-up-ours { border: 2px solid var(--ball); background: color-mix(in srgb, var(--ball) 14%, var(--card)); }
-.tm-up-chip { font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--ball); color: #14201a; }
+.tm-up-list { padding-top: 4px; padding-bottom: 4px; }
+.tm-up { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-bottom: 1px dashed var(--line); }
+.tm-up:last-child { border-bottom: 0; }
+.tm-up-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; }
+.tm-up-a, .tm-up-b { display: flex; align-items: center; gap: 8px; min-width: 0; overflow-wrap: anywhere; }
+.tm-up-b { justify-content: flex-end; text-align: right; }
+.tm-up-when { font-size: .92rem; color: var(--muted); }
+.tm-up-label { color: var(--muted); }
+.tm-up-ours { margin: 0 -12px; padding: 12px; border-radius: 12px; border-bottom-color: transparent; background: color-mix(in srgb, var(--ball) 18%, var(--card)); box-shadow: inset 4px 0 0 var(--ball); }
+.tm-up-chip { font-size: .78rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--ball); color: #14201a; margin-left: 6px; }
 
 /* Rules: what changed in the latest version */
 .rb-changes { margin: 0 0 18px; padding: 12px 16px; border-radius: 12px; background: color-mix(in srgb, var(--ball) 20%, var(--card)); border: 2px solid var(--ball); }

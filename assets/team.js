@@ -215,13 +215,14 @@
       .filter(x => x.e.date && x.t[0] && x.t[1] && (matchEnd(x.e) || Date.parse(x.e.date + "T23:59:00")) > Date.now())
       .sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
     if (!list.length) return `<div class="card muted">No upcoming match has a date yet.</div>`;
-    return `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p>` + list.map(({ key, e, t: [a, b] }) => {
+    const side = (id, cls) => `<span class="${cls}">${logo(id, "tm-logo-sm")}<b>${esc(teamName(id))}</b></span>`;
+    return `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p><div class="card tm-up-list">` + list.map(({ key, e, t: [a, b] }) => {
       const ours = a === state.team || b === state.team;
-      return `<div class="card tm-up${ours ? " tm-up-ours" : ""}">
-        <div class="tm-up-head"><span class="tm-up-label">${esc(label(key))}</span>${ours ? `<span class="tm-up-chip">⭐ Your match</span>` : ""}</div>
-        <div class="tm-up-vs">${teamCell(a, a === state.team)}<span class="tm-up-x">vs</span>${teamCell(b, b === state.team)}</div>
-        <p class="tm-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</p></div>`;
-    }).join("");
+      return `<div class="tm-up${ours ? " tm-up-ours" : ""}">
+        <span class="tm-up-pair">${side(a, "tm-up-a")}<span class="muted">vs</span>${side(b, "tm-up-b")}</span>
+        <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>
+        <span class="tm-up-label">${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span></div>`;
+    }).join("") + `</div>`;
   }
 
   // my place in the league table (same order as the Table tab: points, head-to-head, wins, sets, games)
