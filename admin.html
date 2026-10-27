@@ -229,6 +229,7 @@
       <div class="card">
         <h3 style="margin-top:0">📅 Scheduled matches</h3>
         <p class="note">Every league and cup match with a date set and no confirmed result yet – soonest first, whatever the matchday.</p>
+        <div class="dp-btns" id="sched-all" hidden><button class="btn" data-sched-all="share">📤 Share upcoming</button><button class="btn ghost" data-sched-all="img">⬇️ Download upcoming as 1 image</button></div>
         <div id="sched-list"></div>
       </div>
     </div>
@@ -755,6 +756,26 @@
       GPPLImage.share(blob, file, () => (b.textContent = "📤 Ready – tap again"));
     });
 
+    // all upcoming scheduled matches (not yet played) in one image
+    let schedBlob = null;
+    $("sched-all").addEventListener("click", async e => {
+      const b = e.target.closest("[data-sched-all]");
+      if (!b) return;
+      const day = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+      const rows = scheduledList().filter(x => !isPast(x.e)).map(({ a, b: bb, e: m, label }) => ({
+        label: label.toUpperCase(), a, b: bb, center: "vs",
+        sub: `📅 ${day(m.date)}${m.time ? " · " + GPPL.timeRange(m) : ""}${m.court ? " · 📍 " + m.court.split(",")[0] : ""}`,
+      }));
+      if (!rows.length) return;
+      const file = `GPPL upcoming matches ${today()}.png`;
+      schedBlob = schedBlob || await GPPLImage.render({
+        title: "📅 Upcoming matches", subtitle: `${rows.length} match${rows.length > 1 ? "es" : ""} scheduled – come and watch!`,
+        rows, footer: "Schedule, table & results: ligagppl.github.io",
+      });
+      if (b.dataset.schedAll === "img") return GPPLImage.download(schedBlob, file);
+      GPPLImage.share(schedBlob, file, () => (b.textContent = "📤 Ready – tap again"));
+    });
+
     // ---------- winner banners and the results update ----------
     // every confirmed result with what's needed to draw it: key (L:a-b / C:ri:mi), label, pairs, result
     function confirmedResults() {
@@ -853,11 +874,7 @@
     }
 
     // all matches with a date and no official result, by date (league and cup together)
-    function renderScheduled() {
-      if (!localStorage.getItem("gppl-member-admin")) {
-        $("sched-list").innerHTML = '<p class="muted">Dates and venues are private – enter the admin key in <b>👥 Member area</b> to see them.</p>';
-        return;
-      }
+    function scheduledList() {
       const list = [];
       fixtureList.forEach((games, i) => games.forEach(([a, b]) => {
         const key = lkey(a, b), e = schedule[key];
@@ -867,7 +884,16 @@
         const key = `C:${ri}:${mi}`, e = schedule[key];
         if (e && e.date && !(m.sets || m.walkover || m.winner)) list.push({ key, a: m.a, b: m.b, e, label: `GPPC Cup · ${r.name}` });
       }));
-      list.sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
+      return list.sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
+    }
+    function renderScheduled() {
+      $("sched-all").hidden = true;
+      if (!localStorage.getItem("gppl-member-admin")) {
+        $("sched-list").innerHTML = '<p class="muted">Dates and venues are private – enter the admin key in <b>👥 Member area</b> to see them.</p>';
+        return;
+      }
+      const list = scheduledList();
+      $("sched-all").hidden = !list.some(x => !isPast(x.e));
       $("sched-list").innerHTML = list.map(({ key, a, b, e, label }) => {
         const p = e.pending;
         const state = p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}` : isPast(e) ? "⏰ Result due" : "";
@@ -879,7 +905,7 @@
 
     function renderLeagueViews() {
       showDrawState();
-      updBlob = null;
+      updBlob = null; schedBlob = null;
       renderDeadlines();
       renderUpdate();
       Object.keys(matchImgCache).forEach(k => delete matchImgCache[k]);

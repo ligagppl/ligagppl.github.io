@@ -551,3 +551,22 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tm-match p.tm-due { margin: 8px 0; padding: 6px 10px; border-radius: 8px; background: color-mix(in srgb, var(--ball) 18%, transparent); font-size: .92rem; }
 .tm-check { display: flex !important; flex-direction: row !important; align-items: flex-start; gap: 10px; font-weight: 400 !important; cursor: pointer; }
 .tm-check input { width: 20px; height: 20px; margin-top: 1px; accent-color: var(--green-2); flex: none; }
+
+/* My team → My team / Upcoming matches */
+.tm-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 14px 0 4px; }
+.tm-tabs button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
+.tm-tabs button.active { background: var(--green); color: #fff; border-color: var(--green); }
+.tm-up-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.tm-up-label { font-size: .8rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.tm-up-vs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 10px; }
+.tm-up-vs .tm-tc:last-child { justify-content: flex-end; text-align: right; flex-direction: row-reverse; }
+.tm-up-x { color: var(--muted); font-weight: 700; }
+.tm-up .tm-when { margin: 8px 0 0; }
+.tm-up-ours { border: 2px solid var(--ball); background: color-mix(in srgb, var(--ball) 14%, var(--card)); }
+.tm-up-chip { font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 999px; background: var(--ball); color: #14201a; }
+
+/* Rules: what changed in the latest version */
+.rb-changes { margin: 0 0 18px; padding: 12px 16px; border-radius: 12px; background: color-mix(in srgb, var(--ball) 20%, var(--card)); border: 2px solid var(--ball); }
+.rb-changes ul { margin: 6px 0 0; padding-left: 20px; }
+.rb-changes li { margin: 4px 0; }
+.rb-new { display: inline-block; font-size: .72rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--ball); color: #14201a; vertical-align: 1px; }

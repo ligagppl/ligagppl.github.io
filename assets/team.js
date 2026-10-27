@@ -20,6 +20,7 @@
   let form = null;    // "<key>|schedule", "<key>|result" or "<key>|dispute"
   let msg = null;     // { key, text, ok }
   let loading = false;
+  let view = "team";  // "team" or "upcoming" (all teams' scheduled matches)
   const photos = {};  // key → object URL of a loaded photo
   const matchImgs = {}; // key → image of a scheduled match (made once – Safari shares on the next tap)
 
@@ -158,14 +159,17 @@
     // compulsory: the team agrees to the current rulebook (again after every change of the rules)
     // the gatekeeper decides (data/settings.json → rulesVersion); the version line on the Rules page is the fallback
     const rb = rulebook(state.rulesVersion);
+    // "What changed" box from the Rules page – teams that agreed before can just read that
+    const changes = (document.getElementById("rb-changes") || {}).innerHTML || "";
     if (state.needsRules || !state.rulesAccepted || (!state.rulesVersion && state.rulesAccepted.version !== rb.text)) {
       el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team">${esc(pair.name)}</b>
           <span class="muted">${players(state.team)}</span></div></div>
           <div class="tm-me-btns"><button class="btn ghost small" data-act="logout">Log out</button></div></div>
         <div class="card tm-rules"><h3 style="margin-top:0">📜 The rules</h3>
           <p>Rules last changed: <b>${esc(rb.date || "–")}</b>${rb.version ? ` (Version ${esc(rb.version)})` : ""}.
-          ${state.rulesAccepted ? "The rules have changed since your team last agreed – please read them again." : "Please read the rules before you continue."}
+          ${state.rulesAccepted ? "The rules have changed since your team last agreed." : "Please read the rules before you continue."}
           <a href="#rules">📖 Read the rules</a></p>
+          ${state.rulesAccepted && changes ? `<div class="rb-changes">${changes}<p class="note" style="margin:6px 0 0"><a href="#rules">📖 Open the rules</a> – the changes are listed at the top, with links to each rule.</p></div>` : ""}
           <form class="tm-form" data-submit="rules"><label class="tm-check"><input type="checkbox" name="ok" required>
             <span><b>We (${esc(pair.name)}) agree to all the rules.</b></span></label>
             <button class="btn" type="submit">Continue</button></form>${msgHtml("rules")}</div>`;
@@ -185,13 +189,39 @@
     el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team">${esc(pair.name)}</b>
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
-      <div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
+      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Upcoming matches</button></div>
+      ${view === "upcoming" ? upcomingHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
       <h3>🏆 GPPC Cup</h3>${playedLast(matches.filter(m => m.group === "cup" && !todo.includes(m))).map(card).join("") || `<div class="card muted">No cup match for you right now.</div>`}
       <h3>📅 League</h3>${leagueCards(matches.filter(m => m.group === "league" && !todo.includes(m))) || `<div class="card muted">${LEAGUE.scheduleReleased === false ? "The league schedule appears here once it's published – coming soon." : "The league schedule appears here after the draw."}</div>`}
-      <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`;
+      <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`}`;
+  }
+
+  // every league and cup match with a date that hasn't been played yet – soonest first, our own matches highlighted
+  function upcomingHtml() {
+    const label = key => {
+      if (key.startsWith("C:")) { const r = (state.cup.rounds || [])[+key.split(":")[1]]; return `🏆 GPPC Cup · ${r ? r.name : ""}`; }
+      const [x, y] = key.slice(2).split("-").map(Number);
+      const md = GPPL.fixtures.findIndex(g => g.some(([a, b]) => (a === x && b === y) || (a === y && b === x)));
+      return md >= 0 ? `Matchday ${md + 1}` : "League";
+    };
+    const teams = key => {
+      if (key.startsWith("C:")) { const [, ri, mi] = key.split(":"); const m = (((state.cup.rounds || [])[ri] || {}).matches || [])[mi] || {}; return [m.a, m.b]; }
+      return key.slice(2).split("-").map(Number);
+    };
+    const list = Object.entries(state.upcoming || {}).map(([key, e]) => ({ key, e, t: teams(key) }))
+      .filter(x => x.e.date && x.t[0] && x.t[1] && (matchEnd(x.e) || Date.parse(x.e.date + "T23:59:00")) > Date.now())
+      .sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
+    if (!list.length) return `<div class="card muted">No upcoming match has a date yet.</div>`;
+    return `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p>` + list.map(({ key, e, t: [a, b] }) => {
+      const ours = a === state.team || b === state.team;
+      return `<div class="card tm-up${ours ? " tm-up-ours" : ""}">
+        <div class="tm-up-head"><span class="tm-up-label">${esc(label(key))}</span>${ours ? `<span class="tm-up-chip">⭐ Your match</span>` : ""}</div>
+        <div class="tm-up-vs">${teamCell(a, a === state.team)}<span class="tm-up-x">vs</span>${teamCell(b, b === state.team)}</div>
+        <p class="tm-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</p></div>`;
+    }).join("");
   }
 
   // my place in the league table (same order as the Table tab: points, head-to-head, wins, sets, games)
@@ -435,6 +465,7 @@
     const key = b.dataset.key, a = b.dataset.act;
     if (a === "logout") { ls.set(TOKEN_KEY, null); state = null; msg = null; return render(); }
     if (a === "reload") { msg = null; return load(); }
+    if (a === "view") { view = b.dataset.view; form = null; return render(); }
     if (a === "form") { form = form === b.dataset.form ? null : b.dataset.form; msg = null; return render(); }
     if (a === "win-share") {
       const m = myMatches().find(x => x.key === key);
