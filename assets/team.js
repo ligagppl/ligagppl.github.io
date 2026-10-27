@@ -215,12 +215,15 @@
       .filter(x => x.e.date && x.t[0] && x.t[1] && (matchEnd(x.e) || Date.parse(x.e.date + "T23:59:00")) > Date.now())
       .sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
     if (!list.length) return `<div class="card muted">No upcoming match has a date yet.</div>`;
+    // days until the match day: "today", "tomorrow", "in 6 days"
+    const inDays = d => { const n = Math.round((new Date(d + "T12:00:00") - new Date(new Date().toDateString() + " 12:00")) / 864e5); return n === 0 ? "<b>today</b>" : n === 1 ? "<b>tomorrow</b>" : `in ${n} days`; };
     const side = (id, cls) => `<span class="${cls}">${logo(id, "tm-logo-sm")}<b>${esc(teamName(id))}</b></span>`;
     return `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p><div class="card tm-up-list">` + list.map(({ key, e, t: [a, b] }) => {
       const ours = a === state.team || b === state.team;
+      if (b === state.team) [a, b] = [b, a]; // our own team always on the left
       return `<div class="tm-up${ours ? " tm-up-ours" : ""}">
         <span class="tm-up-pair">${side(a, "tm-up-a")}<span class="muted">vs</span>${side(b, "tm-up-b")}</span>
-        <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>
+        <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""} · ${inDays(e.date)}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>
         <span class="tm-up-label">${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span></div>`;
     }).join("") + `</div>`;
   }
