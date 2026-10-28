@@ -191,14 +191,36 @@
     el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team">${esc(pair.name)}</b>
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
-      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Upcoming matches (${upcomingList().length})</button></div>
-      ${view === "upcoming" ? upcomingHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
+      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Upcoming matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button></div>
+      ${view === "upcoming" ? upcomingHtml() : view === "gallery" ? galleryHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
       <h3>🏆 GPPC Cup</h3>${playedLast(matches.filter(m => m.group === "cup" && !todo.includes(m))).map(card).join("") || `<div class="card muted">No cup match for you right now.</div>`}
       <h3>📅 League</h3>${leagueCards(matches.filter(m => m.group === "league" && !todo.includes(m))) || `<div class="card muted">${LEAGUE.scheduleReleased === false ? "The league schedule appears here once it's published – coming soon." : "The league schedule appears here after the draw."}</div>`}
       <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`}`;
+    if (view === "gallery") loadGalleryPhotos();
+  }
+
+  // 📸 Gallery: matchday photos the organizers published (members only – loaded through the gatekeeper), newest first
+  const galleryImgs = {}; // key → object URL
+  function galleryHtml() {
+    const list = (state.gallery || []).concat(LEAGUE.gallery || []);
+    if (!list.length) return `<div class="card muted">Photos will appear here during the season 📸</div>`;
+    return `<p class="note">Only for league members – please don't share photos of other players outside the league without their permission (Rules §12).</p><div class="gallery">` + list.map(g =>
+      `<figure>${g.key ? `<div class="tm-gal-img" data-gal="${esc(g.key)}">${galleryImgs[g.key] ? `<img src="${galleryImgs[g.key]}" alt="${esc(g.caption)}">` : `<span class="note">Loading…</span>`}</div>`
+        : `<img src="${esc(g.src)}" alt="${esc(g.caption)}" loading="lazy">`}<figcaption>${esc(g.caption)}</figcaption></figure>`).join("") + `</div>`;
+  }
+  async function loadGalleryPhotos() {
+    for (const g of state.gallery || []) {
+      if (!galleryImgs[g.key]) {
+        const res = await call(`/photo?key=${encodeURIComponent(g.key)}`).catch(() => null);
+        if (!res || !res.ok) continue;
+        galleryImgs[g.key] = URL.createObjectURL(await res.blob());
+      }
+      const box = el.querySelector(`[data-gal="${CSS.escape(g.key)}"]`);
+      if (box && !box.querySelector("img")) box.innerHTML = `<img src="${galleryImgs[g.key]}" alt="${esc(g.caption)}">`;
+    }
   }
 
   // every league and cup match with a date that hasn't been played yet – soonest first, our own matches highlighted

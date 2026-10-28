@@ -359,11 +359,11 @@
     const b = e.target.closest("[data-gl]");
     if (!b) return;
     const card = b.closest(".gl-card"), key = card.dataset.key, remove = b.dataset.gl === "remove";
-    if (remove && !confirm("Remove this photo from the public gallery?")) return;
+    if (remove && !confirm("Remove this photo from the gallery?")) return;
     b.disabled = true;
     try {
       await call("/admin/gallery", { key, action: b.dataset.gl, caption: card.querySelector(".gl-cap").value });
-      show("gl-msg", remove ? "✅ Removed from the gallery." : "✅ In the gallery – live on the website in about a minute.");
+      show("gl-msg", remove ? "✅ Removed from the gallery." : "✅ In the gallery – teams see it in My team right away.");
       loadGallery();
     } catch (err) { show("gl-msg", "❌ " + err.message, false); b.disabled = false; }
   });

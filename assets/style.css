@@ -157,6 +157,8 @@ td.pts { font-weight: 700; }
 .gallery { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
 .gallery figure { margin: 0; }
 .gallery img { width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 10px; display: block; }
+.tm-gal-img { aspect-ratio: 4/3; border-radius: 10px; background: color-mix(in srgb, var(--line) 40%, transparent); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.tm-gal-img img { aspect-ratio: auto; height: 100%; border-radius: 0; }
 .gallery figcaption { font-size: .85rem; color: var(--muted); padding-top: 4px; }
 
 /* ---------- Prize table ---------- */
