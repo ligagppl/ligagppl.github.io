@@ -78,7 +78,9 @@
     .md-state { font-size: .88rem; }
     .md-match { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .md-when { font-size: .85rem; color: var(--muted); padding-left: 2px; }
-    .st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px 14px; margin: 4px 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+    .st-pane { margin: 4px 0 16px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
+    .st-pane summary { cursor: pointer; font-weight: 700; }
+    .st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin-top: 10px; }
     .st-row { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: .92rem; }
     .st-row .dp-logo { width: 26px; height: 26px; }
     .st-row span { min-width: 0; overflow-wrap: anywhere; }
@@ -893,6 +895,9 @@
       }));
       return list.sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
     }
+    $("sched-teams").addEventListener("toggle", e => {
+      try { localStorage.setItem("gppl-sched-teams", e.target.open ? "open" : "closed"); } catch {}
+    }, true);
     function renderScheduled() {
       $("sched-all").hidden = true; $("sched-count").textContent = ""; $("sched-teams").innerHTML = "";
       if (!localStorage.getItem("gppl-member-admin")) {
@@ -905,9 +910,10 @@
       // upcoming matches per team – most first, teams without any at the end
       const per = new Map(LEAGUE.pairs.map(p => [p.id, 0]));
       upcoming.forEach(({ a, b }) => [a, b].forEach(id => per.set(id, (per.get(id) || 0) + 1)));
-      $("sched-teams").innerHTML = per.size ? `<p class="note" style="margin:0 0 6px">Upcoming matches per team</p><div class="st-grid">` +
+      const open = localStorage.getItem("gppl-sched-teams") !== "closed"; // open/closed is remembered in this browser
+      $("sched-teams").innerHTML = per.size ? `<details class="st-pane"${open ? " open" : ""}><summary>Upcoming matches per team</summary><div class="st-grid">` +
         [...per].sort((x, y) => y[1] - x[1] || name(x[0]).localeCompare(name(y[0])))
-          .map(([id, n]) => `<span class="st-row${n ? "" : " none"}">${teamLogo(id)}<span>${escA(name(id))}</span><b>${n}</b></span>`).join("") + `</div>` : "";
+          .map(([id, n]) => `<span class="st-row${n ? "" : " none"}">${teamLogo(id)}<span>${escA(name(id))}</span><b>${n}</b></span>`).join("") + `</div></details>` : "";
       $("sched-list").innerHTML = list.map(({ key, a, b, e, label }) => {
         const p = e.pending;
         const state = p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}` : isPast(e) ? "⏰ Result due" : "";
