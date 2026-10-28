@@ -24,7 +24,7 @@
     --loss: #ff8a80;
     color-scheme: dark;
   }
-  a { color: var(--ball); }
+  a { color: #8ab4f8; }
 }
 
 * { box-sizing: border-box; }
