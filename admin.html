@@ -78,6 +78,12 @@
     .md-state { font-size: .88rem; }
     .md-match { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .md-when { font-size: .85rem; color: var(--muted); padding-left: 2px; }
+    .st-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 6px 14px; margin: 4px 0 16px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+    .st-row { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: .92rem; }
+    .st-row .dp-logo { width: 26px; height: 26px; }
+    .st-row span { min-width: 0; overflow-wrap: anywhere; }
+    .st-row b { margin-left: auto; font-variant-numeric: tabular-nums; }
+    .st-row.none { color: var(--muted); }
     .md-share { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
     .upd-ul { margin: 6px 0 10px; padding-left: 20px; font-size: .9rem; }
     .md-row .btn { justify-self: start; }
@@ -142,7 +148,7 @@
     <div class="subnav">
       <button data-panel="league" class="active">League results</button>
       <button data-panel="cup">Cup results</button>
-      <button data-panel="scheduled">📅 Scheduled</button>
+      <button data-panel="scheduled">📅 Scheduled<span id="sched-count"></span></button>
       <button data-panel="draw">🎱 Live draw</button>
       <button data-panel="registration">Registration</button>
       <button data-panel="pairs">Pairs</button>
@@ -230,6 +236,7 @@
         <h3 style="margin-top:0">📅 Scheduled matches</h3>
         <p class="note">Every league and cup match with a date set and no confirmed result yet – soonest first, whatever the matchday.</p>
         <div class="dp-btns" id="sched-all" hidden><button class="btn" data-sched-all="share">📤 Share upcoming</button><button class="btn ghost" data-sched-all="img">⬇️ Download upcoming as 1 image</button></div>
+        <div id="sched-teams"></div>
         <div id="sched-list"></div>
       </div>
     </div>
@@ -887,13 +894,20 @@
       return list.sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
     }
     function renderScheduled() {
-      $("sched-all").hidden = true;
+      $("sched-all").hidden = true; $("sched-count").textContent = ""; $("sched-teams").innerHTML = "";
       if (!localStorage.getItem("gppl-member-admin")) {
         $("sched-list").innerHTML = '<p class="muted">Dates and venues are private – enter the admin key in <b>👥 Member area</b> to see them.</p>';
         return;
       }
-      const list = scheduledList();
-      $("sched-all").hidden = !list.some(x => !isPast(x.e));
+      const list = scheduledList(), upcoming = list.filter(x => !isPast(x.e));
+      $("sched-all").hidden = !upcoming.length;
+      $("sched-count").textContent = ` (${upcoming.length})`;
+      // upcoming matches per team – most first, teams without any at the end
+      const per = new Map(LEAGUE.pairs.map(p => [p.id, 0]));
+      upcoming.forEach(({ a, b }) => [a, b].forEach(id => per.set(id, (per.get(id) || 0) + 1)));
+      $("sched-teams").innerHTML = per.size ? `<p class="note" style="margin:0 0 6px">Upcoming matches per team</p><div class="st-grid">` +
+        [...per].sort((x, y) => y[1] - x[1] || name(x[0]).localeCompare(name(y[0])))
+          .map(([id, n]) => `<span class="st-row${n ? "" : " none"}">${teamLogo(id)}<span>${escA(name(id))}</span><b>${n}</b></span>`).join("") + `</div>` : "";
       $("sched-list").innerHTML = list.map(({ key, a, b, e, label }) => {
         const p = e.pending;
         const state = p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}` : isPast(e) ? "⏰ Result due" : "";
