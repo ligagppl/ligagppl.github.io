@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css">
+  <link rel="stylesheet" href="assets/style.css?v=56">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -122,6 +122,7 @@
     .mb-newcode { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; padding: 8px; border-radius: 8px; background: color-mix(in srgb, var(--ball) 25%, var(--card)); }
     .mb-code { font-size: 1.1rem; font-weight: 800; letter-spacing: .08em; }
     .mb-nophone { font-size: .8rem; color: #a05a00; }
+    @media (prefers-color-scheme: dark) { .mb-nophone { color: #ffb74d; } }
     .mb-bulk { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
     .mb-queue { padding: 14px; border-radius: 12px; margin-bottom: 14px; background: color-mix(in srgb, var(--ball) 22%, var(--card)); border: 2px solid var(--ball); }
     .mb-queue ol { margin: 10px 0 0; padding-left: 20px; font-size: .88rem; }
@@ -131,6 +132,7 @@
     .pairs-table { width: 100%; border-collapse: collapse; font-size: .9rem; }
     .pairs-table th, .pairs-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; text-transform: none; letter-spacing: 0; }
     .pairs-table td.n { font-weight: 800; color: var(--green-2); width: 3em; }
+    @media (prefers-color-scheme: dark) { .pairs-table td.n { color: var(--ball); } }
     .pairs-table tr.wait td { color: var(--muted); }
     .warn-box { padding: 8px 12px; border-radius: 10px; margin: 8px 0; font-size: .88rem; background: color-mix(in srgb, var(--ball) 22%, var(--card)); }
     .reg-status { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }

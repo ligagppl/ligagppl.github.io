@@ -10,6 +10,7 @@
   --win: #0b6b34;
   --loss: #b3261e;
   --radius: 14px;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -21,7 +22,9 @@
     --line: #26352b;
     --win: #5fd18f;
     --loss: #ff8a80;
+    color-scheme: dark;
   }
+  a { color: var(--ball); }
 }
 
 * { box-sizing: border-box; }
