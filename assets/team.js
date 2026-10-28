@@ -83,6 +83,8 @@
   }
   const linkHtml = link => link && /^https:\/\/[^/]*playtomic\.(io|com)\//.test(link) ? ` <a href="${esc(link)}" target="_blank" rel="noopener">Playtomic ↗</a>` : "";
   const mapsUrl = place => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
+  // days until a date: "today", "tomorrow", "in 6 days"
+  const inDays = d => { const n = Math.round((new Date(d + "T12:00:00") - new Date(new Date().toDateString() + " 12:00")) / 864e5); return n === 0 ? "<b>today</b>" : n === 1 ? "<b>tomorrow</b>" : `in ${n} days`; };
   const dayText = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
   // result deadlines (Rules §11): 48 hours after the booked time to enter the result, then 48 hours to confirm
@@ -191,8 +193,8 @@
     el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team">${esc(pair.name)}</b>
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
-      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Upcoming matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button></div>
-      ${view === "upcoming" ? upcomingHtml() : view === "gallery" ? galleryHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
+      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Upcoming matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button></div>
+      ${view === "upcoming" ? upcomingHtml() : view === "gallery" ? galleryHtml() : view === "courts" ? courtsHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
@@ -200,6 +202,55 @@
       <h3>📅 League</h3>${leagueCards(matches.filter(m => m.group === "league" && !todo.includes(m))) || `<div class="card muted">${LEAGUE.scheduleReleased === false ? "The league schedule appears here once it's published – coming soon." : "The league schedule appears here after the draw."}</div>`}
       <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`}`;
     if (view === "gallery") loadGalleryPhotos();
+  }
+
+  // 🎾 Courts: spare courts offered by teams – other teams request them, the organizers decide who gets each one
+  function courtsHtml() {
+    const all = state.slots || [];
+    const when = c => `<span class="tm-up-when">📅 ${dayText(c.date)} · ${esc(GPPL.timeRange(c))} · ${inDays(c.date)} · 📍 <a href="${mapsUrl(c.court)}" target="_blank" rel="noopener">${esc(c.court)}</a></span>`;
+    // only teams we haven't played (no result, none waiting) and haven't scheduled yet
+    const open = myMatches().filter(m => { const e = state.matches[m.key] || {}; return !m.official && !e.pending && !e.date; });
+    const matchName = key => { const m = myMatches().find(x => x.key === key); return m ? `${m.group === "cup" ? "GPPC Cup " + m.label.split(" · ")[1] : m.label.split(" · ")[0]} vs ${teamName(m.opp)}` : ""; };
+    const row = (c, extra) => `<div class="tm-up">${when(c)}${extra}${msgHtml(c.id)}</div>`;
+    const list = (title, items) => items.length ? `<h3>${title}</h3><div class="card tm-up-list">${items.join("")}</div>` : "";
+
+    const mine = all.filter(c => c.assigned).map(c => row(c, `<span class="tm-up-label">✅ <b>This court is yours</b> – offered by ${esc(teamName(c.from))}${c.key ? ` · for ${esc(matchName(c.key))} (the match date is set)` : ""}</span>
+      <div class="tm-btns"><button class="btn ghost small" data-act="slot-reoffer" data-key="${c.id}">↩ Can't use it – offer it again</button></div>`));
+    const free = all.filter(c => !c.mine && !c.assigned && !c.taken).map(c => {
+      const req = c.requested;
+      const extra = req
+        ? `<span class="tm-up-label"><span class="tm-up-chip">⏳ Requested</span>${req.key ? ` for ${esc(matchName(req.key))}` : ""} – the organizers decide</span>
+           <div class="tm-btns"><button class="btn ghost small" data-act="slot-cancel" data-key="${c.id}">Cancel request</button></div>`
+        : form === `${c.id}|slot-request`
+          ? `<form class="tm-form" data-submit="slot-request" data-key="${c.id}"><label>Which match – who would you play?<select name="match">
+              <option value="">Not sure yet</option>${open.map(m => `<option value="${m.key}">${esc(matchName(m.key))}</option>`).join("")}</select></label>
+              <span class="note">A court always goes to two teams for one of their matches. Naming the team you'd play makes it much more likely you get it, and the match date is then set for you. With “Not sure yet”, the organizers may pair you with a team you still have to play.</span>
+              <div class="tm-btns"><button class="btn small" type="submit">Request this court</button><button class="btn ghost small" type="button" data-act="form" data-form="${c.id}|slot-request">Cancel</button></div></form>`
+          : `<div class="tm-btns"><button class="btn small" data-act="form" data-form="${c.id}|slot-request">🙋 Request</button></div>`;
+      return row(c, extra);
+    });
+    const offered = all.filter(c => c.mine).map(c => row(c, c.assignedTo
+      ? `<span class="tm-up-label">✅ Given to <b>${esc(teamName(c.assignedTo))}</b></span>`
+      : `<span class="tm-up-label">${c.requests ? `🙋 ${c.requests} request${c.requests > 1 ? "s" : ""}` : "No requests yet"}</span>
+         <div class="tm-btns"><button class="btn ghost small" data-act="slot-withdraw" data-key="${c.id}">Withdraw</button></div>`));
+    const taken = all.filter(c => c.taken).map(c => row(c, `<span class="tm-up-label muted">Given to another team</span>`));
+
+    const offerForm = form === "slots|slot-offer" ? `<form class="tm-form" data-submit="slot-offer" data-key="slots">
+        <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="900"></label>
+        <label>Duration<select name="duration">${[60, 90, 120].map(d => `<option value="${d}" ${d === 90 ? "selected" : ""}>${d} minutes</option>`).join("")}</select></label></div>
+        <div class="tm-venue"><label for="court-slot">Court / venue</label>
+          <input id="court-slot" name="court" maxlength="160" autocomplete="off" placeholder="Pick a club or search an address…">
+          <div class="tm-sugg" hidden></div></div>
+        <div class="tm-btns"><button class="btn small" type="submit">Offer this court</button><button class="btn ghost small" type="button" data-act="form" data-form="slots|slot-offer">Cancel</button></div>
+        <span class="note">Other teams see the date, time and venue – not who offered it.</span></form>`
+      : `<div class="tm-btns"><button class="btn small" data-act="form" data-form="slots|slot-offer">➕ Offer a spare court</button></div>`;
+
+    return `<p class="note">Booked a court you don't need? Offer it here. Need a court? Request one – the organizers decide who gets it.</p>
+      <div class="card">${offerForm}${msgHtml("slots")}</div>
+      ${list("✅ Courts for you", mine)}
+      ${list("🎾 Free courts", free) || `<h3>🎾 Free courts</h3><div class="card muted">No free courts right now.</div>`}
+      ${list("📤 Courts you offered", offered)}
+      ${list("Requested, given to another team", taken)}`;
   }
 
   // 📸 Gallery: matchday photos the organizers published (members only – loaded through the gatekeeper), newest first
@@ -244,8 +295,6 @@
     };
     const list = upcomingList();
     if (!list.length) return `<div class="card muted">No upcoming match has a date yet.</div>`;
-    // days until the match day: "today", "tomorrow", "in 6 days"
-    const inDays = d => { const n = Math.round((new Date(d + "T12:00:00") - new Date(new Date().toDateString() + " 12:00")) / 864e5); return n === 0 ? "<b>today</b>" : n === 1 ? "<b>tomorrow</b>" : `in ${n} days`; };
     const side = (id, cls) => `<span class="${cls}">${logo(id, "tm-logo-sm")}<b>${esc(teamName(id))}</b></span>`;
     // filter by team: only teams with an upcoming match, A–Z (no ranking, no zeros)
     const per = new Map();
@@ -535,6 +584,9 @@
       return render();
     }
     b.disabled = true;
+    if (a === "slot-reoffer" && confirm("Put this court back in the pool as your offer? The date of your match is removed again.")) return act("slots", () => call("/slot-reoffer", { id: key }), "Back in the pool as your offer.");
+    if (a === "slot-cancel") return act(key, () => call("/slot-cancel", { id: key }), "Request cancelled.");
+    if (a === "slot-withdraw" && confirm("Take this court out of the pool?")) return act(key, () => call("/slot-withdraw", { id: key }), "Withdrawn.");
     if (a === "confirm") return act(key, () => call("/confirm", { key }), "Result confirmed – thanks!");
     if (a === "unschedule" && confirm("Remove the date, time and venue of this match?")) return act(key, () => call("/schedule", { key, date: "", time: "", court: "" }), "Date removed.");
     if (a === "withdraw" && confirm("Withdraw your result? You can then enter it again.")) return act(key, () => call("/withdraw", { key }), "Result withdrawn.");
@@ -563,6 +615,13 @@
       if (!v("court")) throw new Error("Please add the court / venue.");
       return call("/schedule", { key, date, time: time.slice(0, 5), duration: +v("duration") || 90, court: v("court") });
     }, "Saved.");
+    if (kind === "slot-offer") return act(key, () => {
+      const [date = "", time = ""] = v("when").split("T");
+      if (!date || !time) throw new Error("Please pick the date and time.");
+      if (!v("court")) throw new Error("Please add the court / venue.");
+      return call("/slot-offer", { date, time: time.slice(0, 5), duration: +v("duration") || 90, court: v("court") });
+    }, "Your court is in the pool – the organizers will give it to a team that needs one.");
+    if (kind === "slot-request") return act(key, () => call("/slot-request", { id: key, key: v("match") }), "Requested – the organizers will decide.");
     if (kind === "dispute") return act(key, () => call("/dispute", { key, note: v("note") }), "Sent – the organizers will decide.");
     if (kind === "rules") {
       try {
