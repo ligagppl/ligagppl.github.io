@@ -21,6 +21,8 @@
   let msg = null;     // { key, text, ok }
   let loading = false;
   let view = "team";  // "team" or "upcoming" (all teams' scheduled matches)
+  let upTeam = null;  // Upcoming matches: only this team's matches (null = all)
+  let upPaneOpen = false; // the "Filter by team" pane
   const photos = {};  // key → object URL of a loaded photo
   const matchImgs = {}; // key → image of a scheduled match (made once – Safari shares on the next tap)
 
@@ -223,7 +225,15 @@
     // days until the match day: "today", "tomorrow", "in 6 days"
     const inDays = d => { const n = Math.round((new Date(d + "T12:00:00") - new Date(new Date().toDateString() + " 12:00")) / 864e5); return n === 0 ? "<b>today</b>" : n === 1 ? "<b>tomorrow</b>" : `in ${n} days`; };
     const side = (id, cls) => `<span class="${cls}">${logo(id, "tm-logo-sm")}<b>${esc(teamName(id))}</b></span>`;
-    return `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p><div class="card tm-up-list">` + list.map(({ key, e, t: [a, b] }) => {
+    // filter by team: only teams with an upcoming match, A–Z (no ranking, no zeros)
+    const per = new Map();
+    list.forEach(({ t }) => t.forEach(id => per.set(id, (per.get(id) || 0) + 1)));
+    if (upTeam !== null && !per.has(upTeam)) upTeam = null;
+    const chip = (id, text, n) => `<button type="button" class="tm-up-team${id === null ? " all" : ""}${upTeam === id ? " active" : ""}" data-act="up-team" data-team="${id === null ? "" : id}">${id === null ? "" : logo(id, "tm-logo-sm")}<span>${text}</span>${n ? `<small>${n}</small>` : ""}</button>`;
+    const filter = `<details class="card tm-up-filter"${upPaneOpen ? " open" : ""}><summary>🔎 Filter by team${upTeam !== null ? `: <b>${esc(teamName(upTeam))}</b>` : ""}</summary><div class="tm-up-teams">` +
+      chip(null, "All teams") + [...per].sort((x, y) => teamName(x[0]).localeCompare(teamName(y[0]))).map(([id, n]) => chip(id, esc(teamName(id)), n)).join("") + `</div></details>`;
+    const shown = upTeam === null ? list : list.filter(({ t }) => t.includes(upTeam));
+    return `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p>${filter}<div class="card tm-up-list">` + shown.map(({ key, e, t: [a, b] }) => {
       const ours = a === state.team || b === state.team;
       if (b === state.team) [a, b] = [b, a]; // our own team always on the left
       return `<div class="tm-up${ours ? " tm-up-ours" : ""}">
@@ -468,6 +478,9 @@
     render();
   }
 
+  // remember whether the "Filter by team" pane is open (the page is redrawn on every change)
+  el.addEventListener("toggle", e => { if (e.target.classList.contains("tm-up-filter")) upPaneOpen = e.target.open; }, true);
+
   el.addEventListener("click", async e => {
     const b = e.target.closest("[data-act]");
     if (!b) return;
@@ -475,6 +488,7 @@
     if (a === "logout") { ls.set(TOKEN_KEY, null); state = null; msg = null; return render(); }
     if (a === "reload") { msg = null; return load(); }
     if (a === "view") { view = b.dataset.view; form = null; return render(); }
+    if (a === "up-team") { upTeam = b.dataset.team === "" ? null : +b.dataset.team; upPaneOpen = true; return render(); }
     if (a === "form") { form = form === b.dataset.form ? null : b.dataset.form; msg = null; return render(); }
     if (a === "win-share") {
       const m = myMatches().find(x => x.key === key);

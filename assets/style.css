@@ -557,6 +557,15 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tm-tabs button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
 .tm-tabs button.active { background: var(--green); color: #fff; border-color: var(--green); }
 .tm-up-list { padding-top: 4px; padding-bottom: 4px; }
+.tm-up-filter { padding-top: 12px; padding-bottom: 12px; }
+.tm-up-filter summary { cursor: pointer; font-weight: 600; }
+.tm-up-teams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+.tm-up-team { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); font: inherit; font-size: .9rem; font-weight: 600; text-align: left; cursor: pointer; }
+.tm-up-team span { min-width: 0; overflow-wrap: anywhere; }
+.tm-up-team small { margin-left: auto; color: var(--muted); font-weight: 700; }
+.tm-up-team.active { background: var(--green); border-color: var(--green); color: #fff; }
+.tm-up-team.active small { color: #fff; }
+.tm-up-team.all { grid-column: 1 / -1; justify-content: center; }
 .tm-up { display: flex; flex-direction: column; gap: 6px; padding: 12px 0; border-bottom: 1px dashed var(--line); }
 .tm-up:last-child { border-bottom: 0; }
 .tm-up-pair { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); gap: 10px; align-items: center; }
