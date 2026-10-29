@@ -2,6 +2,7 @@
 
 const { pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
 let results = [], cup = { rounds: [] };
+let matchStatus = {}; // member server: "L:a-b" → "scheduled" | "waiting" (no dates, venues or scores)
 
 const sign = n => (n > 0 ? "+" + n : String(n));
 let datesOn = LEAGUE.datesConfirmed !== false; // dates hidden until the start date is set (Admin → League results)
@@ -29,9 +30,12 @@ function renderStandings() {
   document.getElementById("standings").innerHTML = html + "</table>";
 }
 
+const statusOf = (a, b) => GPPL.findResult(results, a, b) ? "played" : matchStatus[`L:${Math.min(a, b)}-${Math.max(a, b)}`] || "open";
+const STATUS = { played: "✅ played", waiting: "✅ played<br>⏳ score pending", scheduled: "📅 date set", open: "⚪ no date" };
+
 function matchRow(a, b) {
-  const r = GPPL.findResult(results, a, b);
-  let score = '<span class="muted">vs</span>', wa = "", wb = "";
+  const r = GPPL.findResult(results, a, b), st = statusOf(a, b);
+  let score = `<span class="muted">vs</span><span class="m-status st-${st}">${STATUS[st]}</span>`, wa = "", wb = "";
   if (r) {
     score = GPPL.scoreText(r, a);
     const w = GPPL.evaluate(r).winner; // null when both pairs were at fault
@@ -52,6 +56,25 @@ function teamLogo(id) {
 // matches with a result first, then the open ones (in draw order); dates and venues are private (🎾 My team)
 const playedFirst = games => games.filter(([a, b]) => GPPL.findResult(results, a, b)).concat(games.filter(([a, b]) => !GPPL.findResult(results, a, b)));
 
+// e.g. "✅ 3 played (⏳ 1 score pending) · 📅 2 scheduled · ⚪ 1 open" – zeros left out; a pending score was played too
+function statusLine(games) {
+  const n = { played: 0, waiting: 0, scheduled: 0, open: 0 };
+  games.forEach(([a, b]) => n[statusOf(a, b)]++);
+  const played = n.played + n.waiting, parts = [];
+  if (n.played === games.length) return `<div class="md-status"><span class="st-played">✅ All ${games.length} played</span></div>`;
+  if (played) parts.push(`<span class="st-played">✅ ${played} played${n.waiting ? ` <span class="st-waiting">(⏳ ${n.waiting} score pending)</span>` : ""}</span>`);
+  if (n.scheduled) parts.push(`<span>📅 ${n.scheduled} scheduled</span>`);
+  if (n.open) parts.push(`<span>⚪ ${n.open} open</span>`);
+  return `<div class="md-status">${parts.join("")}</div>`;
+}
+
+// match states from the member server – the schedule renders first and updates when they arrive
+function loadMatchStatus() {
+  const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
+  if (!api) return;
+  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; renderSchedule(); }).catch(() => {});
+}
+
 function renderSchedule() {
   const cur = currentMatchday();
   document.getElementById("schedule-list").innerHTML = fixtures.map((games, i) => {
@@ -63,10 +86,11 @@ function renderSchedule() {
     const cw = ((LEAGUE.cupWindowsByPairs || {})[LEAGUE.pairs.length] || []).find(w => w.from === md);
     const cup = cw ? `<div class="cupwindow">🏆 <b>GPPC Cup – ${cw.round}</b>: ${cw.draw || "draw"} at the start of this matchday or a few days earlier,
       play by the end of matchday ${cw.to}</div>` : "";
-    return `<div class="card md ${md === cur ? "current" : ""}">${cup}
+    const done = games.length && games.every(([a, b]) => GPPL.findResult(results, a, b)); // every result official
+    return `<div class="card md ${md === cur ? "current" : ""} ${done ? "done" : ""}">${cup}
       <div class="md-head"><h3>Matchday ${md}</h3>
-      <span class="note">${datesOn ? `${fmt(from)} – ${fmt(to)}` : "dates follow"}${md === cur ? ' · <span class="pill">Current</span>' : ""}</span></div>
-      ${playedFirst(games).map(([a, b]) => matchRow(a, b)).join("")}${ms}</div>`;
+      <span class="note">${datesOn ? `${fmt(from)} – ${fmt(to)}` : "dates follow"}${md === cur ? ' · <span class="pill">Current</span>' : ""}${done ? ' · <span class="pill pill-done">✅ Complete</span>' : ""}</span></div>
+      ${statusLine(games)}${playedFirst(games).map(([a, b]) => matchRow(a, b)).join("")}${ms}</div>`;
   }).join("");
 }
 
@@ -593,6 +617,7 @@ function renderData() {
   updateMenu();
   renderHome();
   renderSchedule();
+  loadMatchStatus();
   renderStandings();
   renderCup();
   renderVerifySelect();
