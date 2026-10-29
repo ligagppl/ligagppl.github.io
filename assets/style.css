@@ -147,7 +147,7 @@ td.pts { font-weight: 700; }
 @media (prefers-color-scheme: dark) { .m-status.st-waiting, .md-status .st-waiting { color: #ffcf66; } }
 .md-status { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: -2px 0 8px; font-size: .85rem; color: var(--muted); }
 .md-status .st-played { color: var(--win); font-weight: 600; }
-.dot-none { display: inline-block; width: .7em; height: .7em; margin-right: .3em; border-radius: 50%; background: color-mix(in srgb, var(--muted) 55%, transparent); vertical-align: -.05em; }
+.dot-none { display: inline-block; width: .9em; height: .9em; margin-right: .3em; border-radius: 50%; background: #b7c1ba; vertical-align: -.12em; }
 .pill.pill-done { background: color-mix(in srgb, var(--win) 18%, var(--card)); color: var(--win); }
 .current { outline: 2px solid var(--ball); }
 .cupwindow {
