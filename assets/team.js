@@ -306,7 +306,7 @@
     const shown = upTeam === null ? list : list.filter(({ t }) => t.includes(upTeam));
     return `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p>${filter}<div class="card tm-up-list">` + shown.map(({ key, e, t: [a, b] }) => {
       const ours = a === state.team || b === state.team;
-      if (b === state.team) [a, b] = [b, a]; // our own team always on the left
+      if (ours ? b === state.team : e.by === b) [a, b] = [b, a]; // our own team on the left – otherwise the team that entered the date
       return `<div class="tm-up${ours ? " tm-up-ours" : ""}">
         <span class="tm-up-pair">${side(a, "tm-up-a")}<span class="muted">vs</span>${side(b, "tm-up-b")}</span>
         <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""} · ${inDays(e.date)}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>

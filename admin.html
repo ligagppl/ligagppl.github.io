@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=58">
+  <link rel="stylesheet" href="assets/style.css?v=59">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -900,15 +900,17 @@
     }
 
     // all matches with a date and no official result, by date (league and cup together)
+    // the team that entered the date goes on the left
+    const setterLeft = (a, b, e) => e.by === b ? { a: b, b: a } : { a, b };
     function scheduledList() {
       const list = [];
       fixtureList.forEach((games, i) => games.forEach(([a, b]) => {
         const key = lkey(a, b), e = schedule[key];
-        if (e && e.date && !GPPL.findResult(results, a, b)) list.push({ key, a, b, e, label: `Matchday ${i + 1}` });
+        if (e && e.date && !GPPL.findResult(results, a, b)) list.push({ key, ...setterLeft(a, b, e), e, label: `Matchday ${i + 1}` });
       }));
       (cup.rounds || []).forEach((r, ri) => (r.matches || []).forEach((m, mi) => {
         const key = `C:${ri}:${mi}`, e = schedule[key];
-        if (e && e.date && !(m.sets || m.walkover || m.winner)) list.push({ key, a: m.a, b: m.b, e, label: `GPPC Cup · ${r.name}` });
+        if (e && e.date && !(m.sets || m.walkover || m.winner)) list.push({ key, ...setterLeft(m.a, m.b, e), e, label: `GPPC Cup · ${r.name}` });
       }));
       return list.sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
     }

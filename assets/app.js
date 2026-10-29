@@ -31,7 +31,7 @@ function renderStandings() {
 }
 
 const statusOf = (a, b) => GPPL.findResult(results, a, b) ? "played" : matchStatus[`L:${Math.min(a, b)}-${Math.max(a, b)}`] || "open";
-const STATUS = { played: "✅ played", waiting: "✅ played<br>⏳ score pending", scheduled: "📅 date set", open: "⚪ no date" };
+const STATUS = { played: "✅ played", waiting: "✅ played<br>⏳ score pending", scheduled: "📅 date set", open: '<span class="dot-none"></span>no date' };
 
 function matchRow(a, b) {
   const r = GPPL.findResult(results, a, b), st = statusOf(a, b);
@@ -56,7 +56,7 @@ function teamLogo(id) {
 // matches with a result first, then the open ones (in draw order); dates and venues are private (🎾 My team)
 const playedFirst = games => games.filter(([a, b]) => GPPL.findResult(results, a, b)).concat(games.filter(([a, b]) => !GPPL.findResult(results, a, b)));
 
-// e.g. "✅ 3 played (⏳ 1 score pending) · 📅 2 scheduled · ⚪ 1 open" – zeros left out; a pending score was played too
+// e.g. "✅ 3 played (⏳ 1 score pending) · 📅 2 scheduled · ● 1 no date" – zeros left out; a pending score was played too
 function statusLine(games) {
   const n = { played: 0, waiting: 0, scheduled: 0, open: 0 };
   games.forEach(([a, b]) => n[statusOf(a, b)]++);
@@ -64,7 +64,7 @@ function statusLine(games) {
   if (n.played === games.length) return `<div class="md-status"><span class="st-played">✅ All ${games.length} played</span></div>`;
   if (played) parts.push(`<span class="st-played">✅ ${played} played${n.waiting ? ` <span class="st-waiting">(⏳ ${n.waiting} score pending)</span>` : ""}</span>`);
   if (n.scheduled) parts.push(`<span>📅 ${n.scheduled} scheduled</span>`);
-  if (n.open) parts.push(`<span>⚪ ${n.open} open</span>`);
+  if (n.open) parts.push(`<span><span class="dot-none"></span>${n.open} no date</span>`);
   return `<div class="md-status">${parts.join("")}</div>`;
 }
 
