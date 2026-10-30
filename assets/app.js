@@ -239,50 +239,92 @@ function renderProfile() {
       !last.done ? `🏆 Cup: ${last.rd.name}` : last.res === "W" ? `🏆 Cup: through (${last.rd.name})` : `Cup: out in the ${last.rd.name}`;
   }
   // form: the last 5 league results, oldest left → latest right
-  const form = league.slice(-5), formHtml = Array.from({ length: 5 }, (_, i) => {
-    const x = form[i - (5 - form.length)];
-    return x ? `<span class="pf-f pf-${x.res === "W" ? "w" : x.res === "L" ? "l" : "d"}" title="${x.label} vs ${esc(pairName(x.opp))}">${x.res}</span>` : `<span class="pf-f pf-e" aria-hidden="true"></span>`;
-  }).join("");
-  // still to play: league matches without a result and the current cup match – status only (date set / score pending / no date)
-  const ST = { waiting: "✅ played · ⏳ score pending", scheduled: "📅 date set", open: '<span class="dot-none"></span>no date' };
+  const badge = (x, cls = "") => `<span class="pf-f ${cls} pf-${x.res === "W" ? "w" : x.res === "L" ? "l" : "d"}" role="img" aria-label="${x.res === "W" ? "Win" : x.res === "L" ? "Loss" : "Both out"} vs ${esc(pairName(x.opp))}">${x.res}</span>`;
+  const formOf = list => Array.from({ length: 5 }, (_, i) => { const x = list.slice(-5)[i - (5 - Math.min(5, list.length))]; return x ? badge(x) : `<span class="pf-f pf-e" aria-hidden="true"></span>`; }).join("");
+  // still to play: league matches without a result and the current cup match (the status is only used to pick the next match – not shown)
+  const mdWindow = md => (datesOn ? `${fmt(matchdayWindow(md).from)} – ${fmt(matchdayWindow(md).to)}` : "");
   const todo = [];
   fixtures.forEach((g, i) => g.forEach(([a, b]) => {
-    if ((a === id || b === id) && !GPPL.findResult(results, a, b)) todo.push({ opp: a === id ? b : a, label: `Matchday ${i + 1}${datesOn ? ` · ${fmt(matchdayWindow(i + 1).from)} – ${fmt(matchdayWindow(i + 1).to)}` : ""}`, st: matchStatus[`L:${Math.min(a, b)}-${Math.max(a, b)}`] || "open" });
+    if ((a === id || b === id) && !GPPL.findResult(results, a, b)) todo.push({ opp: a === id ? b : a, md: i + 1, stage: [`Matchday ${i + 1}`, mdWindow(i + 1)].filter(Boolean).join(" · "), st: matchStatus[`L:${Math.min(a, b)}-${Math.max(a, b)}`] || "open" });
   }));
-  cupList.filter(x => !x.done).forEach(x => todo.unshift({ cup: true, opp: x.opp, label: `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(x.rd.name)}`, st: matchStatus[`C:${x.ri}:${x.mi}`] || "open" }));
-  // donut
-  const C = 2 * Math.PI * 42, wFrac = st.w + st.l ? st.w / (st.w + st.l) : 0;
-  const donut = `<svg class="pf-donut" viewBox="0 0 100 100" role="img" aria-label="${st.w} won, ${st.l} lost">
-      <circle cx="50" cy="50" r="42" class="pf-d-bg"/>
-      ${st.w + st.l ? `<circle cx="50" cy="50" r="42" class="pf-d-l"/><circle cx="50" cy="50" r="42" class="pf-d-w" stroke-dasharray="${(wFrac * C).toFixed(2)} ${C.toFixed(2)}"/>` : ""}
-      <text x="50" y="49" class="pf-d-pct">${rate === null ? "–" : rate + "%"}</text><text x="50" y="63" class="pf-d-sub">win rate</text></svg>`;
-  const scopeBtn = (v, t) => `<button type="button" data-pf-scope="${v}" class="${profileScope === v ? "active" : ""}">${t}</button>`;
+  cupList.filter(x => !x.done).forEach(x => todo.unshift({ cup: true, opp: x.opp, round: x.rd.name, stage: `GPPC Cup · ${esc(x.rd.name)}`, st: matchStatus[`C:${x.ri}:${x.mi}`] || "open" }));
+  // next opponent: the open cup match first (it has the shortest window), then a league match with a date set, then the next matchday – no dates shown
+  const next = todo.find(t => t.cup && t.st !== "waiting") || todo.find(t => t.st === "scheduled") || todo.find(t => t.st === "open") || null;
+  // streak: league results in order (cup: by round)
+  const seq = profileScope === "cup" ? cupList.filter(x => x.done) : league, lastRes = seq.length ? seq[seq.length - 1].res : null;
+  let streakN = 0;
+  for (let i = seq.length - 1; i >= 0 && seq[i].res === lastRes && lastRes !== "-"; i--) streakN++;
+  const streak = streakN ? `${lastRes}${streakN}` : "–";
+  const streakNote = !streakN ? "No result yet" : `${lastRes === "W" ? "Won" : "Lost"} the last ${streakN === 1 ? "match" : streakN + " matches"}${profileScope === "cup" ? " in the cup" : " in the league"}`;
+  // donut with a small gap between the two parts
+  const R = 42, C = 2 * Math.PI * R, tot = st.w + st.l, gap = st.w && st.l ? 1.6 : 0;
+  const arc = (len, off, cls) => len > 0 ? `<circle cx="50" cy="50" r="${R}" class="${cls}" stroke-dasharray="${Math.max(0, len - gap).toFixed(2)} ${C.toFixed(2)}" stroke-dashoffset="${(-off - gap / 2).toFixed(2)}"/>` : "";
+  const donut = `<svg class="pf-donut" viewBox="0 0 100 100" role="img" aria-label="${st.w} wins and ${st.l} losses${rate !== null ? `, ${rate} percent win rate` : ""}">
+      <circle cx="50" cy="50" r="${R}" class="pf-d-bg"/>${tot ? arc(st.w / tot * C, 0, "pf-d-w") + arc(st.l / tot * C, st.w / tot * C, "pf-d-l") : ""}
+      <text x="50" y="52" class="pf-d-pct">${rate === null ? "–" : rate + "%"}</text><text x="50" y="65" class="pf-d-sub">win rate</text></svg>`;
+  const scopeBtn = (v, t) => `<button type="button" data-pf-scope="${v}" aria-pressed="${profileScope === v}" class="${profileScope === v ? "active" : ""}">${t}</button>`;
+  const scopeLabel = { all: "League + cup", league: "League only", cup: "Cup only" }[profileScope];
   const anim = (() => { const l = (LEAGUE.logos || {})[p.name]; return l && typeof l === "object" && l.anim && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ? l.anim : null; })();
   const big = anim ? `<img class="pf-logo" src="${esc(anim)}" alt="">` : teamLogo(id).replace('class="mlogo', 'class="pf-logo mlogo');
+  // players under the team name: initials + name – the name links to its Playtomic profile when there is one
+  const initials = n => n.split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+  const players = p.players.map((n, i) => !n ? "" : `<span class="pf-pl"><span class="pf-ini" aria-hidden="true">${esc(initials(n))}</span>${p.links && p.links[i] && /^https:\/\/app\.playtomic\.com\//.test(p.links[i]) ? `<a href="${esc(p.links[i])}" target="_blank" rel="noopener" title="Playtomic profile">${esc(n)}</a>` : `<span>${esc(n)}</span>`}</span>`).join("");
   const resultRow = x => {
-    const score = x.r.walkover ? (x.r.walkover === "both" ? "W/O (both out)" : "W/O") : GPPL.scoreText(x.r, id, tieBreak(x));
-    return `<div class="pf-res${x.comp === "cup" ? " pf-cup" : ""}"><span class="pf-f pf-${x.res === "W" ? "w" : x.res === "L" ? "l" : "d"}">${x.res}</span>
-      <span class="pf-res-main">${teamLogo(x.opp)}<span><span><span class="muted">vs</span> ${link(x.opp)}</span><span class="note">${x.comp === "cup" ? `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(x.rd.name)}` : x.label}</span></span></span><b class="pf-score">${score}</b></div>`;
+    const wo = x.r.walkover, sets = x.r.sets || [];
+    let sw = 0, sl = 0;
+    sets.forEach(([a, b]) => { const [m, t] = x.r.a === id ? [a, b] : [b, a]; m > t ? sw++ : sl++; });
+    const big = wo ? "W/O" : `${sw}-${sl}`, small = wo ? (wo === "both" ? "both out" : "walkover") : GPPL.scoreText(x.r, id, tieBreak(x)).split(" ").join(", ");
+    return `<div class="pf-row${x.comp === "cup" ? " pf-cup" : ""}">${badge(x, "pf-f-md")}
+      ${teamLogo(x.opp)}<div class="pf-row-main"><b>vs ${link(x.opp)}</b><span class="note">${x.comp === "cup" ? `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(x.rd.name)}` : x.label}</span></div>
+      <div class="pf-row-end"><b class="pf-big">${big}</b><span class="note">${small}</span></div></div>`;
   };
-  el.innerHTML = `<p class="note"><a href="#table">← League table</a></p>
-    <div class="card pf-head">${big}
-      <div class="pf-id"><h2>${esc(p.name)}</h2><span class="pf-players">${p.players.filter(Boolean).map(esc).join(" · ")}</span>
-        <div class="pf-chips"><span class="pf-chip">#${rank} in the league · ${row.pts} pts</span>${cupState ? `<span class="pf-chip">${cupState}</span>` : ""}</div>
-        <div class="pf-form"><span class="note">Form</span>${formHtml}<span class="note">latest →</span></div></div></div>
-    <div class="tm-seg pf-scope" role="group" aria-label="Matches">${scopeBtn("all", "All")}${scopeBtn("league", "League")}${scopeBtn("cup", "🏆 Cup")}</div>
+  const todoRow = t => `<div class="pf-row${t.cup ? " pf-cup" : ""}">
+      <div class="pf-md" aria-hidden="true">${t.cup ? `<span>🏆</span><b>Cup</b>` : `<span>MD</span><b>${t.md}</b>`}</div>
+      ${teamLogo(t.opp)}<div class="pf-row-main"><span class="pf-row-title"><b>vs ${link(t.opp)}</b>${t === next ? `<span class="pf-next">Next match</span>` : ""}</span><span class="note">${t.cup ? `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(t.round)}` : t.stage}</span></div>
+</div>`;
+  // the next opponent's card: their league position and form – the date stays private
+  let nextCard = "";
+  if (next) {
+    const o = next.opp, oRank = rows.findIndex(r => r.id === o) + 1, oRow = rows[oRank - 1];
+    const oForm = results.filter(r => r.a === o || r.b === o).map(r => { const e = GPPL.evaluate(r); return { opp: vs(r, o), res: e.both ? "-" : e.winner === o ? "W" : "L" }; });
+    nextCard = `<div class="card pf-side"><h3 class="pf-h">Next opponent</h3>
+      <span class="note">${next.cup ? `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(next.round)}` : next.stage}</span>
+      <a class="pf-opp team-link" href="#profile-${o}">${teamLogo(o)}<span>${pairName(o)}</span></a>
+      <div class="pf-kv"><span>League position</span><b>#${oRank} · ${oRow.pts} pts</b></div>
+      <div class="pf-kv"><span>Their record</span><b>${oRow.w} won, ${oRow.l} lost</b></div>
+      <div class="pf-kv pf-kv-form"><span>Their form</span><span class="pf-form pf-form-sm">${formOf(oForm)}</span></div></div>`;
+  }
+  const allResults = [...cupList.filter(x => x.done)].reverse().concat([...league].reverse());
+  el.innerHTML = `<div class="pf-band">
+      <div class="pf-crumb"><a href="#participants">Teams</a> / ${esc(p.name)}</div>
+      <div class="pf-band-row">
+        <div class="pf-id">${big}<div>
+          <div class="pf-chips"><span class="pf-chip">#${rank} in the league · ${row.pts} pts</span>${cupState ? `<span class="pf-chip">${cupState}</span>` : ""}<span class="pf-chip">Seed #${id}</span></div>
+          <h2 class="pf-name">${esc(p.name)}</h2>
+          <div class="pf-players">${players}</div></div></div>
+        <div class="pf-formbox"><span class="pf-formtitle">Form, last 5 league matches</span><div class="pf-form">${formOf(league)}</div><div class="pf-formfoot"><span>Oldest</span><span>Latest</span></div></div>
+      </div></div>
     <div class="pf-kpis">
-      <div class="card pf-kpi"><span class="note">Played</span><b>${st.p}</b></div>
-      <div class="card pf-kpi"><span class="note">Won – Lost</span><b><span class="pf-wc">${st.w}</span> – <span class="pf-lc">${st.l}</span></b></div>
-      <div class="card pf-kpi"><span class="note">Sets</span><b>${st.sf} – ${st.sa}</b></div>
-      <div class="card pf-kpi"><span class="note">Games</span><b>${st.gf} – ${st.ga}</b></div>
+      <div class="card pf-kpi"><span>Matches played</span><b>${st.p}</b><small>${scopeLabel}</small></div>
+      <div class="card pf-kpi"><span>Win rate</span><b>${rate === null ? "–" : rate + "%"}</b><small>${st.w} win${st.w === 1 ? "" : "s"}, ${st.l} loss${st.l === 1 ? "" : "es"}</small></div>
+      <div class="card pf-kpi"><span>Sets won – lost</span><b>${st.sf} – ${st.sa}</b><small>${st.sf + st.sa ? Math.round(100 * st.sf / (st.sf + st.sa)) + "% of sets won" : "no sets yet"}</small></div>
+      <div class="card pf-kpi"><span>Current streak</span><b>${streak}</b><small>${streakNote}</small></div>
     </div>
     <div class="pf-cols">
-      <div class="card pf-chart">${donut}<div class="pf-legend"><span><i class="pf-sw w"></i>Won <b>${st.w}</b>${rate !== null ? ` (${rate}%)` : ""}</span><span><i class="pf-sw l"></i>Lost <b>${st.l}</b>${rate !== null ? ` (${100 - rate}%)` : ""}</span></div></div>
-      <div class="card"><h3 class="pf-h">Results</h3>${[...cupList.filter(x => x.done)].reverse().concat([...league].reverse()).map(resultRow).join("") || '<p class="muted">No results yet.</p>'}</div>
-    </div>
-    <div class="card"><h3 class="pf-h">Still to play <span class="note">· ${todo.length}</span></h3>
-      <p class="note">Dates and venues are only visible to the teams (🎾 My team).</p>
-      ${todo.map(t => `<div class="pf-todo${t.cup ? " pf-cup" : ""}">${teamLogo(t.opp)}<span><span class="muted">vs</span> ${link(t.opp)}<span class="note">${t.label}</span></span><span class="m-status st-${t.st}">${ST[t.st]}</span></div>`).join("") || '<p class="muted">Every match played. 🎉</p>'}</div>`;
+      <div class="pf-main">
+        <div class="card pf-list"><div class="pf-list-head"><h3 class="pf-h">Still to play</h3><span class="note">${todo.length} match${todo.length === 1 ? "" : "es"} · dates and venues only in 🎾 My team</span></div>
+          ${todo.map(todoRow).join("") || '<p class="muted">Every match played. 🎉</p>'}</div>
+        <div class="card pf-list"><div class="pf-list-head"><h3 class="pf-h">Results</h3><span class="note">Latest first</span></div>
+          ${allResults.map(resultRow).join("") || '<p class="muted">No results yet.</p>'}</div>
+      </div>
+      <aside class="pf-aside">
+        <div class="card pf-side"><h3 class="pf-h">Wins vs losses</h3>
+          <div class="pf-scope" role="group" aria-label="Matches">${scopeBtn("all", "All")}${scopeBtn("league", "League")}${scopeBtn("cup", "🏆 Cup")}</div>
+          ${donut}
+          <div class="pf-legend"><div><i class="pf-sw w"></i>Wins<b>${st.w}${rate !== null ? ` · ${rate}%` : ""}</b></div><div><i class="pf-sw l"></i>Losses<b>${st.l}${rate !== null ? ` · ${100 - rate}%` : ""}</b></div></div></div>
+        ${nextCard}
+      </aside>
+    </div>`;
 }
 document.getElementById("profile-body").addEventListener("click", e => {
   const b = e.target.closest("[data-pf-scope]");
