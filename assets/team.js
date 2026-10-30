@@ -285,12 +285,12 @@
 
   // every league and cup match with a date that hasn't been played yet – soonest first, our own matches highlighted
   // every unplayed match with a date (any team), soonest first
+  const keyTeams = key => {
+    if (key.startsWith("C:")) { const [, ri, mi] = key.split(":"); const m = (((state.cup.rounds || [])[ri] || {}).matches || [])[mi] || {}; return [m.a, m.b]; }
+    return key.slice(2).split("-").map(Number);
+  };
   function upcomingList() {
-    const teams = key => {
-      if (key.startsWith("C:")) { const [, ri, mi] = key.split(":"); const m = (((state.cup.rounds || [])[ri] || {}).matches || [])[mi] || {}; return [m.a, m.b]; }
-      return key.slice(2).split("-").map(Number);
-    };
-    return Object.entries(state.upcoming || {}).map(([key, e]) => ({ key, e, t: teams(key) }))
+    return Object.entries(state.upcoming || {}).map(([key, e]) => ({ key, e, t: keyTeams(key) }))
       .filter(x => x.e.date && x.t[0] && x.t[1] && (matchEnd(x.e) || Date.parse(x.e.date + "T23:59:00")) > Date.now())
       .sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
   }
@@ -308,9 +308,16 @@
     // filter by team: only teams with an upcoming match, A–Z (no ranking, no zeros)
     const per = new Map();
     list.forEach(({ t }) => t.forEach(id => per.set(id, (per.get(id) || 0) + 1)));
+    // played: confirmed results, results waiting for confirmation, and matches that are over but have no score yet
+    const played = new Map(), addPlayed = ids => ids.forEach(id => id && played.set(id, (played.get(id) || 0) + 1));
+    (state.results || []).forEach(r => addPlayed([r.a, r.b]));
+    (state.cup.rounds || []).forEach(r => (r.matches || []).forEach(m => { if (m.sets || m.walkover || m.winner) addPlayed([m.a, m.b]); }));
+    const waiting = typeof matchStatus === "object" ? matchStatus : {}; // public status from app.js – no dates or scores
+    Object.keys(waiting).forEach(key => waiting[key] === "waiting" && addPlayed(keyTeams(key)));
+    Object.entries(state.upcoming || {}).forEach(([key, e]) => e.date && (matchEnd(e) || Date.parse(e.date + "T23:59:00")) <= Date.now() && addPlayed(keyTeams(key)));
     if (upTeam !== null && !per.has(upTeam)) upTeam = null;
-    const chip = (id, text, n) => `<button type="button" class="tm-up-team${id === null ? " all" : ""}${upTeam === id ? " active" : ""}" data-act="up-team" data-team="${id === null ? "" : id}">${id === null ? "" : logo(id, "tm-logo-sm")}<span>${text}</span>${n ? `<small>${n}</small>` : ""}</button>`;
-    const filter = `<details class="card tm-up-filter"${upPaneOpen ? " open" : ""}><summary>🔎 Filter by team${upTeam !== null ? `: <b>${esc(teamName(upTeam))}</b>` : ""}</summary><div class="tm-up-teams">` +
+    const chip = (id, text, n) => `<button type="button" class="tm-up-team${id === null ? " all" : ""}${upTeam === id ? " active" : ""}" data-act="up-team" data-team="${id === null ? "" : id}">${id === null ? "" : logo(id, "tm-logo-sm")}<span>${text}</span>${n ? `<small>${n} (${n + (played.get(id) || 0)})</small>` : ""}</button>`;
+    const filter = `<details class="card tm-up-filter"${upPaneOpen ? " open" : ""}><summary>🔎 Filter by team${upTeam !== null ? `: <b>${esc(teamName(upTeam))}</b>` : ""}</summary><p class="note">Number of upcoming matches – in brackets: upcoming + played.</p><div class="tm-up-teams">` +
       chip(null, "All teams") + [...per].sort((x, y) => teamName(x[0]).localeCompare(teamName(y[0]))).map(([id, n]) => chip(id, esc(teamName(id)), n)).join("") + `</div></details>`;
     const shown = upTeam === null ? list : list.filter(({ t }) => t.includes(upTeam));
     return `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p>${filter}<div class="card tm-up-list">` + shown.map(({ key, e, t: [a, b] }) => {
