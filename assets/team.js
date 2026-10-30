@@ -199,9 +199,9 @@
     }
     const matches = myMatches();
     const todo = matches.filter(m => status(m).cls === "action");
-    el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team">${esc(pair.name)}</b>
+    el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team"><a class="team-link" href="${profileOf(state.team)}">${esc(pair.name)}</a></b>
         <span class="muted">${players(state.team)}</span></div></div>
-        <div class="tm-me-btns"><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
+        <div class="tm-me-btns"><a class="btn ghost small" href="${profileOf(state.team)}">👁 Public profile</a><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
       <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Upcoming matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button></div>
       ${view === "upcoming" ? upcomingHtml() : view === "gallery" ? galleryHtml() : view === "courts" ? courtsHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
@@ -285,6 +285,8 @@
 
   // every league and cup match with a date that hasn't been played yet – soonest first, our own matches highlighted
   // every unplayed match with a date (any team), soonest first
+  // a team's public profile (#teams/<team-name>, from app.js)
+  const profileOf = id => (typeof profileHref === "function" ? profileHref(id) : "#table");
   const keyTeams = key => {
     if (key.startsWith("C:")) { const [, ri, mi] = key.split(":"); const m = (((state.cup.rounds || [])[ri] || {}).matches || [])[mi] || {}; return [m.a, m.b]; }
     return key.slice(2).split("-").map(Number);
@@ -304,7 +306,7 @@
     };
     const list = upcomingList();
     if (!list.length) return `<div class="card muted">No upcoming match has a date yet.</div>`;
-    const side = (id, cls) => `<span class="${cls}">${logo(id, "tm-logo-sm")}<b>${esc(teamName(id))}</b></span>`;
+    const side = (id, cls) => `<span class="${cls}">${logo(id, "tm-logo-sm")}<b><a class="team-link" href="${profileOf(id)}">${esc(teamName(id))}</a></b></span>`;
     // filter by team: only teams with an upcoming match, A–Z (no ranking, no zeros)
     const per = new Map();
     list.forEach(({ t }) => t.forEach(id => per.set(id, (per.get(id) || 0) + 1)));
