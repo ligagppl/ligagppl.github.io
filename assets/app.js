@@ -23,7 +23,7 @@ function renderStandings() {
   let html = `<table><tr><th>#</th><th class="left">Pair</th><th>P</th><th>W</th><th>L</th><th>Sets</th><th>Games</th><th>Pts</th></tr>`;
   rows.forEach((r, i) => {
     html += `<tr class="${i < 2 ? "top" : ""}"><td>${results.length && i < 3 ? `<span class="medal-rank">${["🥇", "🥈", "🥉"][i]}</span>` : i + 1}</td>
-      <td class="left"><a class="tbl-team team-link" href="#profile-${r.id}">${teamLogo(r.id)}<b>${pairName(r.id)}</b></a></td>
+      <td class="left"><a class="tbl-team team-link" href="${profileHref(r.id)}">${teamLogo(r.id)}<b>${pairName(r.id)}</b></a></td>
       <td>${r.p}</td><td>${r.w}</td><td>${r.l}</td>
       <td>${sign(r.sf - r.sa)}</td><td>${sign(r.gf - r.ga)}</td><td class="pts">${r.pts}</td></tr>`;
   });
@@ -42,8 +42,8 @@ function matchRow(a, b) {
     if (w === a) wa = "w"; else if (w === b) wb = "w";
   }
   const cup = '<span class="win-mark" title="Winner">🏆</span>'; // small trophy next to the winner, on the score side
-  return `<div class="match"><span class="a ${wa}">${teamLogo(a)}<a class="tn team-link" href="#profile-${a}">${pairName(a)}</a>${wa ? cup : ""}</span>
-    <span class="score">${score}</span><span class="b ${wb}">${wb ? cup : ""}<a class="tn team-link" href="#profile-${b}">${pairName(b)}</a>${teamLogo(b)}</span></div>`;
+  return `<div class="match"><span class="a ${wa}">${teamLogo(a)}<a class="tn team-link" href="${profileHref(a)}">${pairName(a)}</a>${wa ? cup : ""}</span>
+    <span class="score">${score}</span><span class="b ${wb}">${wb ? cup : ""}<a class="tn team-link" href="${profileHref(b)}">${pairName(b)}</a>${teamLogo(b)}</span></div>`;
 }
 
 // small still logo next to a team name (a ball for teams without one yet)
@@ -166,7 +166,7 @@ function renderCup() {
   const board = (m, r, ri, mi) => {
     const w = GPPL.cupWinner(m), full = GPPL.cupFullSets(r);
     const sets = m.sets || [], cols = Math.max(sets.length, 2);
-    const row = (id, side) => `<span class="cb-team ${w === id ? "w" : ""}">${teamLogo(id)}<a class="team-link" href="#profile-${id}">${pairName(id)}</a>${w === id ? " 🏆" : ""}</span>` +
+    const row = (id, side) => `<span class="cb-team ${w === id ? "w" : ""}">${teamLogo(id)}<a class="team-link" href="${profileHref(id)}">${pairName(id)}</a>${w === id ? " 🏆" : ""}</span>` +
       Array.from({ length: cols }, (_, i) => `<span class="cb-g ${sets[i] && sets[i][side] > sets[i][1 - side] ? "win" : ""}">${sets[i] ? sets[i][side] : ""}</span>`).join("");
     const foot = m.walkover === "both" ? "Walkover – both pairs out"
       : m.walkover ? `Walkover – ${pairName(m.walkover)} goes through`
@@ -190,14 +190,16 @@ function renderCup() {
   }).join("");
 }
 
-// ---------- team profile (#profile-<id>) ----------
+// ---------- team profile (#teams/<team-name>, e.g. #teams/sting-smashers) ----------
+const teamSlug = id => pairName(id).toLowerCase().replace(/&/g, " and ").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || String(id);
+const profileHref = id => "#teams/" + teamSlug(id);
 // public data only: confirmed results, the league table, the cup and the match states ("date set" etc.) – never dates or venues
 let profileId = null, profileScope = "all";
 function renderProfile() {
   const el = document.getElementById("profile-body"), id = profileId, p = GPPL.pairById[id];
   if (!el || !p) return;
   const vs = (r, me) => (r.a === me ? r.b : r.a);
-  const link = o => `<a class="team-link" href="#profile-${o}">${pairName(o)}</a>`;
+  const link = o => `<a class="team-link" href="${profileHref(o)}">${pairName(o)}</a>`;
   const mdOf = (a, b) => fixtures.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) + 1;
   // every official match of this team: league (in the order the results were confirmed) and cup
   const league = results.filter(r => r.a === id || r.b === id).map(r => {
@@ -289,7 +291,7 @@ function renderProfile() {
     const oForm = results.filter(r => r.a === o || r.b === o).map(r => { const e = GPPL.evaluate(r); return { opp: vs(r, o), res: e.both ? "-" : e.winner === o ? "W" : "L" }; });
     nextCard = `<div class="card pf-side"><h3 class="pf-h">Next opponent</h3>
       <span class="note">${next.cup ? `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(next.round)}` : next.stage}</span>
-      <a class="pf-opp team-link" href="#profile-${o}">${teamLogo(o)}<span>${pairName(o)}</span></a>
+      <a class="pf-opp team-link" href="${profileHref(o)}">${teamLogo(o)}<span>${pairName(o)}</span></a>
       <div class="pf-kv"><span>League position</span><b>#${oRank} · ${oRow.pts} pts</b></div>
       <div class="pf-kv"><span>Their record</span><b>${oRow.w} won, ${oRow.l} lost</b></div>
       <div class="pf-kv pf-kv-form"><span>Their form</span><span class="pf-form pf-form-sm">${formOf(oForm)}</span></div></div>`;
@@ -489,7 +491,7 @@ function renderParticipants() {
   body.addEventListener("mouseout", e => { const c = e.target.closest(".part-card.has-anim"); if (c && !c.contains(e.relatedTarget)) set(c, false); });
   body.addEventListener("click", e => {
     const card = e.target.closest(".part-card[data-profile]");
-    if (card && !e.target.closest("a")) { location.hash = "#profile-" + card.dataset.profile; return; } // the whole card opens the profile (player links still go to Playtomic)
+    if (card && !e.target.closest("a")) { location.hash = profileHref(+card.dataset.profile); return; } // the whole card opens the profile (player links still go to Playtomic)
     const c = e.target.closest(".part-card.has-anim");
     if (!c) return;
     const on = !c.classList.contains("playing");
@@ -498,7 +500,7 @@ function renderParticipants() {
   });
   body.addEventListener("keydown", e => {
     const card = e.target.closest(".part-card[data-profile]");
-    if (card && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); location.hash = "#profile-" + card.dataset.profile; }
+    if (card && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); location.hash = profileHref(+card.dataset.profile); }
   });
   body.addEventListener("change", e => {
     if (e.target.id !== "anim-toggle") return;
@@ -683,8 +685,11 @@ setTimeout(() => document.documentElement.classList.add("tabs-ready"), 3000); //
 
 function showTab() {
   let id = (location.hash || "#" + (visibleTabs ? visibleTabs[0] : "home")).slice(1);
-  const prof = /^profile-(\d+)$/.exec(id); // a team's public profile
-  if (prof) { profileId = +prof[1]; id = "profile"; }
+  // a team's public profile: #teams/<team-name> (old links #profile-<id> still work)
+  const old = /^profile-(\d+)$/.exec(id), slug = /^teams\/(.+)$/.exec(id);
+  const prof = old ? GPPL.pairById[+old[1]] : slug ? LEAGUE.pairs.find(p => teamSlug(p.id) === decodeURIComponent(slug[1])) : null;
+  if (old || slug) { profileId = prof ? prof.id : null; id = "profile"; }
+  if (old && prof) history.replaceState(null, "", profileHref(prof.id));
   if ((prof ? !GPPL.pairById[profileId] : !tabAllowed(id)) || !document.getElementById(id) || (id === "register" && registrationOver())) {
     id = visibleTabs ? visibleTabs[0] : "home";
     history.replaceState(null, "", "#" + id);
