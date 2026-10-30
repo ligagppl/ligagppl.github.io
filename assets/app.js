@@ -296,7 +296,7 @@ function renderProfile() {
     nextCard = `<div class="card pf-side"><h3 class="pf-h">Next opponent</h3>
       <span class="note">${next.cup ? `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(next.round)}` : next.stage}</span>
       <a class="pf-opp team-link" href="${profileHref(o)}">${teamLogo(o)}<span>${pairName(o)}</span></a>
-      <div class="pf-kv"><span>League position</span><b>#${oRank} · ${oRow.pts} pts</b></div>
+      ${oRow.p ? `<div class="pf-kv"><span>League position</span><b>${medal(oRow, oRank - 1) ? medal(oRow, oRank - 1) + " " : ""}#${oRank} · ${oRow.pts} pts</b></div>` : `<div class="pf-kv"><span>Seed</span><b>#${o}</b></div>`}
       <div class="pf-kv"><span>Their record</span><b>${oRow.w} won, ${oRow.l} lost</b></div>
       <div class="pf-kv pf-kv-form"><span>Their form</span><span class="pf-form pf-form-sm">${formOf(oForm)}</span></div></div>`;
   }
@@ -305,7 +305,7 @@ function renderProfile() {
       <div class="pf-crumb"><a href="#participants">Teams</a> / ${esc(p.name)}</div>
       <div class="pf-band-row">
         <div class="pf-id">${big}<div>
-          <div class="pf-chips"><span class="pf-chip">${medal(row, rank - 1) ? medal(row, rank - 1) + " " : ""}#${rank} in the league · ${row.pts} pts</span>${cupState ? `<span class="pf-chip">${cupState}</span>` : ""}${row.p ? "" : `<span class="pf-chip">Seed #${id}</span>`}</div>
+          <div class="pf-chips">${row.p ? `<span class="pf-chip">${medal(row, rank - 1) ? medal(row, rank - 1) + " " : ""}#${rank} in the league · ${row.pts} pts</span>` : ""}${cupState ? `<span class="pf-chip">${cupState}</span>` : ""}${row.p ? "" : `<span class="pf-chip">Seed #${id}</span>`}</div>
           <h2 class="pf-name">${esc(p.name)}</h2>
           <div class="pf-players">${players}</div></div></div>
         <div class="pf-formbox"><span class="pf-formtitle">Form, last 5 league matches</span><div class="pf-form">${formOf(league)}</div><div class="pf-formfoot"><span>Oldest</span><span>Latest</span></div></div>
