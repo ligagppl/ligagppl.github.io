@@ -91,6 +91,7 @@
   const H48 = 48 * 3600000;
   const matchStart = e => (e && e.date && e.time ? new Date(`${e.date}T${e.time}:00`).getTime() : null);
   const matchEnd = e => (e && e.date && e.time ? new Date(`${e.date}T${e.time}:00`).getTime() + (+e.duration || 90) * 60000 : null);
+  const liveNow = e => !!(e && e.time) && new Date(`${e.date}T${e.time}:00`).getTime() <= Date.now() && Date.now() < matchEnd(e);
   const two = n => String(n).padStart(2, "0");
   const leftText = ms => { const h = Math.floor(ms / 3600000), m = Math.floor(ms / 60000) % 60, sec = Math.floor(ms / 1000) % 60; return h >= 24 ? `${Math.floor(h / 24)}d ${h % 24}h ${two(m)}m` : `${h}h ${two(m)}m ${two(sec)}s`; };
   // a line with the time left, kept live by the timer below (data-due = deadline, data-what = text before the time)
@@ -105,6 +106,14 @@
     const t = dueText(+x.dataset.due, x.dataset.what, x.dataset.over);
     if (x.innerHTML !== t) x.innerHTML = t; // only the countdown lines, and only when the text changes
   }), 1000);
+  // Upcoming matches: redraw when a match starts (🔴 live) or ends (drops off the list) – no reload needed
+  let upPhase = "";
+  setInterval(() => {
+    if (!state || view !== "upcoming") return;
+    const sig = upcomingList().map(x => x.key + (liveNow(x.e) ? "*" : "")).join();
+    if (upPhase && sig !== upPhase) render();
+    upPhase = sig;
+  }, 15000);
   // sets as seen by my team: [my games, their games]
   const mine = (sets, a) => (state.team === a ? sets : sets.map(([x, y]) => [y, x]));
   const scoreText = (sets, fullSets) => sets.map(([x, y], i) => (i === 2 && !fullSets ? `[${x}-${y}]` : `${x}-${y}`)).join(" ");
@@ -307,16 +316,17 @@
     return `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p>${filter}<div class="card tm-up-list">` + shown.map(({ key, e, t: [a, b] }) => {
       const ours = a === state.team || b === state.team;
       if (ours ? b === state.team : e.by === b) [a, b] = [b, a]; // our own team on the left – otherwise the team that entered the date
-      return `<div class="tm-up${ours ? " tm-up-ours" : ""}">
+      const live = liveNow(e);
+      return `<div class="tm-up${ours ? " tm-up-ours" : ""}${live ? " tm-up-live" : ""}">
         <span class="tm-up-pair">${side(a, "tm-up-a")}<span class="muted">vs</span>${side(b, "tm-up-b")}</span>
-        <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""} · ${inDays(e.date)}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>
+        <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""} · ${live ? `<span class="tm-up-livechip">🔴 Playing now</span>` : inDays(e.date)}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>
         <span class="tm-up-label">${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span>
         ${predictHtml(key, a, b, e)}</div>`;
     }).join("") + `</div>`;
   }
 
   // ---- predictions: every team can pick a winner (and a set score) until 12 hours before the start
-  const PREDICT_CLOSE_MS = 12 * 3600000, PREDICT_OPEN_UNTIL = Date.parse("2026-10-30T20:00:00+01:00"); // at launch: open up to the start
+  const PREDICT_CLOSE_MS = 12 * 3600000, PREDICT_OPEN_UNTIL = Date.parse("2026-11-02T08:00:00+01:00"); // at launch: open up to the start
   const predictLaunch = () => Date.now() < PREDICT_OPEN_UNTIL;
   const predictClosed = e => !e.time || new Date(`${e.date}T${e.time}:00`).getTime() - (predictLaunch() ? 0 : PREDICT_CLOSE_MS) <= Date.now();
   const pickText = p => `${esc(teamName(p.w))}${p.s ? ` ${p.s.replace("-", "–")}` : ""}`;

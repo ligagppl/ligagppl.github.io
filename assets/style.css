@@ -588,6 +588,9 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tm-up-when { font-size: .92rem; color: var(--muted); }
 .tm-up-label { color: var(--muted); }
 .tm-up-ours { margin: 0 -12px; padding: 12px; border-radius: 12px; border-bottom-color: transparent; background: color-mix(in srgb, var(--ball) 18%, var(--card)); box-shadow: inset 4px 0 0 var(--ball); }
+.tm-up-livechip { display: inline-block; font-size: .78rem; font-weight: 700; padding: 1px 9px; border-radius: 999px; background: #d93025; color: #fff; animation: tm-live 1.6s ease-in-out infinite; }
+@keyframes tm-live { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .tm-up-livechip { animation: none; } }
 .tm-up-chip { font-size: .78rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--ball); color: #14201a; margin-left: 6px; }
 
 /* Rules: what changed in the latest version */
