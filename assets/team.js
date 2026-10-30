@@ -325,7 +325,7 @@
     const pa = p.total ? Math.round(100 * (p.n[a] || 0) / p.total) : 50, pb = 100 - pa;
     const stats = p.total
       ? `<div class="tm-pr-bar" aria-hidden="true"><span style="width:${pa}%"></span><span></span></div>
-         <div class="tm-pr-nums"><b>${pa}%</b><span class="muted">${p.total} prediction${p.total === 1 ? "" : "s"}${p.top ? ` · most picked: ${pickText(p.top)}` : ""}</span><b>${pb}%</b></div>`
+         <div class="tm-pr-nums"><b>${pa}% <small>(${p.n[a] || 0})</small></b><span class="muted">${p.total} prediction${p.total === 1 ? "" : "s"}${p.top ? ` · most picked: ${pickText(p.top)}` : ""}</span><b><small>(${p.total - (p.n[a] || 0)})</small> ${pb}%</b></div>`
       : `<div class="tm-pr-nums"><span class="muted">No predictions yet${closed ? "" : " – be the first!"}</span></div>`;
     const btn = closed
       ? `<span class="note">🔒 Predictions closed${p.mine ? ` · your pick: ${pickText(p.mine)}` : ""}</span>`

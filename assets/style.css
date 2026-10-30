@@ -604,6 +604,8 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tm-pr-bar span[style*="width:0%"], .tm-pr-bar span[style*="width:100%"] + span { display: none; }
 .tm-pr-nums { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: .85rem; }
 .tm-pr-nums b:first-child { color: var(--win); }
+.tm-pr-nums b small { font-weight: 600; opacity: .8; white-space: nowrap; }
+.tm-pr-nums b { white-space: nowrap; }
 .tm-pr-nums b:last-child { color: #c46f0d; }
 @media (prefers-color-scheme: dark) { .tm-pr-nums b:last-child { color: #f2a654; } }
 .tm-pr-nums .muted { text-align: center; flex: 1; min-width: 0; }
