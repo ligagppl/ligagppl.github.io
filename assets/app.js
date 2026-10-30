@@ -23,7 +23,7 @@ function renderStandings() {
   let html = `<table><tr><th>#</th><th class="left">Pair</th><th>P</th><th>W</th><th>L</th><th>Sets</th><th>Games</th><th>Pts</th></tr>`;
   rows.forEach((r, i) => {
     html += `<tr class="${i < 2 ? "top" : ""}"><td>${results.length && i < 3 ? `<span class="medal-rank">${["🥇", "🥈", "🥉"][i]}</span>` : i + 1}</td>
-      <td class="left"><span class="tbl-team">${teamLogo(r.id)}<b>${pairName(r.id)}</b></span></td>
+      <td class="left"><a class="tbl-team team-link" href="#profile-${r.id}">${teamLogo(r.id)}<b>${pairName(r.id)}</b></a></td>
       <td>${r.p}</td><td>${r.w}</td><td>${r.l}</td>
       <td>${sign(r.sf - r.sa)}</td><td>${sign(r.gf - r.ga)}</td><td class="pts">${r.pts}</td></tr>`;
   });
@@ -42,8 +42,8 @@ function matchRow(a, b) {
     if (w === a) wa = "w"; else if (w === b) wb = "w";
   }
   const cup = '<span class="win-mark" title="Winner">🏆</span>'; // small trophy next to the winner, on the score side
-  return `<div class="match"><span class="a ${wa}">${teamLogo(a)}<span class="tn">${pairName(a)}</span>${wa ? cup : ""}</span>
-    <span class="score">${score}</span><span class="b ${wb}">${wb ? cup : ""}<span class="tn">${pairName(b)}</span>${teamLogo(b)}</span></div>`;
+  return `<div class="match"><span class="a ${wa}">${teamLogo(a)}<a class="tn team-link" href="#profile-${a}">${pairName(a)}</a>${wa ? cup : ""}</span>
+    <span class="score">${score}</span><span class="b ${wb}">${wb ? cup : ""}<a class="tn team-link" href="#profile-${b}">${pairName(b)}</a>${teamLogo(b)}</span></div>`;
 }
 
 // small still logo next to a team name (a ball for teams without one yet)
@@ -72,7 +72,7 @@ function statusLine(games) {
 function loadMatchStatus() {
   const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
   if (!api) return;
-  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; renderSchedule(); }).catch(() => {});
+  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; renderSchedule(); renderProfile(); }).catch(() => {});
 }
 
 function renderSchedule() {
@@ -166,7 +166,7 @@ function renderCup() {
   const board = (m, r, ri, mi) => {
     const w = GPPL.cupWinner(m), full = GPPL.cupFullSets(r);
     const sets = m.sets || [], cols = Math.max(sets.length, 2);
-    const row = (id, side) => `<span class="cb-team ${w === id ? "w" : ""}">${teamLogo(id)}<span>${pairName(id)}</span>${w === id ? " 🏆" : ""}</span>` +
+    const row = (id, side) => `<span class="cb-team ${w === id ? "w" : ""}">${teamLogo(id)}<a class="team-link" href="#profile-${id}">${pairName(id)}</a>${w === id ? " 🏆" : ""}</span>` +
       Array.from({ length: cols }, (_, i) => `<span class="cb-g ${sets[i] && sets[i][side] > sets[i][1 - side] ? "win" : ""}">${sets[i] ? sets[i][side] : ""}</span>`).join("");
     const foot = m.walkover === "both" ? "Walkover – both pairs out"
       : m.walkover ? `Walkover – ${pairName(m.walkover)} goes through`
@@ -189,6 +189,105 @@ function renderCup() {
     </div>`;
   }).join("");
 }
+
+// ---------- team profile (#profile-<id>) ----------
+// public data only: confirmed results, the league table, the cup and the match states ("date set" etc.) – never dates or venues
+let profileId = null, profileScope = "all";
+function renderProfile() {
+  const el = document.getElementById("profile-body"), id = profileId, p = GPPL.pairById[id];
+  if (!el || !p) return;
+  const vs = (r, me) => (r.a === me ? r.b : r.a);
+  const link = o => `<a class="team-link" href="#profile-${o}">${pairName(o)}</a>`;
+  const mdOf = (a, b) => fixtures.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) + 1;
+  // every official match of this team: league (in the order the results were confirmed) and cup
+  const league = results.filter(r => r.a === id || r.b === id).map(r => {
+    const e = GPPL.evaluate(r);
+    return { comp: "league", r, opp: vs(r, id), res: e.both ? "-" : e.winner === id ? "W" : "L", label: `Matchday ${mdOf(r.a, r.b)}` };
+  });
+  const cupList = [];
+  cup.rounds.forEach((rd, ri) => (rd.matches || []).forEach((m, mi) => {
+    if (m.a !== id && m.b !== id) return;
+    const w = GPPL.cupWinner(m), done = !!w || m.walkover === "both";
+    cupList.push({ comp: "cup", r: m, ri, mi, rd, opp: vs(m, id), done, res: m.walkover === "both" ? "-" : w === id ? "W" : "L", label: `🏆 Cup · ${rd.name}` });
+  }));
+  const played = [...league, ...cupList.filter(x => x.done)];
+  const tieBreak = x => x.comp === "league" || !GPPL.cupFullSets(x.rd); // 3rd set = match tie-break (cup semi-finals and final: full sets)
+  // stats for the chosen scope (sets and games from the scores; walkovers count as 2–0 like in the table)
+  const stats = list => {
+    const s = { p: list.length, w: 0, l: 0, sf: 0, sa: 0, gf: 0, ga: 0 };
+    list.forEach(x => {
+      if (x.res === "W") s.w++; else if (x.res === "L") s.l++;
+      const r = x.r;
+      if (r.walkover) { if (r.walkover !== "both") (r.walkover === id ? (s.sf += 2) : (s.sa += 2)); return; }
+      (r.sets || []).forEach(([a, b], i) => {
+        const [mine, theirs] = r.a === id ? [a, b] : [b, a];
+        mine > theirs ? s.sf++ : s.sa++;
+        if (!(i === 2 && tieBreak(x))) { s.gf += mine; s.ga += theirs; } // a match tie-break counts as a set, not as games
+      });
+    });
+    return s;
+  };
+  const scopeList = profileScope === "league" ? league : profileScope === "cup" ? cupList.filter(x => x.done) : played;
+  const st = stats(scopeList), rate = st.w + st.l ? Math.round(100 * st.w / (st.w + st.l)) : null;
+  const rows = GPPL.rankStandings(results), rank = rows.findIndex(r => r.id === id) + 1, row = rows[rank - 1];
+  // cup status
+  let cupState = "";
+  if (cup.rounds.length) {
+    const last = cupList[cupList.length - 1], byeRound = [...cup.rounds].reverse().find(r => (r.byes || []).includes(id));
+    const champ = GPPL.cupNextStage(cup).type === "done" && GPPL.cupNextStage(cup).champion === id;
+    cupState = champ ? "🏆 Cup champions" : !last ? (byeRound ? `🎟️ Bye in the ${byeRound.name}` : "Cup: not drawn") :
+      !last.done ? `🏆 Cup: ${last.rd.name}` : last.res === "W" ? `🏆 Cup: through (${last.rd.name})` : `Cup: out in the ${last.rd.name}`;
+  }
+  // form: the last 5 league results, oldest left → latest right
+  const form = league.slice(-5), formHtml = Array.from({ length: 5 }, (_, i) => {
+    const x = form[i - (5 - form.length)];
+    return x ? `<span class="pf-f pf-${x.res === "W" ? "w" : x.res === "L" ? "l" : "d"}" title="${x.label} vs ${esc(pairName(x.opp))}">${x.res}</span>` : `<span class="pf-f pf-e" aria-hidden="true"></span>`;
+  }).join("");
+  // still to play: league matches without a result and the current cup match – status only (date set / score pending / no date)
+  const ST = { waiting: "✅ played · ⏳ score pending", scheduled: "📅 date set", open: '<span class="dot-none"></span>no date' };
+  const todo = [];
+  fixtures.forEach((g, i) => g.forEach(([a, b]) => {
+    if ((a === id || b === id) && !GPPL.findResult(results, a, b)) todo.push({ opp: a === id ? b : a, label: `Matchday ${i + 1}${datesOn ? ` · ${fmt(matchdayWindow(i + 1).from)} – ${fmt(matchdayWindow(i + 1).to)}` : ""}`, st: matchStatus[`L:${Math.min(a, b)}-${Math.max(a, b)}`] || "open" });
+  }));
+  cupList.filter(x => !x.done).forEach(x => todo.unshift({ cup: true, opp: x.opp, label: `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(x.rd.name)}`, st: matchStatus[`C:${x.ri}:${x.mi}`] || "open" }));
+  // donut
+  const C = 2 * Math.PI * 42, wFrac = st.w + st.l ? st.w / (st.w + st.l) : 0;
+  const donut = `<svg class="pf-donut" viewBox="0 0 100 100" role="img" aria-label="${st.w} won, ${st.l} lost">
+      <circle cx="50" cy="50" r="42" class="pf-d-bg"/>
+      ${st.w + st.l ? `<circle cx="50" cy="50" r="42" class="pf-d-l"/><circle cx="50" cy="50" r="42" class="pf-d-w" stroke-dasharray="${(wFrac * C).toFixed(2)} ${C.toFixed(2)}"/>` : ""}
+      <text x="50" y="49" class="pf-d-pct">${rate === null ? "–" : rate + "%"}</text><text x="50" y="63" class="pf-d-sub">win rate</text></svg>`;
+  const scopeBtn = (v, t) => `<button type="button" data-pf-scope="${v}" class="${profileScope === v ? "active" : ""}">${t}</button>`;
+  const anim = (() => { const l = (LEAGUE.logos || {})[p.name]; return l && typeof l === "object" && l.anim && !(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) ? l.anim : null; })();
+  const big = anim ? `<img class="pf-logo" src="${esc(anim)}" alt="">` : teamLogo(id).replace('class="mlogo', 'class="pf-logo mlogo');
+  const resultRow = x => {
+    const score = x.r.walkover ? (x.r.walkover === "both" ? "W/O (both out)" : "W/O") : GPPL.scoreText(x.r, id, tieBreak(x));
+    return `<div class="pf-res${x.comp === "cup" ? " pf-cup" : ""}"><span class="pf-f pf-${x.res === "W" ? "w" : x.res === "L" ? "l" : "d"}">${x.res}</span>
+      <span class="pf-res-main">${teamLogo(x.opp)}<span><span><span class="muted">vs</span> ${link(x.opp)}</span><span class="note">${x.comp === "cup" ? `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(x.rd.name)}` : x.label}</span></span></span><b class="pf-score">${score}</b></div>`;
+  };
+  el.innerHTML = `<p class="note"><a href="#table">← League table</a></p>
+    <div class="card pf-head">${big}
+      <div class="pf-id"><h2>${esc(p.name)}</h2><span class="pf-players">${p.players.filter(Boolean).map(esc).join(" · ")}</span>
+        <div class="pf-chips"><span class="pf-chip">#${rank} in the league · ${row.pts} pts</span>${cupState ? `<span class="pf-chip">${cupState}</span>` : ""}</div>
+        <div class="pf-form"><span class="note">Form</span>${formHtml}<span class="note">latest →</span></div></div></div>
+    <div class="tm-seg pf-scope" role="group" aria-label="Matches">${scopeBtn("all", "All")}${scopeBtn("league", "League")}${scopeBtn("cup", "🏆 Cup")}</div>
+    <div class="pf-kpis">
+      <div class="card pf-kpi"><span class="note">Played</span><b>${st.p}</b></div>
+      <div class="card pf-kpi"><span class="note">Won – Lost</span><b><span class="pf-wc">${st.w}</span> – <span class="pf-lc">${st.l}</span></b></div>
+      <div class="card pf-kpi"><span class="note">Sets</span><b>${st.sf} – ${st.sa}</b></div>
+      <div class="card pf-kpi"><span class="note">Games</span><b>${st.gf} – ${st.ga}</b></div>
+    </div>
+    <div class="pf-cols">
+      <div class="card pf-chart">${donut}<div class="pf-legend"><span><i class="pf-sw w"></i>Won <b>${st.w}</b>${rate !== null ? ` (${rate}%)` : ""}</span><span><i class="pf-sw l"></i>Lost <b>${st.l}</b>${rate !== null ? ` (${100 - rate}%)` : ""}</span></div></div>
+      <div class="card"><h3 class="pf-h">Results</h3>${[...cupList.filter(x => x.done)].reverse().concat([...league].reverse()).map(resultRow).join("") || '<p class="muted">No results yet.</p>'}</div>
+    </div>
+    <div class="card"><h3 class="pf-h">Still to play <span class="note">· ${todo.length}</span></h3>
+      <p class="note">Dates and venues are only visible to the teams (🎾 My team).</p>
+      ${todo.map(t => `<div class="pf-todo${t.cup ? " pf-cup" : ""}">${teamLogo(t.opp)}<span><span class="muted">vs</span> ${link(t.opp)}<span class="note">${t.label}</span></span><span class="m-status st-${t.st}">${ST[t.st]}</span></div>`).join("") || '<p class="muted">Every match played. 🎉</p>'}</div>`;
+}
+document.getElementById("profile-body").addEventListener("click", e => {
+  const b = e.target.closest("[data-pf-scope]");
+  if (b) { profileScope = b.dataset.pfScope; renderProfile(); }
+});
 
 // ---------- Verify draw ----------
 const verifiableRounds = () => cup.rounds.map((r, i) => ({ r, i })).filter(x => x.r.words);
@@ -326,7 +425,8 @@ function renderParticipants() {
     : /\btbd\b/i.test(p.name) ? `<span class="part-loading" role="img" aria-label="Team name coming soon"><span></span></span>`
     : `<span class="part-num">#${p.id}</span>`;
   const label = p => logos[p.name] || /\btbd\b/i.test(p.name) ? `<span class="part-seed">#${p.id}</span>` : "";
-  el.innerHTML = count + toggle + `<div class="part-grid${always ? " anim-on" : ""}">` + pairs.map(p => `<div class="card part-card${logos[p.name] && logo(p.name).anim && !always ? " has-anim" : ""}">
+  const linked = !!LEAGUE.scheduleVisible; // once the season is on, each card opens the team's profile
+  el.innerHTML = count + toggle + `<div class="part-grid${always ? " anim-on" : ""}">` + pairs.map(p => `<div class="card part-card${logos[p.name] && logo(p.name).anim && !always ? " has-anim" : ""}${linked ? " linked" : ""}"${linked ? ` data-profile="${p.id}" role="link" tabindex="0" aria-label="${esc(p.name)} – team profile"` : ""}>
       ${badge(p)}
       <div class="part-info">${label(p)}<b class="part-team">${esc(p.name)}</b>
         <span class="part-players">${p.players.map((n, i) => !n ? "" : `<span class="pl">` + (p.links && p.links[i] && /^https:\/\/app\.playtomic\.com\//.test(p.links[i]) ? `<a href="${esc(p.links[i])}" target="_blank" rel="noopener" title="Playtomic profile">${esc(n)}</a>` : esc(n)) + `</span>`).filter(Boolean).join("")}</span></div></div>`).join("") + `</div>`;
@@ -346,11 +446,17 @@ function renderParticipants() {
   body.addEventListener("mouseover", e => { const c = e.target.closest(".part-card.has-anim"); if (c && !c.classList.contains("playing")) set(c, true); });
   body.addEventListener("mouseout", e => { const c = e.target.closest(".part-card.has-anim"); if (c && !c.contains(e.relatedTarget)) set(c, false); });
   body.addEventListener("click", e => {
+    const card = e.target.closest(".part-card[data-profile]");
+    if (card && !e.target.closest("a")) { location.hash = "#profile-" + card.dataset.profile; return; } // the whole card opens the profile (player links still go to Playtomic)
     const c = e.target.closest(".part-card.has-anim");
     if (!c) return;
     const on = !c.classList.contains("playing");
     body.querySelectorAll(".part-card.playing").forEach(o => o !== c && set(o, false));
     set(c, on);
+  });
+  body.addEventListener("keydown", e => {
+    const card = e.target.closest(".part-card[data-profile]");
+    if (card && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); location.hash = "#profile-" + card.dataset.profile; }
   });
   body.addEventListener("change", e => {
     if (e.target.id !== "anim-toggle") return;
@@ -535,12 +641,15 @@ setTimeout(() => document.documentElement.classList.add("tabs-ready"), 3000); //
 
 function showTab() {
   let id = (location.hash || "#" + (visibleTabs ? visibleTabs[0] : "home")).slice(1);
-  if (!tabAllowed(id) || !document.getElementById(id) || (id === "register" && registrationOver())) {
+  const prof = /^profile-(\d+)$/.exec(id); // a team's public profile
+  if (prof) { profileId = +prof[1]; id = "profile"; }
+  if ((prof ? !GPPL.pairById[profileId] : !tabAllowed(id)) || !document.getElementById(id) || (id === "register" && registrationOver())) {
     id = visibleTabs ? visibleTabs[0] : "home";
     history.replaceState(null, "", "#" + id);
   }
+  if (id === "profile") renderProfile();
   document.querySelectorAll("main > section").forEach(s => s.classList.toggle("active", s.id === id));
-  document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#" + id));
+  document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#" + (id === "profile" ? "table" : id)));
   window.scrollTo(0, 0);
 }
 window.addEventListener("hashchange", showTab);
@@ -619,6 +728,7 @@ function renderData() {
   renderSchedule();
   loadMatchStatus();
   renderStandings();
+  renderProfile();
   renderCup();
   renderVerifySelect();
   renderRegister();
