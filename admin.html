@@ -78,6 +78,34 @@
     .md-state { font-size: .88rem; }
     .md-match { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .md-when { font-size: .85rem; color: var(--muted); padding-left: 2px; }
+    .pp-table { margin-top: 8px; font-size: .85rem; }
+    .pairs-table.pp-table th, .pairs-table.pp-table td { padding: 6px 4px; }
+    .pairs-table.pp-table td.n { width: auto; }
+    .pp-table .md-teams { flex-wrap: nowrap; gap: 6px; }
+    .pp-table .md-teams .dp-logo { width: 22px; height: 22px; flex: none; }
+    .pp-table .md-teams span { overflow-wrap: anywhere; }
+    .pp-table td:nth-child(n+3), .pp-table th:nth-child(n+3) { text-align: center; font-variant-numeric: tabular-nums; }
+    .seg[hidden] { display: none; }
+    .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; margin: 0 0 12px; }
+    .seg button { border: 0; background: transparent; color: var(--text); padding: 6px 14px; font: inherit; font-size: .9rem; cursor: pointer; }
+    .seg button.active { background: var(--green); color: #fff; font-weight: 700; }
+    .cal-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .cal-head b { flex: 1; text-align: center; font-size: 1.05rem; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 3px; }
+    .cal-wd { text-align: center; font-size: .75rem; color: var(--muted); font-weight: 700; padding: 2px 0; }
+    .cal-d { min-height: 64px; border: 1px solid var(--line); border-radius: 8px; padding: 3px; background: var(--card); color: var(--text); font: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .cal-d.out { visibility: hidden; }
+    .cal-d .n { font-size: .78rem; font-weight: 700; color: var(--muted); }
+    .cal-d.today .n { color: #fff; background: var(--green); border-radius: 999px; padding: 0 6px; align-self: flex-start; }
+    .cal-d.has { background: color-mix(in srgb, var(--ball) 14%, var(--card)); }
+    .cal-d.sel { outline: 2px solid var(--green); outline-offset: -1px; }
+    .cal-m { display: flex; align-items: center; gap: 2px; font-size: .7rem; font-variant-numeric: tabular-nums; flex-wrap: wrap; line-height: 1.2; }
+    .cal-m .dp-logo { width: 15px; height: 15px; font-size: 9px; }
+    .cal-m.past { opacity: .55; }
+    .cal-more { font-size: .7rem; color: var(--muted); }
+    .cal-day { margin-top: 12px; }
+    .cal-day h4 { margin: 0 0 4px; }
+    @media (max-width: 520px) { .cal-d { min-height: 54px; } .cal-m .t { display: none; } }
     .st-pane { margin: 4px 0 16px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
     .st-pane summary { cursor: pointer; font-weight: 700; }
     .st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin-top: 10px; }
@@ -246,6 +274,7 @@
         <p class="note">Every league and cup match with a date set and no confirmed result yet – soonest first, whatever the matchday.</p>
         <div class="dp-btns" id="sched-all" hidden><button class="btn" data-sched-all="share">📤 Share upcoming</button><button class="btn ghost" data-sched-all="img">⬇️ Download upcoming as 1 image</button></div>
         <div id="sched-teams"></div>
+        <div class="seg" id="sched-view" hidden><button type="button" data-sched-view="list">📋 List</button><button type="button" data-sched-view="cal">🗓️ Calendar</button></div>
         <div id="sched-list"></div>
       </div>
     </div>
@@ -388,6 +417,10 @@
         </div>
         <button class="btn" id="predict-top-save" style="margin-top:10px">Save</button>
         <div class="msg" id="predict-top-msg"></div>
+        <h4 style="margin:18px 0 4px">🏅 Prediction points <span class="note">(admin only – teams never see them)</span></h4>
+        <p class="note">+0.5 for the right winner, +0.5 more for the exact set score. Counted from the confirmed results only (walkovers don't count) – completely separate from the league table.</p>
+        <button class="btn ghost small" id="pp-load">🔄 Refresh</button>
+        <div id="pp-list"></div>
       </div>
 
       <div class="card">
@@ -929,7 +962,7 @@
       try { localStorage.setItem("gppl-sched-teams", e.target.open ? "open" : "closed"); } catch {}
     }, true);
     function renderScheduled() {
-      $("sched-all").hidden = true; $("sched-count").textContent = ""; $("sched-teams").innerHTML = "";
+      $("sched-all").hidden = true; $("sched-view").hidden = true; $("sched-count").textContent = ""; $("sched-teams").innerHTML = "";
       if (!localStorage.getItem("gppl-member-admin")) {
         $("sched-list").innerHTML = '<p class="muted">Dates and venues are private – enter the admin key in <b>👥 Member area</b> to see them.</p>';
         return;
@@ -937,21 +970,67 @@
       const list = scheduledList(), upcoming = list.filter(x => !isPast(x.e));
       $("sched-all").hidden = !upcoming.length;
       $("sched-count").textContent = ` (${upcoming.length})`;
-      // upcoming matches per team – most first, teams without any at the end
-      const per = new Map(LEAGUE.pairs.map(p => [p.id, 0]));
-      upcoming.forEach(({ a, b }) => [a, b].forEach(id => per.set(id, (per.get(id) || 0) + 1)));
+      // upcoming matches per team – most first, teams without any at the end; in brackets: upcoming + played
+      const per = new Map(LEAGUE.pairs.map(p => [p.id, 0])), played = new Map(LEAGUE.pairs.map(p => [p.id, 0]));
+      const add = (m, ids) => ids.forEach(id => m.has(id) && m.set(id, m.get(id) + 1));
+      upcoming.forEach(({ a, b }) => add(per, [a, b]));
+      list.filter(x => isPast(x.e)).forEach(({ a, b }) => add(played, [a, b])); // played, result not confirmed yet
+      results.forEach(r => add(played, [r.a, r.b]));
+      (cup.rounds || []).forEach(r => (r.matches || []).forEach(m => { if (m.sets || m.walkover || m.winner) add(played, [m.a, m.b]); }));
       const open = localStorage.getItem("gppl-sched-teams") !== "closed"; // open/closed is remembered in this browser
-      $("sched-teams").innerHTML = per.size ? `<details class="st-pane"${open ? " open" : ""}><summary>Upcoming matches per team</summary><div class="st-grid">` +
+      $("sched-teams").innerHTML = per.size ? `<details class="st-pane"${open ? " open" : ""}><summary>Upcoming matches per team <span class="note">· upcoming (upcoming + played)</span></summary><div class="st-grid">` +
         [...per].sort((x, y) => y[1] - x[1] || name(x[0]).localeCompare(name(y[0])))
-          .map(([id, n]) => `<span class="st-row${n ? "" : " none"}">${teamLogo(id)}<span>${escA(name(id))}</span><b>${n}</b></span>`).join("") + `</div></details>` : "";
-      $("sched-list").innerHTML = list.map(({ key, a, b, e, label }) => {
+          .map(([id, n]) => `<span class="st-row${n ? "" : " none"}">${teamLogo(id)}<span>${escA(name(id))}</span><b>${n} <small class="note">(${n + played.get(id)})</small></b></span>`).join("") + `</div></details>` : "";
+      $("sched-view").hidden = false;
+      $("sched-view").querySelectorAll("button").forEach(x => x.classList.toggle("active", x.dataset.schedView === schedView));
+      if (schedView === "cal") { $("sched-list").innerHTML = calendarHtml(list); return; }
+      $("sched-list").innerHTML = list.map(schedRow).join("") || '<p class="muted">No match has a date yet.</p>';
+    }
+    function schedRow({ key, a, b, e, label }) {
         const p = e.pending;
         const state = p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}` : isPast(e) ? "⏰ Result due" : "";
         return `<div class="md-row">${pairLine(a, b)}
           <span class="md-info"><span class="md-when">${whenText(e)}</span><span class="note">${escA(label)}</span>${state ? `<span class="md-state">${state}</span>` : ""}</span>
           ${p ? "" : `<span class="md-share"><button class="btn ghost small" data-match-share="${key}|${a}|${b}|${escA(label)}">📤 Share</button></span>`}</div>`;
-      }).join("") || '<p class="muted">No match has a date yet.</p>';
     }
+
+    // calendar view: a month grid (Monday first) – tap a day to see its matches below
+    let schedView = localStorage.getItem("gppl-sched-view") === "cal" ? "cal" : "list";
+    const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    let calMonth = ymd(new Date()).slice(0, 7), calDay = ymd(new Date());
+    function calendarHtml(list) {
+      const byDay = {};
+      list.forEach(x => (byDay[x.e.date] = byDay[x.e.date] || []).push(x));
+      const [y, m] = calMonth.split("-").map(Number), first = new Date(y, m - 1, 1), days = new Date(y, m, 0).getDate();
+      const lead = (first.getDay() + 6) % 7, today = ymd(new Date()), cells = [];
+      for (let i = 0; i < lead; i++) cells.push(`<span class="cal-d out"></span>`);
+      for (let d = 1; d <= days; d++) {
+        const date = `${calMonth}-${String(d).padStart(2, "0")}`, ms = byDay[date] || [];
+        const chips = ms.slice(0, 3).map(({ a, b, e }) => `<span class="cal-m${isPast(e) ? " past" : ""}"><span class="t">${escA(e.time || "")}</span>${teamLogo(a)}${teamLogo(b)}</span>`).join("");
+        cells.push(`<button type="button" class="cal-d${ms.length ? " has" : ""}${date === today ? " today" : ""}${date === calDay ? " sel" : ""}" data-cal-day="${date}" aria-label="${date}: ${ms.length} match${ms.length === 1 ? "" : "es"}"><span class="n">${d}</span>${chips}${ms.length > 3 ? `<span class="cal-more">+${ms.length - 3}</span>` : ""}</button>`);
+      }
+      const title = first.toLocaleDateString("en-GB", { month: "long", year: "numeric" }), inMonth = list.filter(x => x.e.date.startsWith(calMonth)).length;
+      const sel = byDay[calDay] || [];
+      const dayTitle = new Date(calDay + "T12:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+      return `<div class="cal-head"><button type="button" class="btn ghost small" data-cal-nav="-1" aria-label="Previous month">‹</button><b>${title} <span class="note">· ${inMonth} match${inMonth === 1 ? "" : "es"}</span></b><button type="button" class="btn ghost small" data-cal-nav="0">Today</button><button type="button" class="btn ghost small" data-cal-nav="1" aria-label="Next month">›</button></div>
+        <div class="cal-grid">${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(w => `<span class="cal-wd">${w}</span>`).join("")}${cells.join("")}</div>
+        <div class="cal-day"><h4>${dayTitle}</h4>${sel.map(schedRow).join("") || '<p class="muted">No match on this day.</p>'}</div>`;
+    }
+    $("sched-view").addEventListener("click", e => {
+      const b = e.target.closest("[data-sched-view]"); if (!b) return;
+      schedView = b.dataset.schedView;
+      try { localStorage.setItem("gppl-sched-view", schedView); } catch {}
+      renderScheduled();
+    });
+    $("sched-list").addEventListener("click", e => {
+      const nav = e.target.closest("[data-cal-nav]"), day = e.target.closest("[data-cal-day]");
+      if (nav) {
+        if (nav.dataset.calNav === "0") { calMonth = ymd(new Date()).slice(0, 7); calDay = ymd(new Date()); }
+        else { const [y, m] = calMonth.split("-").map(Number); calMonth = ymd(new Date(y, m - 1 + +nav.dataset.calNav, 1)).slice(0, 7); }
+      } else if (day) calDay = day.dataset.calDay;
+      else return;
+      renderScheduled();
+    });
 
     // ---------- slot pool ----------
     let slots = [];
@@ -1351,6 +1430,22 @@
       const next = { ...siteSettings, logoAnimation: mode };
       if (await persist("settings", next, `logo animations: ${mode}`, "logo-anim-msg")) siteSettings = next;
     });
+    // prediction points per team (from the member server – never shown to teams)
+    async function loadPredictionPoints() {
+      const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
+      if (!api || !key) { $("pp-list").innerHTML = '<p class="muted">Enter the admin key in <b>👥 Member area</b> first.</p>'; return; }
+      $("pp-list").innerHTML = '<p class="muted">Loading…</p>';
+      try {
+        const res = await fetch(api + "/admin/predictions", { headers: { Authorization: `Admin ${key}` } });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Error ${res.status}`);
+        const teams = (await res.json()).teams || [];
+        let rank = 0, prev = null;
+        $("pp-list").innerHTML = teams.length ? `<table class="pairs-table pp-table"><thead><tr><th>#</th><th>Team</th><th title="Predictions on matches with a confirmed result">Picks</th><th title="Right winner">✅</th><th title="Exact set score">🎯</th><th title="Points">Pts</th></tr></thead><tbody>` +
+          teams.map((t, i) => { if (t.points !== prev) { rank = i + 1; prev = t.points; } return `<tr><td class="n">${rank}</td><td><span class="md-teams">${teamLogo(t.team)}<span>${escA(name(t.team))}</span></span></td><td>${t.predicted}</td><td>${t.correct}</td><td>${t.exact}</td><td><b>${t.points}</b></td></tr>`; }).join("") + `</tbody></table>`
+          : '<p class="muted">No points yet – they appear once a predicted match has a confirmed result.</p>';
+      } catch (e) { $("pp-list").innerHTML = `<p class="msg err">❌ ${escA(e.message)}</p>`; }
+    }
+    $("pp-load").addEventListener("click", loadPredictionPoints);
     function fillPredictTop() {
       const mode = siteSettings.predictShowTop === false ? "hide" : "show";
       document.querySelectorAll('input[name="predict-top"]').forEach(r => (r.checked = r.value === mode));
@@ -1681,6 +1776,7 @@
       }
       if (btn.dataset.panel === "cup") await reload();
       if (btn.dataset.panel === "slots") await loadSlots();
+      if (btn.dataset.panel === "pairs") loadPredictionPoints();
     }));
 
     // keep the embedded draw as tall as its content
@@ -1705,6 +1801,7 @@
       await mergePending();
       fillMatches(); renderResultList(); renderLeagueViews(); renderCup(); fillRegistration(); renderCurrentPairs();
       loadSlots(); // open requests show in the tab name
+      loadPredictionPoints();
     }
 
     // after a reload: open the tab from the address (admin.html#members …) again
