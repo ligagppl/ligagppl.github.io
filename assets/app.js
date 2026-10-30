@@ -18,11 +18,14 @@ function currentMatchday() {
   return null;
 }
 
+// 🥇🥈🥉 for the top 3 – only for teams that have played at least one match
+const medal = (row, i) => (i < 3 && row.p > 0 ? ["🥇", "🥈", "🥉"][i] : "");
+
 function renderStandings() {
   const rows = GPPL.rankStandings(results);
   let html = `<table><tr><th>#</th><th class="left">Pair</th><th>P</th><th>W</th><th>L</th><th>Sets</th><th>Games</th><th>Pts</th></tr>`;
   rows.forEach((r, i) => {
-    html += `<tr class="${i < 2 ? "top" : ""}"><td>${results.length && i < 3 ? `<span class="medal-rank">${["🥇", "🥈", "🥉"][i]}</span>` : i + 1}</td>
+    html += `<tr class="${i < 2 ? "top" : ""}"><td>${medal(r, i) ? `<span class="medal-rank">${medal(r, i)}</span>` : i + 1}</td>
       <td class="left"><a class="tbl-team team-link" href="${profileHref(r.id)}">${teamLogo(r.id)}<b>${pairName(r.id)}</b></a></td>
       <td>${r.p}</td><td>${r.w}</td><td>${r.l}</td>
       <td>${sign(r.sf - r.sa)}</td><td>${sign(r.gf - r.ga)}</td><td class="pts">${r.pts}</td></tr>`;
@@ -302,7 +305,7 @@ function renderProfile() {
       <div class="pf-crumb"><a href="#participants">Teams</a> / ${esc(p.name)}</div>
       <div class="pf-band-row">
         <div class="pf-id">${big}<div>
-          <div class="pf-chips"><span class="pf-chip">#${rank} in the league · ${row.pts} pts</span>${cupState ? `<span class="pf-chip">${cupState}</span>` : ""}<span class="pf-chip">Seed #${id}</span></div>
+          <div class="pf-chips"><span class="pf-chip">${medal(row, rank - 1) ? medal(row, rank - 1) + " " : ""}#${rank} in the league · ${row.pts} pts</span>${cupState ? `<span class="pf-chip">${cupState}</span>` : ""}<span class="pf-chip">Seed #${id}</span></div>
           <h2 class="pf-name">${esc(p.name)}</h2>
           <div class="pf-players">${players}</div></div></div>
         <div class="pf-formbox"><span class="pf-formtitle">Form, last 5 league matches</span><div class="pf-form">${formOf(league)}</div><div class="pf-formfoot"><span>Oldest</span><span>Latest</span></div></div>
