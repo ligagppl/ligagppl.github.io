@@ -313,7 +313,7 @@
     (state.results || []).forEach(r => addPlayed([r.a, r.b]));
     (state.cup.rounds || []).forEach(r => (r.matches || []).forEach(m => { if (m.sets || m.walkover || m.winner) addPlayed([m.a, m.b]); }));
     const waiting = typeof matchStatus === "object" ? matchStatus : {}; // public status from app.js – no dates or scores
-    Object.keys(waiting).forEach(key => waiting[key] === "waiting" && addPlayed(keyTeams(key)));
+    Object.keys(waiting).forEach(key => waiting[key] === "waiting" && !(state.upcoming || {})[key] && addPlayed(keyTeams(key))); // started matches are counted below once they end
     Object.entries(state.upcoming || {}).forEach(([key, e]) => e.date && (matchEnd(e) || Date.parse(e.date + "T23:59:00")) <= Date.now() && addPlayed(keyTeams(key)));
     if (upTeam !== null && !per.has(upTeam)) upTeam = null;
     const chip = (id, text, n) => `<button type="button" class="tm-up-team${id === null ? " all" : ""}${upTeam === id ? " active" : ""}" data-act="up-team" data-team="${id === null ? "" : id}">${id === null ? "" : logo(id, "tm-logo-sm")}<span>${text}</span>${n ? `<small>${n} (${n + (played.get(id) || 0)})</small>` : ""}</button>`;

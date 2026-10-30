@@ -74,6 +74,7 @@ function loadMatchStatus() {
   if (!api) return;
   fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; renderSchedule(); renderProfile(); }).catch(() => {});
 }
+setInterval(() => { if (!document.hidden) loadMatchStatus(); }, 60000); // a match that starts moves to "played" within a minute
 
 function renderSchedule() {
   const cur = currentMatchday();
@@ -245,13 +246,13 @@ function renderProfile() {
   const formOf = list => Array.from({ length: 5 }, (_, i) => { const x = list.slice(-5)[i - (5 - Math.min(5, list.length))]; return x ? badge(x) : `<span class="pf-f pf-e" aria-hidden="true"></span>`; }).join("");
   // still to play: league matches without a result and the current cup match (the status is only used to pick the next match – not shown)
   const mdWindow = md => (datesOn ? `${fmt(matchdayWindow(md).from)} – ${fmt(matchdayWindow(md).to)}` : "");
-  const todo = [];
+  const todo = [], started = key => matchStatus[key] === "waiting"; // played or already started – no longer "still to play"
   fixtures.forEach((g, i) => g.forEach(([a, b]) => {
-    if ((a === id || b === id) && !GPPL.findResult(results, a, b)) todo.push({ opp: a === id ? b : a, md: i + 1, stage: [`Matchday ${i + 1}`, mdWindow(i + 1)].filter(Boolean).join(" · "), st: matchStatus[`L:${Math.min(a, b)}-${Math.max(a, b)}`] || "open" });
+    if ((a === id || b === id) && !GPPL.findResult(results, a, b) && !started(`L:${Math.min(a, b)}-${Math.max(a, b)}`)) todo.push({ opp: a === id ? b : a, md: i + 1, stage: [`Matchday ${i + 1}`, mdWindow(i + 1)].filter(Boolean).join(" · "), st: matchStatus[`L:${Math.min(a, b)}-${Math.max(a, b)}`] || "open" });
   }));
-  cupList.filter(x => !x.done).forEach(x => todo.unshift({ cup: true, opp: x.opp, round: x.rd.name, stage: `GPPC Cup · ${esc(x.rd.name)}`, st: matchStatus[`C:${x.ri}:${x.mi}`] || "open" }));
+  cupList.filter(x => !x.done && !started(`C:${x.ri}:${x.mi}`)).forEach(x => todo.unshift({ cup: true, opp: x.opp, round: x.rd.name, stage: `GPPC Cup · ${esc(x.rd.name)}`, st: matchStatus[`C:${x.ri}:${x.mi}`] || "open" }));
   // next opponent: the open cup match first (it has the shortest window), then a league match with a date set, then the next matchday – no dates shown
-  const next = todo.find(t => t.cup && t.st !== "waiting") || todo.find(t => t.st === "scheduled") || todo.find(t => t.st === "open") || null;
+  const next = todo.find(t => t.cup) || todo.find(t => t.st === "scheduled") || todo[0] || null;
   // streak: league results in order (cup: by round)
   const seq = profileScope === "cup" ? cupList.filter(x => x.done) : league, lastRes = seq.length ? seq[seq.length - 1].res : null;
   let streakN = 0;
