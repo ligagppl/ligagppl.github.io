@@ -202,7 +202,7 @@
     el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team"><a class="team-link" href="${profileOf(state.team)}">${esc(pair.name)}</a></b>
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><a class="btn ghost small" href="${profileOf(state.team)}">👁 Public profile</a><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
-      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Upcoming matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button></div>
+      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Upcoming matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button></div>
       ${view === "upcoming" ? upcomingHtml() : view === "gallery" ? galleryHtml() : view === "courts" ? courtsHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
       ${msgHtml("top")}
@@ -224,8 +224,9 @@
     const list = (title, items) => items.length ? `<h3>${title}</h3><div class="card tm-up-list">${items.join("")}</div>` : "";
 
     const mine = all.filter(c => c.assigned).map(c => row(c, `<span class="tm-up-label">✅ <b>This court is yours</b> – offered by ${esc(teamName(c.from))}${c.key ? ` · for ${esc(matchName(c.key))} (the match date is set)` : ""}</span>
-      <div class="tm-btns"><button class="btn ghost small" data-act="slot-reoffer" data-key="${c.id}">↩ Can't use it – offer it again</button></div>`));
-    const free = all.filter(c => !c.mine && !c.assigned && !c.taken).map(c => {
+      <div class="tm-btns"><button class="btn ghost small" data-act="slot-reoffer" data-key="${c.id}">↩ Can't use it – offer it again</button></div>`))
+      .concat(all.filter(c => c.ourMatch).map(c => row(c, `<span class="tm-up-label">✅ <b>Given to your match vs ${esc(teamName(c.to))}</b>${c.key && matchName(c.key) ? ` · ${esc(matchName(c.key).split(" vs ")[0])}` : ""} (the match date is set)</span>`)));
+    const free = all.filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).map(c => {
       const req = c.requested;
       const extra = req
         ? `<span class="tm-up-label"><span class="tm-up-chip">⏳ Requested</span>${req.key ? ` for ${esc(matchName(req.key))}` : ""} – the organizers decide</span>
