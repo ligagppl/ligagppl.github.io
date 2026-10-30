@@ -320,7 +320,8 @@
     const filter = `<details class="card tm-up-filter"${upPaneOpen ? " open" : ""}><summary>🔎 Filter by team${upTeam !== null ? `: <b>${esc(teamName(upTeam))}</b>` : ""}</summary><p class="note">Number of upcoming matches – in brackets: upcoming + played.</p><div class="tm-up-teams">` +
       chip(null, "All teams") + [...per].sort((x, y) => teamName(x[0]).localeCompare(teamName(y[0]))).map(([id, n]) => chip(id, esc(teamName(id)), n)).join("") + `</div></details>`;
     const shown = upTeam === null ? list : list.filter(({ t }) => t.includes(upTeam));
-    return `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p>${filter}<div class="card tm-up-list">` + shown.map(({ key, e, t: [a, b] }) => {
+    const seg = `<div class="tm-seg" role="group" aria-label="View">${[["list", "📋 List"], ["cal", "🗓️ Calendar"]].map(([v, t]) => `<button type="button" data-act="up-view" data-view="${v}" class="${upView === v ? "active" : ""}">${t}</button>`).join("")}</div>`;
+    const row = ({ key, e, t: [a, b] }) => {
       const ours = a === state.team || b === state.team;
       if (ours ? b === state.team : e.by === b) [a, b] = [b, a]; // our own team on the left – otherwise the team that entered the date
       const live = liveNow(e);
@@ -329,7 +330,32 @@
         <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""} · ${live ? `<span class="tm-up-livechip">🔴 Playing now</span>` : inDays(e.date)}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>
         <span class="tm-up-label">${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span>
         ${predictHtml(key, a, b, e)}</div>`;
-    }).join("") + `</div>`;
+    };
+    const intro = `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p>${filter}${seg}`;
+    if (upView === "cal") return intro + calendarHtml(shown, row);
+    return intro + `<div class="card tm-up-list">` + shown.map(row).join("") + `</div>`;
+  }
+
+  // calendar view of the upcoming matches: a month grid (Monday first) – tap a day to see its matches below
+  const ymd = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  let upView = ls.get("gppl-up-view") === "cal" ? "cal" : "list", calMonth = ymd(new Date()).slice(0, 7), calDay = ymd(new Date());
+  function calendarHtml(list, row) {
+    const byDay = {};
+    list.forEach(x => (byDay[x.e.date] = byDay[x.e.date] || []).push(x));
+    const [y, m] = calMonth.split("-").map(Number), first = new Date(y, m - 1, 1), days = new Date(y, m, 0).getDate();
+    const today = ymd(new Date()), cells = [];
+    for (let i = 0; i < (first.getDay() + 6) % 7; i++) cells.push(`<span class="tm-cal-d out"></span>`);
+    for (let d = 1; d <= days; d++) {
+      const date = `${calMonth}-${String(d).padStart(2, "0")}`, ms = byDay[date] || [], ours = ms.some(({ t }) => t.includes(state.team));
+      const chips = ms.slice(0, 3).map(({ key, e, t: [a, b] }) => `<span class="tm-cal-m${key.startsWith("C:") ? " cup" : ""}${a === state.team || b === state.team ? " ours" : ""}${liveNow(e) ? " live" : ""}"${key.startsWith("C:") ? ' title="GPPC Cup"' : ""}><span class="t">${esc(e.time || "")}</span>${logo(a, "tm-cal-logo")}${logo(b, "tm-cal-logo")}${key.startsWith("C:") ? '<span class="cup-i" aria-label="Cup">🏆</span>' : ""}</span>`).join("");
+      cells.push(`<button type="button" class="tm-cal-d${ms.length ? " has" : ""}${ours ? " ours" : ""}${date === today ? " today" : ""}${date === calDay ? " sel" : ""}" data-act="cal-day" data-day="${date}" aria-label="${date}: ${ms.length} match${ms.length === 1 ? "" : "es"}"><span class="n">${d}</span>${chips}${ms.length > 3 ? `<span class="tm-cal-more">+${ms.length - 3}</span>` : ""}</button>`);
+    }
+    const n = list.filter(x => x.e.date.startsWith(calMonth)).length, sel = byDay[calDay] || [];
+    return `<div class="card tm-cal">
+      <div class="tm-cal-head"><button type="button" class="btn ghost small" data-act="cal-nav" data-nav="-1" aria-label="Previous month">‹</button><b>${first.toLocaleDateString("en-GB", { month: "long", year: "numeric" })} <span class="note">· ${n} match${n === 1 ? "" : "es"}</span></b><button type="button" class="btn ghost small" data-act="cal-nav" data-nav="0">Today</button><button type="button" class="btn ghost small" data-act="cal-nav" data-nav="1" aria-label="Next month">›</button></div>
+      <div class="tm-cal-grid">${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(w => `<span class="tm-cal-wd">${w}</span>`).join("")}${cells.join("")}</div>
+      <h4 class="tm-cal-title">${new Date(calDay + "T12:00:00").toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}</h4>
+      ${sel.map(row).join("") || `<p class="muted">No match on this day.</p>`}</div>`;
   }
 
   // ---- predictions: every team can pick a winner (and a set score) until 12 hours before the start
@@ -641,6 +667,13 @@
       pr = { key, a: +b.dataset.a, b: +b.dataset.b, w: mine ? mine.w : 0, s: mine && mine.s || "", err: null, busy: false };
       drawPredict(); predictDialog().showModal();
       return;
+    }
+    if (a === "up-view") { upView = b.dataset.view; ls.set("gppl-up-view", upView); return render(); }
+    if (a === "cal-day") { calDay = b.dataset.day; return render(); }
+    if (a === "cal-nav") {
+      if (b.dataset.nav === "0") { calMonth = ymd(new Date()).slice(0, 7); calDay = ymd(new Date()); }
+      else { const [y, m] = calMonth.split("-").map(Number); calMonth = ymd(new Date(y, m - 1 + +b.dataset.nav, 1)).slice(0, 7); }
+      return render();
     }
     if (a === "up-team") { upTeam = b.dataset.team === "" ? null : +b.dataset.team; upPaneOpen = true; return render(); }
     if (a === "form") { form = form === b.dataset.form ? null : b.dataset.form; msg = null; return render(); }

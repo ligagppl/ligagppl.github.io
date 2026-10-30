@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=63">
+  <link rel="stylesheet" href="assets/style.css?v=64">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -102,6 +102,8 @@
     .cal-m { display: flex; align-items: center; gap: 2px; font-size: .7rem; font-variant-numeric: tabular-nums; flex-wrap: wrap; line-height: 1.2; }
     .cal-m .dp-logo { width: 15px; height: 15px; font-size: 9px; }
     .cal-m.past { opacity: .55; }
+    .cal-m.cup { outline: 1.5px solid #d4a017; border-radius: 6px; padding: 0 2px; background: color-mix(in srgb, #d4a017 14%, transparent); }
+    .cal-m .cup-i { font-size: .62rem; line-height: 1; }
     .cal-more { font-size: .7rem; color: var(--muted); }
     .cal-day { margin-top: 12px; }
     .cal-day h4 { margin: 0 0 4px; }
@@ -1006,7 +1008,7 @@
       for (let i = 0; i < lead; i++) cells.push(`<span class="cal-d out"></span>`);
       for (let d = 1; d <= days; d++) {
         const date = `${calMonth}-${String(d).padStart(2, "0")}`, ms = byDay[date] || [];
-        const chips = ms.slice(0, 3).map(({ a, b, e }) => `<span class="cal-m${isPast(e) ? " past" : ""}"><span class="t">${escA(e.time || "")}</span>${teamLogo(a)}${teamLogo(b)}</span>`).join("");
+        const chips = ms.slice(0, 3).map(({ key, a, b, e }) => `<span class="cal-m${key.startsWith("C:") ? " cup" : ""}${isPast(e) ? " past" : ""}"${key.startsWith("C:") ? ' title="GPPC Cup"' : ""}><span class="t">${escA(e.time || "")}</span>${teamLogo(a)}${teamLogo(b)}${key.startsWith("C:") ? '<span class="cup-i" aria-label="Cup">🏆</span>' : ""}</span>`).join("");
         cells.push(`<button type="button" class="cal-d${ms.length ? " has" : ""}${date === today ? " today" : ""}${date === calDay ? " sel" : ""}" data-cal-day="${date}" aria-label="${date}: ${ms.length} match${ms.length === 1 ? "" : "es"}"><span class="n">${d}</span>${chips}${ms.length > 3 ? `<span class="cal-more">+${ms.length - 3}</span>` : ""}</button>`);
       }
       const title = first.toLocaleDateString("en-GB", { month: "long", year: "numeric" }), inMonth = list.filter(x => x.e.date.startsWith(calMonth)).length;
