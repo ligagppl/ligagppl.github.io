@@ -310,8 +310,68 @@
       return `<div class="tm-up${ours ? " tm-up-ours" : ""}">
         <span class="tm-up-pair">${side(a, "tm-up-a")}<span class="muted">vs</span>${side(b, "tm-up-b")}</span>
         <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""} · ${inDays(e.date)}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>
-        <span class="tm-up-label">${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span></div>`;
+        <span class="tm-up-label">${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span>
+        ${predictHtml(key, a, b, e)}</div>`;
     }).join("") + `</div>`;
+  }
+
+  // ---- predictions: every team can pick a winner (and a set score) until 12 hours before the start
+  const PREDICT_CLOSE_MS = 12 * 3600000, PREDICT_OPEN_UNTIL = Date.parse("2026-10-30T20:00:00+01:00"); // at launch: open up to the start
+  const predictLaunch = () => Date.now() < PREDICT_OPEN_UNTIL;
+  const predictClosed = e => !e.time || new Date(`${e.date}T${e.time}:00`).getTime() - (predictLaunch() ? 0 : PREDICT_CLOSE_MS) <= Date.now();
+  const pickText = p => `${esc(teamName(p.w))}${p.s ? ` ${p.s.replace("-", "–")}` : ""}`;
+  function predictHtml(key, a, b, e) {
+    const p = (state.predictions || {})[key] || { n: {}, total: 0 }, closed = predictClosed(e);
+    const pa = p.total ? Math.round(100 * (p.n[a] || 0) / p.total) : 50, pb = 100 - pa;
+    const stats = p.total
+      ? `<div class="tm-pr-bar" aria-hidden="true"><span style="width:${pa}%"></span><span></span></div>
+         <div class="tm-pr-nums"><b>${pa}%</b><span class="muted">${p.total} prediction${p.total === 1 ? "" : "s"}${p.top ? ` · most picked: ${pickText(p.top)}` : ""}</span><b>${pb}%</b></div>`
+      : `<div class="tm-pr-nums"><span class="muted">No predictions yet${closed ? "" : " – be the first!"}</span></div>`;
+    const btn = closed
+      ? `<span class="note">🔒 Predictions closed${p.mine ? ` · your pick: ${pickText(p.mine)}` : ""}</span>`
+      : `<button class="btn ghost small" data-act="predict" data-key="${key}" data-a="${a}" data-b="${b}">${p.mine ? `🔮 Your pick: ${pickText(p.mine)} · Change` : "🔮 Predict"}</button>`;
+    return `<div class="tm-pr">${stats}<div class="tm-pr-act">${btn}</div></div>`;
+  }
+
+  // the popup – lives outside the member area, so redraws of the page don't close it
+  let pr = null; // { key, a, b, w, s, err, busy }
+  function predictDialog() {
+    let d = document.getElementById("tm-predict");
+    if (!d) {
+      d = document.createElement("dialog");
+      d.id = "tm-predict"; d.className = "tm-pr-dlg";
+      document.body.appendChild(d);
+      d.addEventListener("click", async ev => {
+        if (ev.target === d) return d.close(); // tap outside
+        const t = ev.target.closest("button");
+        if (!t || !pr || pr.busy) return;
+        if (t.dataset.w) { pr.w = +t.dataset.w; return drawPredict(); }
+        if (t.dataset.s !== undefined) { pr.s = t.dataset.s; return drawPredict(); }
+        if ("close" in t.dataset) return d.close();
+        if ("save" in t.dataset || "clear" in t.dataset) {
+          pr.busy = true; pr.err = null; drawPredict();
+          try {
+            await call("/predict", { key: pr.key, winner: "clear" in t.dataset ? 0 : pr.w, score: pr.s });
+            state = await call("/me");
+            d.close(); render();
+          } catch (err) { pr.err = err.message; }
+          pr.busy = false;
+          if (d.open) drawPredict();
+        }
+      });
+    }
+    return d;
+  }
+  function drawPredict() {
+    const d = predictDialog(), mine = ((state.predictions || {})[pr.key] || {}).mine;
+    d.innerHTML = `<div class="tm-pr-form">
+      <h3>🔮 Who wins?</h3>
+      <div class="tm-pr-teams">${[pr.a, pr.b].map(id => `<button type="button" class="tm-pr-team${pr.w === id ? " active" : ""}" data-w="${id}">${logo(id)}<b>${esc(teamName(id))}</b></button>`).join("")}</div>
+      <p class="tm-pr-sub">Score in sets</p>
+      <div class="tm-pr-scores">${[["2-0", "2–0"], ["2-1", "2–1"]].map(([v, t]) => `<button type="button" class="tm-pr-score${pr.s === v ? " active" : ""}" data-s="${v}">${t}</button>`).join("")}</div>
+      <p class="note">${pr.w && pr.s ? `${esc(teamName(pr.w))} wins ${pr.s.replace("-", "–")}. ` : ""}You can change it until ${predictLaunch() ? "the match starts" : "12 hours before the match"}. Predictions are anonymous – others only see the percentages.</p>
+      ${pr.err ? `<div class="msg err">❌ ${esc(pr.err)}</div>` : ""}
+      <div class="tm-btns"><button type="button" class="btn small" data-save${pr.w && pr.s && !pr.busy ? "" : " disabled"}>${pr.busy ? "Saving…" : "Save prediction"}</button>${mine ? `<button type="button" class="btn ghost small" data-clear${pr.busy ? " disabled" : ""}>Remove</button>` : ""}<button type="button" class="btn ghost small" data-close>Cancel</button></div></div>`;
   }
 
   // my place in the league table (same order as the Table tab: points, head-to-head, wins, sets, games)
@@ -559,6 +619,12 @@
     if (a === "logout") { ls.set(TOKEN_KEY, null); state = null; msg = null; return render(); }
     if (a === "reload") { msg = null; return load(); }
     if (a === "view") { view = b.dataset.view; form = null; return render(); }
+    if (a === "predict") {
+      const mine = ((state.predictions || {})[key] || {}).mine;
+      pr = { key, a: +b.dataset.a, b: +b.dataset.b, w: mine ? mine.w : 0, s: mine && mine.s || "", err: null, busy: false };
+      drawPredict(); predictDialog().showModal();
+      return;
+    }
     if (a === "up-team") { upTeam = b.dataset.team === "" ? null : +b.dataset.team; upPaneOpen = true; return render(); }
     if (a === "form") { form = form === b.dataset.form ? null : b.dataset.form; msg = null; return render(); }
     if (a === "win-share") {

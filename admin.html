@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=60">
+  <link rel="stylesheet" href="assets/style.css?v=61">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -377,6 +377,17 @@
         </div>
         <button class="btn" id="site-logo-anim-save" style="margin-top:10px">Save</button>
         <div class="msg" id="site-logo-anim-msg"></div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0">🔮 Predictions</h3>
+        <p class="note">Under each upcoming match (🎾 My team → Upcoming matches), teams see the percentages. Choose whether they also see the most predicted score, e.g. “most picked: Kaantay Walay Phool 2–0”.</p>
+        <div class="reg-status" role="radiogroup" aria-label="Most predicted score">
+          <label><input type="radio" name="predict-top" value="show"> <span><b>Show the most picked score</b>Percentages and the most predicted winner and score</span></label>
+          <label><input type="radio" name="predict-top" value="hide"> <span><b>Hide it</b>Only the percentages and the number of predictions</span></label>
+        </div>
+        <button class="btn" id="predict-top-save" style="margin-top:10px">Save</button>
+        <div class="msg" id="predict-top-msg"></div>
       </div>
 
       <div class="card">
@@ -1340,6 +1351,15 @@
       const next = { ...siteSettings, logoAnimation: mode };
       if (await persist("settings", next, `logo animations: ${mode}`, "logo-anim-msg")) siteSettings = next;
     });
+    function fillPredictTop() {
+      const mode = siteSettings.predictShowTop === false ? "hide" : "show";
+      document.querySelectorAll('input[name="predict-top"]').forEach(r => (r.checked = r.value === mode));
+    }
+    $("predict-top-save").addEventListener("click", async () => {
+      const mode = (document.querySelector('input[name="predict-top"]:checked') || {}).value || "show";
+      const next = { ...siteSettings, predictShowTop: mode === "show" };
+      if (await persist("settings", next, `predictions: most picked score ${mode === "show" ? "shown" : "hidden"}`, "predict-top-msg")) siteSettings = next;
+    });
     function fillSiteLogoAnim() {
       const mode = siteSettings.siteLogoAnimation === "always" ? "always" : "hover";
       document.querySelectorAll('input[name="site-logo-anim"]').forEach(r => (r.checked = r.value === mode));
@@ -1433,6 +1453,7 @@
       renderManual();
       fillLogoAnim();
       fillSiteLogoAnim();
+      fillPredictTop();
       fillStartDate(); renderRelease();
       const draft = getDraft(), list = workingPairs(), pub = LEAGUE.pairs;
       const changed = !!draft && (draft.length !== pub.length || draft.some((p, i) => !sameTeam(p, pub[i])));

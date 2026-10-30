@@ -595,3 +595,26 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .rb-changes ul { margin: 6px 0 0; padding-left: 20px; }
 .rb-changes li { margin: 4px 0; }
 .rb-new { display: inline-block; font-size: .72rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--ball); color: #14201a; vertical-align: 1px; }
+
+/* predictions (My team → Upcoming matches) */
+.tm-pr { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.tm-pr-bar { display: flex; gap: 3px; height: 8px; }
+.tm-pr-bar span { border-radius: 999px; background: var(--win); }
+.tm-pr-bar span + span { flex: 1; background: #e8912d; }
+.tm-pr-bar span[style*="width:0%"], .tm-pr-bar span[style*="width:100%"] + span { display: none; }
+.tm-pr-nums { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; font-size: .85rem; }
+.tm-pr-nums b:first-child { color: var(--win); }
+.tm-pr-nums b:last-child { color: #c46f0d; }
+@media (prefers-color-scheme: dark) { .tm-pr-nums b:last-child { color: #f2a654; } }
+.tm-pr-nums .muted { text-align: center; flex: 1; min-width: 0; }
+.tm-pr-act .btn { white-space: normal; text-align: left; }
+.tm-pr-dlg { width: min(440px, calc(100vw - 32px)); padding: 18px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); color: var(--text); }
+.tm-pr-dlg::backdrop { background: rgba(0, 0, 0, .45); }
+.tm-pr-dlg h3 { margin: 0 0 12px; }
+.tm-pr-teams { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tm-pr-team { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 8px; border: 2px solid var(--line); border-radius: 12px; background: var(--card); color: var(--text); font: inherit; text-align: center; cursor: pointer; overflow-wrap: anywhere; }
+.tm-pr-team.active { border-color: var(--win); background: color-mix(in srgb, var(--win) 14%, var(--card)); }
+.tm-pr-sub { margin: 14px 0 6px; font-weight: 600; }
+.tm-pr-scores { display: flex; gap: 8px; flex-wrap: wrap; }
+.tm-pr-score { padding: 6px 14px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); font: inherit; font-weight: 600; cursor: pointer; }
+.tm-pr-score.active { background: var(--green); border-color: var(--green); color: #fff; }
