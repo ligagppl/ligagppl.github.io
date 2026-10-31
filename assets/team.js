@@ -202,7 +202,7 @@
     el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team"><a class="team-link" href="${profileOf(state.team)}">${esc(pair.name)}</a></b>
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><a class="btn ghost small" href="${profileOf(state.team)}">👁 Public profile</a><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
-      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Upcoming matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button></div>
+      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button></div>
       ${view === "upcoming" ? upcomingHtml() : view === "gallery" ? galleryHtml() : view === "courts" ? courtsHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
       ${msgHtml("top")}
@@ -301,6 +301,20 @@
       .sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
   }
 
+  // played matches with a date (any team), latest first: confirmed (with score), score pending, or over without a score yet
+  function playedList() {
+    const list = Object.entries(state.played || {}).map(([key, e]) => ({ key, e, t: keyTeams(key), played: true }));
+    Object.entries(state.upcoming || {}).forEach(([key, e]) => {
+      if (e.date && (matchEnd(e) || Date.parse(e.date + "T23:59:00")) <= Date.now() && !(state.played || {})[key]) list.push({ key, e: { ...e, pending: true }, t: keyTeams(key), played: true });
+    });
+    return list.filter(x => x.e.date && x.t[0] && x.t[1])
+      .map(x => {
+        if (x.key.startsWith("C:")) { const [, ri, mi] = x.key.split(":"); const r = (state.cup.rounds || [])[ri] || {}, m = (r.matches || [])[mi] || {}; return { ...x, done: m.sets || m.walkover || m.winner ? m : null, tb: !GPPL.cupFullSets(r) }; }
+        return { ...x, done: GPPL.findResult(state.results || [], x.t[0], x.t[1]) || null, tb: true };
+      })
+      .sort((x, y) => `${y.e.date}T${y.e.time || "00:00"}`.localeCompare(`${x.e.date}T${x.e.time || "00:00"}`));
+  }
+
   function upcomingHtml() {
     const label = key => {
       if (key.startsWith("C:")) { const r = (state.cup.rounds || [])[+key.split(":")[1]]; return `🏆 GPPC Cup · ${r ? r.name : ""}`; }
@@ -308,12 +322,13 @@
       const md = GPPL.fixtures.findIndex(g => g.some(([a, b]) => (a === x && b === y) || (a === y && b === x)));
       return md >= 0 ? `Matchday ${md + 1}` : "League";
     };
-    const list = upcomingList();
-    if (!list.length) return `<div class="card muted">No upcoming match has a date yet.</div>`;
+    const list = upcomingList(), done = playedList();
+    if (!list.length && !done.length) return `<div class="card muted">No match has a date yet.</div>`;
     const side = (id, cls) => `<span class="${cls}">${logo(id, "tm-logo-sm")}<b><a class="team-link" href="${profileOf(id)}">${esc(teamName(id))}</a></b></span>`;
     // filter by team: only teams with an upcoming match, A–Z (no ranking, no zeros)
     const per = new Map();
     list.forEach(({ t }) => t.forEach(id => per.set(id, (per.get(id) || 0) + 1)));
+    done.forEach(({ t }) => t.forEach(id => per.has(id) || per.set(id, 0))); // teams with only played matches can be picked too
     // played: confirmed results, results waiting for confirmation, and matches that are over but have no score yet
     const played = new Map(), addPlayed = ids => ids.forEach(id => id && played.set(id, (played.get(id) || 0) + 1));
     (state.results || []).forEach(r => addPlayed([r.a, r.b]));
@@ -322,14 +337,21 @@
     Object.keys(waiting).forEach(key => waiting[key] === "waiting" && !(state.upcoming || {})[key] && addPlayed(keyTeams(key))); // started matches are counted below once they end
     Object.entries(state.upcoming || {}).forEach(([key, e]) => e.date && (matchEnd(e) || Date.parse(e.date + "T23:59:00")) <= Date.now() && addPlayed(keyTeams(key)));
     if (upTeam !== null && !per.has(upTeam)) upTeam = null;
-    const chip = (id, text, n) => `<button type="button" class="tm-up-team${id === null ? " all" : ""}${upTeam === id ? " active" : ""}" data-act="up-team" data-team="${id === null ? "" : id}">${id === null ? "" : logo(id, "tm-logo-sm")}<span>${text}</span>${n ? `<small>${n} (${n + (played.get(id) || 0)})</small>` : ""}</button>`;
+    const chip = (id, text, n) => `<button type="button" class="tm-up-team${id === null ? " all" : ""}${upTeam === id ? " active" : ""}" data-act="up-team" data-team="${id === null ? "" : id}">${id === null ? "" : logo(id, "tm-logo-sm")}<span>${text}</span>${id !== null ? `<small>${n} (${n + (played.get(id) || 0)})</small>` : ""}</button>`;
     const filter = `<details class="card tm-up-filter"${upPaneOpen ? " open" : ""}><summary>🔎 Filter by team${upTeam !== null ? `: <b>${esc(teamName(upTeam))}</b>` : ""}</summary><p class="note">Number of upcoming matches – in brackets: upcoming + played.</p><div class="tm-up-teams">` +
       chip(null, "All teams") + [...per].sort((x, y) => teamName(x[0]).localeCompare(teamName(y[0]))).map(([id, n]) => chip(id, esc(teamName(id)), n)).join("") + `</div></details>`;
     const shown = upTeam === null ? list : list.filter(({ t }) => t.includes(upTeam));
+    const shownDone = upTeam === null ? done : done.filter(({ t }) => t.includes(upTeam));
     const seg = `<div class="tm-seg" role="group" aria-label="View">${[["list", "📋 List"], ["cal", "🗓️ Calendar"]].map(([v, t]) => `<button type="button" data-act="up-view" data-view="${v}" class="${upView === v ? "active" : ""}">${t}</button>`).join("")}</div>`;
-    const row = ({ key, e, t: [a, b] }) => {
+    const row = x => {
+      let { key, e, t: [a, b] } = x;
       const ours = a === state.team || b === state.team;
       if (ours ? b === state.team : e.by === b) [a, b] = [b, a]; // our own team on the left – otherwise the team that entered the date
+      if (x.played) return `<div class="tm-up tm-up-played${ours ? " tm-up-ours" : ""}">
+        <span class="tm-up-pair">${side(a, "tm-up-a")}<span class="muted">vs</span>${side(b, "tm-up-b")}</span>
+        <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>
+        <span class="tm-up-label">${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span>
+        <span class="tm-up-result">${x.done ? `✅ <b>${esc(GPPL.scoreText(x.done, a, x.tb))}</b>${(w => w ? ` · 🏆 ${esc(teamName(w))}` : "")(x.key.startsWith("C:") ? GPPL.cupWinner(x.done) : GPPL.evaluate(x.done).winner)}` : "✅ Played · ⏳ score pending"}</span></div>`;
       const live = liveNow(e);
       return `<div class="tm-up${ours ? " tm-up-ours" : ""}${live ? " tm-up-live" : ""}">
         <span class="tm-up-pair">${side(a, "tm-up-a")}<span class="muted">vs</span>${side(b, "tm-up-b")}</span>
@@ -337,9 +359,9 @@
         <span class="tm-up-label">${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span>
         ${predictHtml(key, a, b, e)}</div>`;
     };
-    const intro = `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted.</p>${filter}${seg}`;
-    if (upView === "cal") return intro + calendarHtml(shown, row);
-    return intro + `<div class="card tm-up-list">` + shown.map(row).join("") + `</div>`;
+    const intro = `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted. Played matches are in the calendar.</p>${filter}${seg}`;
+    if (upView === "cal") return intro + calendarHtml(shown.concat(shownDone), row); // the calendar also shows played matches (with the score)
+    return intro + (shown.length ? `<div class="card tm-up-list">` + shown.map(row).join("") + `</div>` : `<div class="card muted">No upcoming match has a date yet.</div>`);
   }
 
   // calendar view of the upcoming matches: a month grid (Monday first) – tap a day to see its matches below
@@ -353,7 +375,7 @@
     for (let i = 0; i < (first.getDay() + 6) % 7; i++) cells.push(`<span class="tm-cal-d out"></span>`);
     for (let d = 1; d <= days; d++) {
       const date = `${calMonth}-${String(d).padStart(2, "0")}`, ms = byDay[date] || [], ours = ms.some(({ t }) => t.includes(state.team));
-      const chips = ms.slice(0, 3).map(({ key, e, t: [a, b] }) => `<span class="tm-cal-m${key.startsWith("C:") ? " cup" : ""}${a === state.team || b === state.team ? " ours" : ""}${liveNow(e) ? " live" : ""}"${key.startsWith("C:") ? ' title="GPPC Cup"' : ""}><span class="t">${esc(e.time || "")}</span>${logo(a, "tm-cal-logo")}${logo(b, "tm-cal-logo")}${key.startsWith("C:") ? '<span class="cup-i" aria-label="Cup">🏆</span>' : ""}</span>`).join("");
+      const chips = ms.slice(0, 3).map(({ key, e, t: [a, b], played }) => `<span class="tm-cal-m${played ? " done" : ""}${key.startsWith("C:") ? " cup" : ""}${a === state.team || b === state.team ? " ours" : ""}${liveNow(e) ? " live" : ""}"${key.startsWith("C:") ? ' title="GPPC Cup"' : ""}><span class="t">${esc(e.time || "")}</span>${logo(a, "tm-cal-logo")}${logo(b, "tm-cal-logo")}${key.startsWith("C:") ? '<span class="cup-i" aria-label="Cup">🏆</span>' : ""}</span>`).join("");
       cells.push(`<button type="button" class="tm-cal-d${ms.length ? " has" : ""}${ours ? " ours" : ""}${date === today ? " today" : ""}${date === calDay ? " sel" : ""}" data-act="cal-day" data-day="${date}" aria-label="${date}: ${ms.length} match${ms.length === 1 ? "" : "es"}"><span class="n">${d}</span>${chips}${ms.length > 3 ? `<span class="tm-cal-more">+${ms.length - 3}</span>` : ""}</button>`);
     }
     const n = list.filter(x => x.e.date.startsWith(calMonth)).length, sel = byDay[calDay] || [];
