@@ -102,6 +102,8 @@
     .cal-m { display: flex; align-items: center; gap: 2px; font-size: .7rem; font-variant-numeric: tabular-nums; flex-wrap: wrap; line-height: 1.2; }
     .cal-m .dp-logo { width: 15px; height: 15px; font-size: 9px; }
     .cal-m.past { opacity: .55; }
+    .cal-m.done .t::before { content: "✅"; font-size: .6rem; margin-right: 1px; }
+    .sched-sub { margin: 22px 0 4px; }
     .cal-m.cup { outline: 1.5px solid #d4a017; border-radius: 6px; padding: 0 2px; background: color-mix(in srgb, #d4a017 14%, transparent); }
     .cal-m .cup-i { font-size: .62rem; line-height: 1; }
     .cal-more { font-size: .7rem; color: var(--muted); }
@@ -659,6 +661,7 @@
     }
 
     // ---------- league: due results + matches per matchday (cards like the members see) ----------
+    let playedDates = {}; // dates and venues of matches that already have a confirmed result (Admin → Scheduled)
     let schedule = {}; // dates, venues and waiting/disputed results – private in the gatekeeper, fetched with the admin key (👥 Member area)
     async function mergePending() {
       const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
@@ -668,6 +671,7 @@
         if (!res.ok) return;
         const d = await res.json();
         schedule = d.schedule || {};
+        playedDates = d.played || {};
         d.open.forEach(o => (schedule[o.key] = { ...(schedule[o.key] || {}), pending: o }));
       } catch {}
     }
@@ -962,6 +966,19 @@
       }));
       return list.sort((x, y) => `${x.e.date}T${x.e.time || "23:59"}`.localeCompare(`${y.e.date}T${y.e.time || "23:59"}`));
     }
+    // matches with a confirmed result that had a date – latest first
+    function playedList() {
+      const list = [];
+      fixtureList.forEach((games, i) => games.forEach(([a, b]) => {
+        const key = lkey(a, b), e = playedDates[key], r = GPPL.findResult(results, a, b);
+        if (e && e.date && r) list.push({ key, ...setterLeft(a, b, e), e, label: `Matchday ${i + 1}`, done: r });
+      }));
+      (cup.rounds || []).forEach((r, ri) => (r.matches || []).forEach((m, mi) => {
+        const key = `C:${ri}:${mi}`, e = playedDates[key];
+        if (e && e.date && (m.sets || m.walkover || m.winner)) list.push({ key, ...setterLeft(m.a, m.b, e), e, label: `GPPC Cup · ${r.name}`, done: m });
+      }));
+      return list.sort((x, y) => `${y.e.date}T${y.e.time || "00:00"}`.localeCompare(`${x.e.date}T${x.e.time || "00:00"}`));
+    }
     $("sched-teams").addEventListener("toggle", e => {
       try { localStorage.setItem("gppl-sched-teams", e.target.open ? "open" : "closed"); } catch {}
     }, true);
@@ -987,15 +1004,17 @@
           .map(([id, n]) => `<span class="st-row${n ? "" : " none"}">${teamLogo(id)}<span>${escA(name(id))}</span><b>${n} <small class="note">(${n + played.get(id)})</small></b></span>`).join("") + `</div></details>` : "";
       $("sched-view").hidden = false;
       $("sched-view").querySelectorAll("button").forEach(x => x.classList.toggle("active", x.dataset.schedView === schedView));
-      if (schedView === "cal") { $("sched-list").innerHTML = calendarHtml(list); return; }
-      $("sched-list").innerHTML = list.map(schedRow).join("") || '<p class="muted">No match has a date yet.</p>';
+      const done = playedList();
+      if (schedView === "cal") { $("sched-list").innerHTML = calendarHtml(list.concat(done)); return; }
+      $("sched-list").innerHTML = (list.map(schedRow).join("") || '<p class="muted">No open match has a date.</p>') +
+        (done.length ? `<h4 class="sched-sub">✅ Played <span class="note">· ${done.length} · latest first</span></h4>` + done.map(schedRow).join("") : "");
     }
-    function schedRow({ key, a, b, e, label }) {
-        const p = e.pending;
-        const state = p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}` : isPast(e) ? "⏰ Result due" : "";
-        return `<div class="md-row">${pairLine(a, b)}
+    function schedRow({ key, a, b, e, label, done }) {
+        const p = !done && e.pending;
+        const state = done ? `✅ Played · ${GPPL.scoreText(done, a)}` : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}` : isPast(e) ? "⏰ Result due" : "";
+        return `<div class="md-row${done ? " is-done" : ""}">${pairLine(a, b)}
           <span class="md-info"><span class="md-when">${whenText(e)}</span><span class="note">${escA(label)}</span>${state ? `<span class="md-state">${state}</span>` : ""}</span>
-          ${p ? "" : `<span class="md-share"><button class="btn ghost small" data-match-share="${key}|${a}|${b}|${escA(label)}">📤 Share</button></span>`}</div>`;
+          ${p || done ? "" : `<span class="md-share"><button class="btn ghost small" data-match-share="${key}|${a}|${b}|${escA(label)}">📤 Share</button></span>`}</div>`;
     }
 
     // calendar view: a month grid (Monday first) – tap a day to see its matches below
@@ -1010,7 +1029,7 @@
       for (let i = 0; i < lead; i++) cells.push(`<span class="cal-d out"></span>`);
       for (let d = 1; d <= days; d++) {
         const date = `${calMonth}-${String(d).padStart(2, "0")}`, ms = byDay[date] || [];
-        const chips = ms.slice(0, 3).map(({ key, a, b, e }) => `<span class="cal-m${key.startsWith("C:") ? " cup" : ""}${isPast(e) ? " past" : ""}"${key.startsWith("C:") ? ' title="GPPC Cup"' : ""}><span class="t">${escA(e.time || "")}</span>${teamLogo(a)}${teamLogo(b)}${key.startsWith("C:") ? '<span class="cup-i" aria-label="Cup">🏆</span>' : ""}</span>`).join("");
+        const chips = ms.slice(0, 3).map(({ key, a, b, e, done }) => `<span class="cal-m${key.startsWith("C:") ? " cup" : ""}${isPast(e) ? " past" : ""}${done ? " done" : ""}"${key.startsWith("C:") ? ' title="GPPC Cup"' : ""}><span class="t">${escA(e.time || "")}</span>${teamLogo(a)}${teamLogo(b)}${key.startsWith("C:") ? '<span class="cup-i" aria-label="Cup">🏆</span>' : ""}</span>`).join("");
         cells.push(`<button type="button" class="cal-d${ms.length ? " has" : ""}${date === today ? " today" : ""}${date === calDay ? " sel" : ""}" data-cal-day="${date}" aria-label="${date}: ${ms.length} match${ms.length === 1 ? "" : "es"}"><span class="n">${d}</span>${chips}${ms.length > 3 ? `<span class="cal-more">+${ms.length - 3}</span>` : ""}</button>`);
       }
       const title = first.toLocaleDateString("en-GB", { month: "long", year: "numeric" }), inMonth = list.filter(x => x.e.date.startsWith(calMonth)).length;
