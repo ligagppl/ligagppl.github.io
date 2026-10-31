@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=66">
+  <link rel="stylesheet" href="assets/style.css?v=67">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -117,6 +117,8 @@
     .st-row b { margin-left: auto; font-variant-numeric: tabular-nums; }
     .st-row.none { color: var(--muted); }
     .slot-reqs { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; }
+    .slot-soon { margin: 0 -12px; padding: 12px; border-radius: 12px; background: color-mix(in srgb, #e8912d 14%, var(--card)); box-shadow: inset 4px 0 0 #e8912d; }
+    .slot-soon-chip { align-self: flex-start; font-size: .78rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: #e8912d; color: #fff; }
     .slot-req { display: flex; align-items: center; gap: 8px 12px; flex-wrap: wrap; padding: 6px 10px; border-radius: 10px; background: color-mix(in srgb, var(--line) 30%, transparent); }
     .slot-req .btn { margin-left: auto; }
     .slot-own { font-size: .8rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--ball); color: #14201a; }
@@ -1085,8 +1087,11 @@
       const pickHtml = (s, r) => `<select class="slot-opp" data-for="${r.team}"><option value="">Pick the opponent…</option>${openMatches(r.team).map(k =>
         `<option value="${k}">${matchTeams(k).includes(s.by) ? "⭐ " : ""}${escA(oppLabel(k, r.team))}${matchTeams(k).includes(s.by) ? " (offered this court)" : ""}</option>`).join("")}</select>${giveBtn(s, r)}`;
       const sorted = slots.slice().sort((x, y) => `${x.date}T${x.time}`.localeCompare(`${y.date}T${y.time}`));
-      $("slot-list").innerHTML = sorted.map(s => `<div class="md-row slot-row">
-          <span class="md-info"><span class="md-when">${whenText(s)}</span><span class="note">Offered by <b>${escA(name(s.by))}</b></span>
+      // not given to anyone yet and starting within 48 hours → highlighted (only a hint – no deadline)
+      const hoursLeft = s => (new Date(`${s.date}T${s.time}:00`).getTime() - Date.now()) / 3600000;
+      const soon = s => !s.assignedTo && hoursLeft(s) > 0 && hoursLeft(s) <= 48;
+      $("slot-list").innerHTML = sorted.map(s => `<div class="md-row slot-row${soon(s) ? " slot-soon" : ""}">
+          <span class="md-info"><span class="md-when">${whenText(s)}</span>${soon(s) ? `<span class="slot-soon-chip">⏰ Only ${Math.max(1, Math.round(hoursLeft(s)))} h left</span>` : ""}<span class="note">Offered by <b>${escA(name(s.by))}</b></span>
             ${s.assignedTo ? `<span class="md-state">✅ Given to <b>${escA(name(s.assignedTo))}</b>${s.assignedKey ? ` – ${escA(label(s.assignedKey))}` : ""}</span>` : ""}</span>
           ${s.assignedTo ? "" : `<div class="slot-reqs">${s.requests.map(r => `<div class="slot-req"><span class="md-teams">${teamLogo(r.team)}<b>${escA(name(r.team))}</b>${ms(r.team)}</span>
               <span class="note">for ${escA(label(r.key))}</span>${r.key && matchTeams(r.key).includes(s.by) ? `<span class="slot-own">⭐ vs the team that offered this court</span>` : ""}

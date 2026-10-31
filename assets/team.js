@@ -220,7 +220,10 @@
     // only teams we haven't played (no result, none waiting) and haven't scheduled yet
     const open = myMatches().filter(m => { const e = state.matches[m.key] || {}; return !m.official && !e.pending && !e.date; });
     const matchName = key => { const m = myMatches().find(x => x.key === key); return m ? `${m.group === "cup" ? "GPPC Cup " + m.label.split(" · ")[1] : m.label.split(" · ")[0]} vs ${teamName(m.opp)}` : ""; };
-    const row = (c, extra) => `<div class="tm-up">${when(c)}${extra}${msgHtml(c.id)}</div>`;
+    // a court nobody has got yet that starts within 48 hours is highlighted (only a hint – no deadline)
+    const hoursLeft = c => (new Date(`${c.date}T${c.time}:00`).getTime() - Date.now()) / 3600000;
+    const soon = c => !c.assigned && !c.ourMatch && !c.taken && !c.assignedTo && hoursLeft(c) > 0 && hoursLeft(c) <= 48;
+    const row = (c, extra) => `<div class="tm-up${soon(c) ? " tm-court-soon" : ""}">${when(c)}${soon(c) ? `<span class="tm-soon-chip">⏰ Only ${Math.max(1, Math.round(hoursLeft(c)))} h left</span>` : ""}${extra}${msgHtml(c.id)}</div>`;
     const list = (title, items) => items.length ? `<h3>${title}</h3><div class="card tm-up-list">${items.join("")}</div>` : "";
 
     const mine = all.filter(c => c.assigned).map(c => row(c, `<span class="tm-up-label">✅ <b>This court is yours</b> – offered by ${esc(teamName(c.from))}${c.key ? ` · for ${esc(matchName(c.key))} (the match date is set)` : ""}</span>
