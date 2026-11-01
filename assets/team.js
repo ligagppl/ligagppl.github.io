@@ -202,8 +202,8 @@
     el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team"><a class="team-link" href="${profileOf(state.team)}">${esc(pair.name)}</a></b>
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><a class="btn ghost small" href="${profileOf(state.team)}">👁 Public profile</a><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
-      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button></div>
-      ${view === "upcoming" ? upcomingHtml() : view === "gallery" ? galleryHtml() : view === "courts" ? courtsHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
+      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button>${state.fanPolls ? `<button role="tab" data-act="view" data-view="fanpolls" class="${view === "fanpolls" ? "active" : ""}">📣 Fan polls</button>` : ""}</div>
+      ${view === "upcoming" ? upcomingHtml() : view === "fanpolls" && state.fanPolls ? fanPollsHtml() : view === "gallery" ? galleryHtml() : view === "courts" ? courtsHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
@@ -404,6 +404,34 @@
     const closes = new Date(`${e.date}T${e.time}:00`).getTime() - (predictLaunch() ? 0 : PREDICT_CLOSE_MS);
     const left = closed || typeof closesText !== "function" ? "" : `<span class="note tm-pr-closes" data-closes="${closes}">${closesText(closes)}</span>`;
     return `<div class="tm-pr">${stats}<div class="tm-pr-act">${btn}${left}</div></div>`;
+  }
+
+  // fan polls – only for the teams the server allows (state.fanPolls: match key → poll code); the server checks every request
+  let fpMsg = null;
+  const pollLink = token => `${location.origin}${location.pathname}#poll/${token}`;
+  const stillOn = k => state.upcoming[k] && state.upcoming[k].time && !(matchEnd(state.upcoming[k]) <= Date.now()); // fans can vote until the match is over
+  const byStart = (x, y) => `${state.upcoming[x].date} ${state.upcoming[x].time}`.localeCompare(`${state.upcoming[y].date} ${state.upcoming[y].time}`);
+  // the 📣 Fan polls tab: every upcoming match – open a poll, copy its link, share all open polls in one WhatsApp message
+  function fanPollsHtml() {
+    const keys = Object.keys(state.upcoming || {}).filter(stillOn).sort(byStart), open = keys.filter(k => state.fanPolls[k]);
+    const rows = keys.map(k => {
+      const [a, b] = keyTeams(k), e = state.upcoming[k], token = state.fanPolls[k];
+      return `<div class="tm-fp-row"><span class="tm-up-pair">${logo(a, "tm-logo-sm")}<b>${esc(teamName(a))}</b><span class="muted">vs</span><b>${esc(teamName(b))}</b>${logo(b, "tm-logo-sm")}</span>
+        <span class="note">${k.startsWith("C:") ? "🏆 GPPC Cup · " : ""}📅 ${dayText(e.date)} · ${esc(e.time)}${token ? " · <b>✅ poll open</b>" : ""}</span>
+        <div class="tm-btns">${token
+          ? `<button type="button" class="btn ghost small" data-act="fp-copy" data-token="${esc(token)}">🔗 Copy poll link</button>`
+          : `<button type="button" class="btn small" data-act="fp-open" data-key="${esc(k)}">📣 Open poll</button>`}</div></div>`;
+    }).join("");
+    return `<div class="card tm-fp"><p class="note">Open a poll for a match, then share all open polls in one WhatsApp message. Fans can vote until the match is over. Only the organizers can close a poll.</p>
+      <div class="tm-btns"><button type="button" class="btn" data-act="fp-share"${open.length ? "" : " disabled"}>📲 Share open polls on WhatsApp (${open.length})</button></div>
+      ${fpMsg ? `<div class="msg ${fpMsg.ok ? "ok" : "err"}">${esc(fpMsg.text)}</div>` : ""}</div>
+      ${keys.length ? `<div class="card tm-fp-list">${rows}</div>` : `<div class="card muted">No upcoming match with a date and time.</div>`}`;
+  }
+  function pollMessage() {
+    const keys = Object.keys(state.fanPolls || {}).filter(stillOn).sort(byStart);
+    const lines = keys.map((k, i) => { const [a, b] = keyTeams(k); return `${i + 1}. *${teamName(a)} vs ${teamName(b)}*${k.startsWith("C:") ? " 🏆 Cup" : ""}\n👉 ${pollLink(state.fanPolls[k])}`; }); // *…* = bold in WhatsApp
+    const n = keys.length;
+    return `*🇵🇰 GPPL 🇩🇪*\n\nWe have ${n} upcoming liga match${n === 1 ? "" : "es"} and you can vote directly for your team\n\n${lines.join("\n\n")}\n\nIf you don't know who they are, you can check their details on ${location.origin}${location.pathname}#participants`;
   }
 
   // the popup – lives outside the member area, so redraws of the page don't close it
@@ -697,6 +725,31 @@
       pr = { key, a: +b.dataset.a, b: +b.dataset.b, w: mine ? mine.w : 0, s: mine && mine.s || "", err: null, busy: false };
       drawPredict(); predictDialog().showModal();
       return;
+    }
+    if (a === "fp-open") {
+      b.disabled = true;
+      try {
+        const { token } = await call("/team-poll", { key });
+        state = await call("/me");
+        try { await navigator.clipboard.writeText(pollLink(token)); fpMsg = { ok: true, text: `✅ Poll open – link copied: ${pollLink(token)}` }; }
+        catch { fpMsg = { ok: true, text: `✅ Poll open – link: ${pollLink(token)}` }; }
+      } catch (err) { fpMsg = { ok: false, text: `❌ ${err.message}` }; }
+      return render();
+    }
+    if (a === "fp-copy") {
+      const link = pollLink(b.dataset.token);
+      try { await navigator.clipboard.writeText(link); fpMsg = { ok: true, text: `✅ Link copied: ${link}` }; } catch { fpMsg = { ok: true, text: `Link: ${link}` }; }
+      return render();
+    }
+    if (a === "fp-share") {
+      const text = pollMessage();
+      try { await navigator.clipboard.writeText(text); } catch {}
+      // the phone's share box keeps emojis and flags intact; on a computer: WhatsApp's send page
+      const whatsapp = () => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+      if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) navigator.share({ text }).catch(err => { if (err.name !== "AbortError") whatsapp(); });
+      else whatsapp();
+      fpMsg = { ok: true, text: "✅ Message ready – it's also copied, in case you want to paste it yourself." };
+      return render();
     }
     if (a === "up-view") { upView = b.dataset.view; ls.set("gppl-up-view", upView); return render(); }
     if (a === "cal-day") { calDay = b.dataset.day; return render(); }
