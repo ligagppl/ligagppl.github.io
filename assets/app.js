@@ -683,6 +683,85 @@ if (visibleTabs) {
     if (id && !tabAllowed(id) && !a.classList.contains("rb-ref")) a.replaceWith(document.createTextNode(a.textContent));
   });
 }
+// ---------- fan poll (#poll/<code>) – the admins share the link; anyone can vote once, until 30 minutes before the start ----------
+// public: the two teams and the percentages only (team predictions and fan votes together) – never dates or venues
+let pollToken = null, poll = { pick: {} };
+// "Voting closes in 3 days" – under a day a live countdown (every [data-closes] element ticks each second)
+function closesText(ms) {
+  const left = ms - Date.now();
+  if (left <= 0) return "🔒 Voting closed";
+  const d = Math.floor(left / 86400000);
+  if (d >= 1) return `🗳️ Voting closes in ${d} day${d === 1 ? "" : "s"}`;
+  const s = Math.floor(left / 1000), h = Math.floor(s / 3600), m = Math.floor(s / 60) % 60, pad = n => String(n).padStart(2, "0");
+  return `⏳ Voting closes in ${h ? `${h}h ` : ""}${pad(m)}m ${pad(s % 60)}s`;
+}
+setInterval(() => document.querySelectorAll("[data-closes]").forEach(el => (el.textContent = closesText(+el.dataset.closes))), 1000);
+const pollSaved = () => { try { return JSON.parse(localStorage.getItem("gppl-poll-" + pollToken) || "null"); } catch { return null; } };
+async function loadPoll() {
+  const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), token = pollToken;
+  poll = { pick: {}, loading: true }; renderPoll();
+  try {
+    const res = await fetch(`${api}/poll?t=${encodeURIComponent(token)}`), d = await res.json();
+    if (token !== pollToken) return;
+    poll = res.ok ? { pick: {}, data: d } : { pick: {}, error: d.error || "This poll doesn't exist." };
+  } catch { poll = { pick: {}, error: "Couldn't load the poll – please try again." }; }
+  renderPoll();
+}
+function renderPoll() {
+  const el = document.getElementById("poll-body");
+  if (!el) return;
+  if (poll.loading) { el.innerHTML = `<div class="card poll-card"><p class="muted">Loading…</p></div>`; return; }
+  if (poll.error) { el.innerHTML = `<div class="card poll-card"><h2>🔮 Fan poll</h2><p>${esc(poll.error)}</p></div>`; return; }
+  const d = poll.data, mine = pollSaved(), pick = poll.pick, a = d.a, b = d.b;
+  const pickText = p => `${esc(pairName(p.w))} ${p.s.replace("-", "–")}`;
+  const pa = d.total ? Math.round(100 * (d.n[a] || 0) / d.total) : 50;
+  const stats = d.total
+    ? `<div class="tm-pr-bar" aria-hidden="true"><span style="width:${pa}%"></span><span></span></div>
+       <div class="tm-pr-nums"><b>${pa}% <small>(${d.n[a] || 0})</small></b><span class="muted">${d.total} vote${d.total === 1 ? "" : "s"}${d.top ? ` · most picked: ${pickText(d.top)}` : ""}</span><b><small>(${d.total - (d.n[a] || 0)})</small> ${100 - pa}%</b></div>`
+    : `<div class="tm-pr-nums"><span class="muted">No votes yet${d.open ? " – be the first!" : ""}</span></div>`;
+  const team = id => `<a class="poll-team team-link" href="${profileHref(id)}">${teamLogo(id).replace('class="mlogo', 'class="poll-logo mlogo')}<b>${pairName(id)}</b></a>`;
+  let body, form = false;
+  if (mine) body = `<p class="poll-done">✅ Your vote: <b>${pickText(mine)}</b></p>`;
+  else if (d.voted) body = `<p class="poll-done">✅ A vote from your network has already been counted.</p>`;
+  else if (!d.open) body = `<p class="poll-done">🔒 Voting is closed.</p>`;
+  else if (poll.confirm) body = `<div class="poll-confirm"><p><b>${pickText(pick)}</b> – your vote can't be changed afterwards.</p>
+      ${poll.err ? `<div class="msg err">❌ ${esc(poll.err)}</div>` : ""}
+      <div class="tm-btns"><button type="button" class="btn" data-poll="send"${poll.busy ? " disabled" : ""}>${poll.busy ? "Sending…" : "✅ Confirm my vote"}</button><button type="button" class="btn ghost" data-poll="back"${poll.busy ? " disabled" : ""}>Back</button></div></div>`;
+  else form = true, body = `<p class="tm-pr-sub">Who wins? Tap a team</p>
+      <div class="tm-pr-teams">${[a, b].map(id => `<button type="button" class="tm-pr-team${pick.w === id ? " active" : ""}" data-poll-w="${id}">${teamLogo(id)}<b>${pairName(id)}</b></button>`).join("")}</div>
+      <p class="tm-pr-sub">Score in sets</p>
+      <div class="tm-pr-scores">${[["2-0", "2–0"], ["2-1", "2–1"]].map(([v, t]) => `<button type="button" class="tm-pr-score${pick.s === v ? " active" : ""}" data-poll-s="${v}">${t}</button>`).join("")}</div>
+      <div class="tm-btns" style="margin-top:14px"><button type="button" class="btn" data-poll="vote"${pick.w && pick.s ? "" : " disabled"}>🔮 Vote</button></div>`;
+  el.innerHTML = `<div class="card poll-card">
+    <p class="poll-kicker">🔮 Fan poll · ${d.cup ? `🏆 GPPC Cup · ${esc(d.cup)}` : "GPPL league match"}</p>
+    ${form ? "" : `<div class="poll-vs">${team(a)}<span class="poll-x">vs</span>${team(b)}</div>`}
+    ${body}
+    ${d.open && d.closesAt && !mine && !d.voted ? `<p class="poll-closes" data-closes="${d.closesAt}">${closesText(d.closesAt)}</p>` : ""}
+    <div class="tm-pr poll-stats">${stats}</div>
+    <p class="note">One vote per person, anonymous. The percentages include the teams' own predictions.</p></div>`;
+}
+document.addEventListener("click", async ev => {
+  const t = ev.target.closest("[data-poll], [data-poll-w], [data-poll-s]");
+  if (!t || !poll.data || poll.busy) return;
+  if (t.dataset.pollW) poll.pick.w = +t.dataset.pollW;
+  else if (t.dataset.pollS) poll.pick.s = t.dataset.pollS;
+  else if (t.dataset.poll === "vote") poll.confirm = true;
+  else if (t.dataset.poll === "back") { poll.confirm = false; poll.err = null; }
+  else if (t.dataset.poll === "send") {
+    poll.busy = true; poll.err = null; renderPoll();
+    const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
+    try {
+      const res = await fetch(api + "/poll", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t: pollToken, winner: poll.pick.w, score: poll.pick.s }) });
+      const d = await res.json();
+      if (res.ok) { try { localStorage.setItem("gppl-poll-" + pollToken, JSON.stringify(poll.pick)); } catch {} poll = { pick: {}, data: d }; }
+      else if (res.status === 409) poll = { pick: {}, data: { ...poll.data, voted: true } };
+      else poll.err = d.error || `Error ${res.status}`;
+    } catch { poll.err = "Couldn't send the vote – please try again."; }
+    poll.busy = false;
+  }
+  renderPoll();
+});
+
 // the menu stays hidden until updateMenu has sorted out Schedule / Register / Participants (no flash of tabs)
 { const s = document.querySelector('#nav a[href="#schedule"]'); if (s) s.hidden = !LEAGUE.scheduleVisible; }
 setTimeout(() => document.documentElement.classList.add("tabs-ready"), 3000); // in case the data never arrives
@@ -690,11 +769,12 @@ setTimeout(() => document.documentElement.classList.add("tabs-ready"), 3000); //
 function showTab() {
   let id = (location.hash || "#" + (visibleTabs ? visibleTabs[0] : "home")).slice(1);
   // a team's public profile: #teams/<team-name> (old links #profile-<id> still work)
-  const old = /^profile-(\d+)$/.exec(id), slug = /^teams\/(.+)$/.exec(id);
+  const old = /^profile-(\d+)$/.exec(id), slug = /^teams\/(.+)$/.exec(id), pollLink = /^poll\/([A-Za-z0-9]+)$/.exec(id);
+  if (pollLink) { if (pollToken !== pollLink[1].toUpperCase()) { pollToken = pollLink[1].toUpperCase(); loadPoll(); } id = "poll"; }
   const prof = old ? GPPL.pairById[+old[1]] : slug ? LEAGUE.pairs.find(p => teamSlug(p.id) === decodeURIComponent(slug[1])) : null;
   if (old || slug) { profileId = prof ? prof.id : null; id = "profile"; }
   if (old && prof) history.replaceState(null, "", profileHref(prof.id));
-  if ((prof ? !GPPL.pairById[profileId] : !tabAllowed(id)) || !document.getElementById(id) || (id === "register" && registrationOver())) {
+  if ((pollLink ? false : prof ? !GPPL.pairById[profileId] : !tabAllowed(id)) || !document.getElementById(id) || (id === "register" && registrationOver())) {
     id = visibleTabs ? visibleTabs[0] : "home";
     history.replaceState(null, "", "#" + id);
   }

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=68">
+  <link rel="stylesheet" href="assets/style.css?v=69">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -81,6 +81,10 @@
     .pp-table { margin-top: 8px; font-size: .85rem; }
     .pairs-table.pp-table th, .pairs-table.pp-table td { padding: 6px 4px; }
     .pairs-table.pp-table td.n { width: auto; }
+    .fp-table { margin-top: 8px; font-size: .85rem; }
+    .pairs-table.fp-table th, .pairs-table.fp-table td { padding: 6px 4px; vertical-align: middle; }
+    .fp-table .md-teams { display: flex; margin: 2px 0; }
+    .fp-btns { display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
     .pp-table .md-teams { flex-wrap: nowrap; gap: 6px; }
     .pp-table .md-teams .dp-logo { width: 22px; height: 22px; flex: none; }
     .pp-table .md-teams span { overflow-wrap: anywhere; }
@@ -427,6 +431,11 @@
         <p class="note">+0.5 for the right winner, +0.5 more for the exact set score. Counted from the confirmed results only (walkovers don't count) – completely separate from the league table.</p>
         <button class="btn ghost small" id="pp-load">🔄 Refresh</button>
         <div id="pp-list"></div>
+        <h4 style="margin:18px 0 4px">📣 Fan polls</h4>
+        <p class="note">Open a poll for an upcoming match and share the link (e.g. in WhatsApp). Anyone with the link can vote once per connection – no account needed – until 30 minutes before the match, and can't change the vote. Teams and fans only see the combined percentages; here they're kept apart. Fan votes never count for prediction points.</p>
+        <button class="btn ghost small" id="fp-load">🔄 Refresh</button>
+        <div id="fp-list"></div>
+        <div class="msg" id="fp-msg"></div>
       </div>
 
       <div class="card">
@@ -1472,6 +1481,49 @@
       } catch (e) { $("pp-list").innerHTML = `<p class="msg err">❌ ${escA(e.message)}</p>`; }
     }
     $("pp-load").addEventListener("click", loadPredictionPoints);
+    // fan polls: team picks and fan votes side by side (teams and fans only ever see them combined)
+    const pollLink = token => `${location.origin}/#poll/${token}`;
+    async function loadPolls() {
+      const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
+      if (!api || !key) { $("fp-list").innerHTML = '<p class="muted">Enter the admin key in <b>👥 Member area</b> first.</p>'; return; }
+      try {
+        const res = await fetch(api + "/admin/polls", { headers: { Authorization: `Admin ${key}` } });
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Error ${res.status}`);
+        const polls = (await res.json()).polls || [];
+        const split = (t, a) => t.total ? `${Math.round(100 * (t.n[a] || 0) / t.total)}% – ${100 - Math.round(100 * (t.n[a] || 0) / t.total)}% <span class="muted">(${t.total})</span>` : '<span class="muted">–</span>';
+        const when = p => p.date ? new Date(`${p.date}T12:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + (p.time ? ` · ${p.time}` : "") : "no date";
+        $("fp-list").innerHTML = polls.length ? `<table class="pairs-table fp-table"><thead><tr><th>Match</th><th title="Team predictions">🔮 Teams</th><th title="Fan votes">📣 Fans</th><th></th></tr></thead><tbody>` +
+          polls.map(p => `<tr><td><span class="md-teams">${teamLogo(p.a)}<span>${escA(name(p.a))}</span></span><span class="md-teams">${teamLogo(p.b)}<span>${escA(name(p.b))}</span></span>
+              <span class="note">${p.cup ? `🏆 ${escA(p.cup)} · ` : ""}${when(p)}${p.over ? " · voting closed" : p.fans && p.fans.closed ? " · poll closed" : ""}</span></td>
+            <td>${split(p.teams, p.a)}</td><td>${p.fans ? split(p.fans, p.a) : '<span class="muted">no poll</span>'}</td>
+            <td class="fp-btns">${p.fans
+              ? `<button class="btn small" data-fp-copy="${p.fans.token}">🔗 Copy link</button>${p.over ? "" : `<button class="btn ghost small" data-fp="${p.key}" data-fp-open="${p.fans.closed ? 1 : 0}">${p.fans.closed ? "Reopen" : "Close"}</button>`}`
+              : `<button class="btn ghost small" data-fp="${p.key}" data-fp-open="1">📣 Open poll</button>`}</td></tr>`).join("") + `</tbody></table>`
+          : '<p class="muted">No upcoming matches with a date.</p>';
+      } catch (e) { $("fp-list").innerHTML = `<p class="msg err">❌ ${escA(e.message)}</p>`; }
+    }
+    $("fp-load").addEventListener("click", loadPolls);
+    $("fp-list").addEventListener("click", async ev => {
+      const b = ev.target.closest("button");
+      if (!b) return;
+      if (b.dataset.fpCopy) {
+        const link = pollLink(b.dataset.fpCopy);
+        try { await navigator.clipboard.writeText(link); flash("fp-msg", `✅ Link copied: ${link}`, true); }
+        catch { flash("fp-msg", `Copy this link: ${link}`, true); }
+        return;
+      }
+      if (!b.dataset.fp) return;
+      const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
+      b.disabled = true;
+      try {
+        const res = await fetch(api + "/admin/polls", { method: "POST", headers: { Authorization: `Admin ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ key: b.dataset.fp, open: b.dataset.fpOpen === "1" }) });
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
+        if (d.token) { const link = pollLink(d.token); try { await navigator.clipboard.writeText(link); flash("fp-msg", `✅ Poll open – link copied: ${link}`, true); } catch { flash("fp-msg", `✅ Poll open – share this link: ${link}`, true); } }
+        else flash("fp-msg", "✅ Poll closed – the link now shows “Voting is closed”.", true);
+        await loadPolls();
+      } catch (e) { flash("fp-msg", `❌ ${e.message}`, false); b.disabled = false; }
+    });
     function fillPredictTop() {
       const mode = siteSettings.predictShowTop === false ? "hide" : "show";
       document.querySelectorAll('input[name="predict-top"]').forEach(r => (r.checked = r.value === mode));
@@ -1802,7 +1854,7 @@
       }
       if (btn.dataset.panel === "cup") await reload();
       if (btn.dataset.panel === "slots") await loadSlots();
-      if (btn.dataset.panel === "pairs") loadPredictionPoints();
+      if (btn.dataset.panel === "pairs") { loadPredictionPoints(); loadPolls(); }
     }));
 
     // keep the embedded draw as tall as its content
@@ -1827,7 +1879,7 @@
       await mergePending();
       fillMatches(); renderResultList(); renderLeagueViews(); renderCup(); fillRegistration(); renderCurrentPairs();
       loadSlots(); // open requests show in the tab name
-      loadPredictionPoints();
+      loadPredictionPoints(); loadPolls();
     }
 
     // after a reload: open the tab from the address (admin.html#members …) again

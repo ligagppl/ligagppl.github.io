@@ -386,8 +386,8 @@
       ${sel.map(row).join("") || `<p class="muted">No match on this day.</p>`}</div>`;
   }
 
-  // ---- predictions: every team can pick a winner (and a set score) until 12 hours before the start
-  const PREDICT_CLOSE_MS = 12 * 3600000, PREDICT_OPEN_UNTIL = Date.parse("2026-11-02T08:00:00+01:00"); // at launch: open up to the start
+  // ---- predictions: every team can pick a winner (and a set score) until the start (PREDICT_CLOSE_MS)
+  const PREDICT_CLOSE_MS = 30 * 60000 /* close 30 minutes before the start */, PREDICT_OPEN_UNTIL = Date.parse("2026-11-02T08:00:00+01:00"); // at launch: open up to the start
   const predictLaunch = () => Date.now() < PREDICT_OPEN_UNTIL;
   const predictClosed = e => !e.time || new Date(`${e.date}T${e.time}:00`).getTime() - (predictLaunch() ? 0 : PREDICT_CLOSE_MS) <= Date.now();
   const pickText = p => `${esc(teamName(p.w))}${p.s ? ` ${p.s.replace("-", "–")}` : ""}`;
@@ -401,7 +401,9 @@
     const btn = closed
       ? `<span class="note">🔒 Predictions closed${p.mine ? ` · your pick: ${pickText(p.mine)}` : ""}</span>`
       : `<button class="btn ghost small" data-act="predict" data-key="${key}" data-a="${a}" data-b="${b}">${p.mine ? `🔮 Your pick: ${pickText(p.mine)} · Change` : "🔮 Predict"}</button>`;
-    return `<div class="tm-pr">${stats}<div class="tm-pr-act">${btn}</div></div>`;
+    const closes = new Date(`${e.date}T${e.time}:00`).getTime() - (predictLaunch() ? 0 : PREDICT_CLOSE_MS);
+    const left = closed || typeof closesText !== "function" ? "" : `<span class="note tm-pr-closes" data-closes="${closes}">${closesText(closes)}</span>`;
+    return `<div class="tm-pr">${stats}<div class="tm-pr-act">${btn}${left}</div></div>`;
   }
 
   // the popup – lives outside the member area, so redraws of the page don't close it
@@ -440,7 +442,7 @@
       <div class="tm-pr-teams">${[pr.a, pr.b].map(id => `<button type="button" class="tm-pr-team${pr.w === id ? " active" : ""}" data-w="${id}">${logo(id)}<b>${esc(teamName(id))}</b></button>`).join("")}</div>
       <p class="tm-pr-sub">Score in sets</p>
       <div class="tm-pr-scores">${[["2-0", "2–0"], ["2-1", "2–1"]].map(([v, t]) => `<button type="button" class="tm-pr-score${pr.s === v ? " active" : ""}" data-s="${v}">${t}</button>`).join("")}</div>
-      <p class="note">${pr.w && pr.s ? `${esc(teamName(pr.w))} wins ${pr.s.replace("-", "–")}. ` : ""}You can change it until ${predictLaunch() ? "the match starts" : "12 hours before the match"}. Predictions are anonymous – others only see the percentages.</p>
+      <p class="note">${pr.w && pr.s ? `${esc(teamName(pr.w))} wins ${pr.s.replace("-", "–")}. ` : ""}You can change it until ${predictLaunch() ? "the match starts" : "30 minutes before the match"}. Predictions are anonymous – others only see the percentages.</p>
       ${pr.err ? `<div class="msg err">❌ ${esc(pr.err)}</div>` : ""}
       <div class="tm-btns"><button type="button" class="btn small" data-save${pr.w && pr.s && !pr.busy ? "" : " disabled"}>${pr.busy ? "Saving…" : "Save prediction"}</button>${mine ? `<button type="button" class="btn ghost small" data-clear${pr.busy ? " disabled" : ""}>Remove</button>` : ""}<button type="button" class="btn ghost small" data-close>Cancel</button></div></div>`;
   }
