@@ -1511,7 +1511,12 @@
       if (!openPolls.length) return flash("fp-msg", "❌ No open polls – open a poll for a match first.", false);
       const n = openPolls.length, lines = openPolls.map((p, i) => `${i + 1}. *${name(p.a)} vs ${name(p.b)}*${p.cup ? " 🏆 Cup" : ""}\n👉 ${pollLink(p.fans.token)}`); // *…* = bold in WhatsApp
       const text = `*🇵🇰 GPPL 🇩🇪*\n\nWe have ${n} upcoming liga match${n === 1 ? "" : "es"} and you can vote directly for your team\n\n${lines.join("\n\n")}\n\nIf you don't know who they are, you can check their details on ${location.origin}/#participants`;
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+      // the phone's share box keeps emojis and flags intact (wa.me's redirect breaks them); on a computer: WhatsApp's send page
+      try { navigator.clipboard.writeText(text); } catch {}
+      const whatsapp = () => window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+      if (navigator.share && /Android|iPhone|iPad/i.test(navigator.userAgent)) navigator.share({ text }).catch(e => { if (e.name !== "AbortError") whatsapp(); });
+      else whatsapp();
+      flash("fp-msg", "✅ Message ready – it's also copied, in case you want to paste it yourself.", true);
     });
     $("fp-list").addEventListener("click", async ev => {
       const b = ev.target.closest("button");
