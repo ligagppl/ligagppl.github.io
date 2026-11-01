@@ -697,12 +697,14 @@ function closesText(ms) {
   return `⏳ Voting closes in ${h ? `${h}h ` : ""}${pad(m)}m ${pad(s % 60)}s`;
 }
 setInterval(() => document.querySelectorAll("[data-closes]").forEach(el => (el.textContent = closesText(+el.dataset.closes))), 1000);
+// a logged-in team is sent along, so the poll can tell teams to predict in My team instead
+const pollAuth = () => { try { const t = localStorage.getItem("gppl-team-token"); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; } };
 const pollSaved = () => { try { return JSON.parse(localStorage.getItem("gppl-poll-" + pollToken) || "null"); } catch { return null; } };
 async function loadPoll() {
   const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), token = pollToken;
   poll = { pick: {}, loading: true }; renderPoll();
   try {
-    const res = await fetch(`${api}/poll?t=${encodeURIComponent(token)}`), d = await res.json();
+    const res = await fetch(`${api}/poll?t=${encodeURIComponent(token)}`, { headers: pollAuth() }), d = await res.json();
     if (token !== pollToken) return;
     poll = res.ok ? { pick: {}, data: d } : { pick: {}, error: d.error || "This poll doesn't exist." };
   } catch { poll = { pick: {}, error: "Couldn't load the poll – please try again." }; }
@@ -725,6 +727,7 @@ function renderPoll() {
   if (mine) body = `<p class="poll-done">✅ Your vote: <b>${pickText(mine)}</b></p>`;
   else if (d.voted) body = `<p class="poll-done">✅ A vote from your network has already been counted.</p>`;
   else if (!d.open) body = "";
+  else if (d.team) body = `<p class="poll-done">🎾 You're logged in as <b>${esc(pairName(d.team))}</b> – teams predict in <a href="#team">My team → Matches</a>, not in the fan poll.</p>`;
   else if (poll.confirm) body = `<div class="poll-confirm"><p><b>${pickText(pick)}</b> – your vote can't be changed afterwards.</p>
       ${poll.err ? `<div class="msg err">❌ ${esc(poll.err)}</div>` : ""}
       <div class="tm-btns"><button type="button" class="btn" data-poll="send"${poll.busy ? " disabled" : ""}>${poll.busy ? "Sending…" : "✅ Confirm my vote"}</button><button type="button" class="btn ghost" data-poll="back"${poll.busy ? " disabled" : ""}>Back</button></div></div>`;
@@ -751,7 +754,7 @@ document.addEventListener("click", async ev => {
     poll.busy = true; poll.err = null; renderPoll();
     const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
     try {
-      const res = await fetch(api + "/poll", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ t: pollToken, winner: poll.pick.w, score: poll.pick.s }) });
+      const res = await fetch(api + "/poll", { method: "POST", headers: { "Content-Type": "application/json", ...pollAuth() }, body: JSON.stringify({ t: pollToken, winner: poll.pick.w, score: poll.pick.s }) });
       const d = await res.json();
       if (res.ok) { try { localStorage.setItem("gppl-poll-" + pollToken, JSON.stringify(poll.pick)); } catch {} poll = { pick: {}, data: d }; }
       else if (res.status === 409) poll = { pick: {}, data: { ...poll.data, voted: true } };
