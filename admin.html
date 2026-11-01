@@ -434,6 +434,7 @@
         <h4 style="margin:18px 0 4px">📣 Fan polls</h4>
         <p class="note">Open a poll for an upcoming match and share the link (e.g. in WhatsApp). Anyone with the link can vote once per connection – no account needed – until the match is over (then the link shows the results), and can't change the vote. Teams and fans only see the combined percentages; here they're kept apart. Fan votes never count for prediction points.</p>
         <button class="btn ghost small" id="fp-load">🔄 Refresh</button>
+        <button class="btn small" id="fp-share">📲 Share open polls on WhatsApp</button>
         <div id="fp-list"></div>
         <div class="msg" id="fp-msg"></div>
       </div>
@@ -1483,6 +1484,7 @@
     $("pp-load").addEventListener("click", loadPredictionPoints);
     // fan polls: team picks and fan votes side by side (teams and fans only ever see them combined)
     const pollLink = token => `${location.origin}/#poll/${token}`;
+    let openPolls = []; // polls fans can vote in right now – for the WhatsApp message
     async function loadPolls() {
       const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
       if (!api || !key) { $("fp-list").innerHTML = '<p class="muted">Enter the admin key in <b>👥 Member area</b> first.</p>'; return; }
@@ -1490,6 +1492,7 @@
         const res = await fetch(api + "/admin/polls", { headers: { Authorization: `Admin ${key}` } });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Error ${res.status}`);
         const polls = (await res.json()).polls || [];
+        openPolls = polls.filter(p => p.fans && !p.fans.closed && !p.over);
         const split = (t, a) => t.total ? `${Math.round(100 * (t.n[a] || 0) / t.total)}% – ${100 - Math.round(100 * (t.n[a] || 0) / t.total)}% <span class="muted">(${t.total})</span>` : '<span class="muted">–</span>';
         const when = p => p.date ? new Date(`${p.date}T12:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + (p.time ? ` · ${p.time}` : "") : "no date";
         $("fp-list").innerHTML = polls.length ? `<table class="pairs-table fp-table"><thead><tr><th>Match</th><th title="Team predictions">🔮 Teams</th><th title="Fan votes">📣 Fans</th><th></th></tr></thead><tbody>` +
@@ -1503,6 +1506,13 @@
       } catch (e) { $("fp-list").innerHTML = `<p class="msg err">❌ ${escA(e.message)}</p>`; }
     }
     $("fp-load").addEventListener("click", loadPolls);
+    // one WhatsApp message with every open poll – opens WhatsApp's share box (choose the chat there)
+    $("fp-share").addEventListener("click", () => {
+      if (!openPolls.length) return flash("fp-msg", "❌ No open polls – open a poll for a match first.", false);
+      const n = openPolls.length, lines = openPolls.map((p, i) => `${i + 1}. *${name(p.a)} vs ${name(p.b)}*${p.cup ? " 🏆 Cup" : ""}\n👉 ${pollLink(p.fans.token)}`); // *…* = bold in WhatsApp
+      const text = `*🇵🇰 GPPL 🇩🇪*\n\nWe have ${n} upcoming liga match${n === 1 ? "" : "es"} and you can vote directly for your team\n\n${lines.join("\n\n")}\n\nIf you don't know who they are, you can check their details on ${location.origin}/#participants`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+    });
     $("fp-list").addEventListener("click", async ev => {
       const b = ev.target.closest("button");
       if (!b) return;
