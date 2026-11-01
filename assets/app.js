@@ -683,10 +683,11 @@ if (visibleTabs) {
     if (id && !tabAllowed(id) && !a.classList.contains("rb-ref")) a.replaceWith(document.createTextNode(a.textContent));
   });
 }
-// ---------- fan poll (#poll/<code>) – the admins share the link; anyone can vote once, until 30 minutes before the start ----------
+// ---------- fan poll (#poll/<code>) – the admins share the link; anyone can vote once, until the match is over – then it shows the results ----------
 // public: the two teams and the percentages only (team predictions and fan votes together) – never dates or venues
 let pollToken = null, poll = { pick: {} };
-// "Voting closes in 3 days" – under a day a live countdown (every [data-closes] element ticks each second)
+// "Voting closes in 3 days" – under a day a live countdown (every [data-closes] element ticks each second).
+// Teams only (My team → Matches): on the public poll page it would give away the match time.
 function closesText(ms) {
   const left = ms - Date.now();
   if (left <= 0) return "🔒 Voting closed";
@@ -723,7 +724,7 @@ function renderPoll() {
   let body, form = false;
   if (mine) body = `<p class="poll-done">✅ Your vote: <b>${pickText(mine)}</b></p>`;
   else if (d.voted) body = `<p class="poll-done">✅ A vote from your network has already been counted.</p>`;
-  else if (!d.open) body = `<p class="poll-done">🔒 Voting is closed.</p>`;
+  else if (!d.open) body = "";
   else if (poll.confirm) body = `<div class="poll-confirm"><p><b>${pickText(pick)}</b> – your vote can't be changed afterwards.</p>
       ${poll.err ? `<div class="msg err">❌ ${esc(poll.err)}</div>` : ""}
       <div class="tm-btns"><button type="button" class="btn" data-poll="send"${poll.busy ? " disabled" : ""}>${poll.busy ? "Sending…" : "✅ Confirm my vote"}</button><button type="button" class="btn ghost" data-poll="back"${poll.busy ? " disabled" : ""}>Back</button></div></div>`;
@@ -733,12 +734,11 @@ function renderPoll() {
       <div class="tm-pr-scores">${[["2-0", "2–0"], ["2-1", "2–1"]].map(([v, t]) => `<button type="button" class="tm-pr-score${pick.s === v ? " active" : ""}" data-poll-s="${v}">${t}</button>`).join("")}</div>
       <div class="tm-btns" style="margin-top:14px"><button type="button" class="btn" data-poll="vote"${pick.w && pick.s ? "" : " disabled"}>🔮 Vote</button></div>`;
   el.innerHTML = `<div class="card poll-card">
-    <p class="poll-kicker">🔮 Fan poll · ${d.cup ? `🏆 GPPC Cup · ${esc(d.cup)}` : "GPPL league match"}</p>
+    <p class="poll-kicker">${d.open ? "🔮 Fan poll" : "📊 Poll results"} · ${d.cup ? `🏆 GPPC Cup · ${esc(d.cup)}` : "GPPL league match"}</p>
     ${form ? "" : `<div class="poll-vs">${team(a)}<span class="poll-x">vs</span>${team(b)}</div>`}
     ${body}
-    ${d.open && d.closesAt && !mine && !d.voted ? `<p class="poll-closes" data-closes="${d.closesAt}">${closesText(d.closesAt)}</p>` : ""}
     <div class="tm-pr poll-stats">${stats}</div>
-    <p class="note">One vote per person, anonymous. The percentages include the teams' own predictions.</p></div>`;
+    <p class="note">${d.open ? "One vote per person, anonymous. " : ""}The percentages include the teams' own predictions.</p></div>`;
 }
 document.addEventListener("click", async ev => {
   const t = ev.target.closest("[data-poll], [data-poll-w], [data-poll-s]");

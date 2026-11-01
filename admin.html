@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=69">
+  <link rel="stylesheet" href="assets/style.css?v=70">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -432,7 +432,7 @@
         <button class="btn ghost small" id="pp-load">🔄 Refresh</button>
         <div id="pp-list"></div>
         <h4 style="margin:18px 0 4px">📣 Fan polls</h4>
-        <p class="note">Open a poll for an upcoming match and share the link (e.g. in WhatsApp). Anyone with the link can vote once per connection – no account needed – until 30 minutes before the match, and can't change the vote. Teams and fans only see the combined percentages; here they're kept apart. Fan votes never count for prediction points.</p>
+        <p class="note">Open a poll for an upcoming match and share the link (e.g. in WhatsApp). Anyone with the link can vote once per connection – no account needed – until the match is over (then the link shows the results), and can't change the vote. Teams and fans only see the combined percentages; here they're kept apart. Fan votes never count for prediction points.</p>
         <button class="btn ghost small" id="fp-load">🔄 Refresh</button>
         <div id="fp-list"></div>
         <div class="msg" id="fp-msg"></div>
@@ -1520,7 +1520,7 @@
         const d = await res.json();
         if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
         if (d.token) { const link = pollLink(d.token); try { await navigator.clipboard.writeText(link); flash("fp-msg", `✅ Poll open – link copied: ${link}`, true); } catch { flash("fp-msg", `✅ Poll open – share this link: ${link}`, true); } }
-        else flash("fp-msg", "✅ Poll closed – the link now shows “Voting is closed”.", true);
+        else flash("fp-msg", "✅ Poll closed – the link now shows the results.", true);
         await loadPolls();
       } catch (e) { flash("fp-msg", `❌ ${e.message}`, false); b.disabled = false; }
     });
