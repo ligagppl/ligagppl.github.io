@@ -41,6 +41,23 @@
     .gl-card { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
     .gl-img { flex: 0 0 200px; min-height: 120px; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--line) 40%, transparent); border-radius: 10px; overflow: hidden; }
     .gl-img img { width: 100%; display: block; }
+    .gl-img img { cursor: zoom-in; }
+    /* full-screen photo viewer */
+    #gl-view { position: fixed; inset: 0; z-index: 1000; background: rgba(8, 12, 10, .98); display: flex; flex-direction: column; color: #fff; touch-action: pan-y; }
+    #gl-view[hidden] { display: none; }
+    .glv-bar { display: flex; align-items: center; gap: 10px; padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top)); background: linear-gradient(rgba(0,0,0,.55), transparent); }
+    .glv-info { flex: 1; min-width: 0; }
+    .glv-info b { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.25; }
+    .glv-info span { font-size: .8rem; opacity: .75; }
+    .glv-btn { flex: none; border: 0; border-radius: 999px; min-width: 40px; height: 40px; padding: 0 12px; background: rgba(255,255,255,.14); color: #fff; font: inherit; font-size: 1rem; cursor: pointer; }
+    .glv-btn:hover { background: rgba(255,255,255,.26); }
+    .glv-stage { flex: 1; min-height: 0; position: relative; display: flex; align-items: center; justify-content: center; padding: 0 56px 18px; }
+    .glv-stage img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; box-shadow: 0 10px 40px rgba(0,0,0,.5); user-select: none; -webkit-user-drag: none; }
+    .glv-load { opacity: .7; }
+    .glv-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 64px; border-radius: 12px; font-size: 2rem; line-height: 1; padding: 0; }
+    .glv-prev { left: 6px; } .glv-next { right: 6px; }
+    .glv-cap { text-align: center; padding: 0 16px 16px; padding-bottom: max(16px, env(safe-area-inset-bottom)); font-size: .95rem; opacity: .9; }
+    @media (max-width: 600px) { .glv-stage { padding: 0 0 12px; } .glv-nav { background: rgba(0,0,0,.35); width: 38px; height: 54px; } }
     .gl-body { flex: 1 1 240px; display: flex; flex-direction: column; gap: 8px; }
     .gl-body label { display: flex; flex-direction: column; gap: 4px; }
     .gl-cap { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; }
@@ -505,7 +522,14 @@
       <p class="note" style="margin-top:0">Matchday photos the teams uploaded with their results – also while a result still waits for approval. <b>Publish</b> (once the result is approved) puts a photo in the 📸 Gallery in <a href="index.html#team" target="_top">🎾 My team</a> – only logged-in teams see it (Rules §12). Photos stay private until you publish them.</p>
       <div class="msg" id="gl-msg"></div>
       <div id="gl-list"><div class="card muted">Loading…</div></div>
-    </div>
+      <div id="gl-view" hidden role="dialog" aria-modal="true" aria-label="Photo">
+        <div class="glv-bar"><div class="glv-info"><b id="glv-title"></b><span id="glv-sub"></span></div>
+          <button class="glv-btn" id="glv-dl" title="Download">⬇️</button><button class="glv-btn" id="glv-close" title="Close (Esc)">✕</button></div>
+        <div class="glv-stage" id="glv-stage"><button class="glv-btn glv-nav glv-prev" id="glv-prev" aria-label="Previous photo">‹</button>
+          <img id="glv-img" alt=""><span class="glv-load" id="glv-load">Loading photo…</span>
+          <button class="glv-btn glv-nav glv-next" id="glv-next" aria-label="Next photo">›</button></div>
+        <div class="glv-cap" id="glv-cap"></div>
+      </div>
 
     <div class="panel" id="panel-settings">
       <div class="card">
@@ -547,7 +571,7 @@
   <script src="assets/league.js?v=11"></script>
   <script src="assets/store.js?v=5"></script>
   <script src="assets/lock.js?v=2"></script>
-  <script src="assets/members-admin.js?v=56" defer></script>
+  <script src="assets/members-admin.js?v=57" defer></script>
   <script src="assets/share-image.js?v=17"></script>
   <script>
     const $ = id => document.getElementById(id);

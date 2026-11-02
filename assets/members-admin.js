@@ -342,6 +342,10 @@
               : official(p.key) ? `<button class="btn small" data-gl="publish">📸 Publish to gallery</button>` : `<button class="btn small" disabled title="Publish once the result is approved">📸 Publish to gallery</button>`}</div></div></div>`;
       };
       const pub = items.filter(p => inGallery.has(p.key)), rest = items.filter(p => !inGallery.has(p.key));
+      // the full-screen viewer goes through the photos in the order they're listed
+      glOrder = rest.concat(pub).map(p => ({ key: p.key, title: `${matchLabel(p.key, cup)} · ${teams(p.key).map(name).join(" vs ")}`,
+        sub: inGallery.has(p.key) ? "✅ In the gallery" : official(p.key) ? "Not published yet" : "⏳ Result not approved yet",
+        cap: inGallery.has(p.key) ? inGallery.get(p.key).caption : "" }));
       $("gl-list").innerHTML = `<h3>Not published yet</h3>${rest.map(card).join("") || '<div class="card muted">No new matchday photos.</div>'}
         <h3>In the gallery</h3>${pub.map(card).join("") || '<div class="card muted">Nothing published yet.</div>'}`;
       // photos load one by one in the background
@@ -355,7 +359,62 @@
       }
     } catch (e) { $("gl-list").innerHTML = `<div class="card msg err">❌ ${esc(e.message)}</div>`; }
   }
+  // ---- full-screen viewer: ‹ › / arrow keys / swipe, Esc or a tap beside the photo closes it
+  let glOrder = [], glAt = -1;
+  const glView = $("gl-view");
+  async function glShow(i) {
+    if (!glOrder.length) return;
+    glAt = (i + glOrder.length) % glOrder.length;
+    const p = glOrder[glAt], img = $("glv-img");
+    $("glv-title").textContent = p.title;
+    $("glv-sub").textContent = `${glAt + 1} / ${glOrder.length} · ${p.sub}`;
+    $("glv-cap").textContent = p.cap;
+    $("glv-prev").hidden = $("glv-next").hidden = glOrder.length < 2;
+    img.hidden = !glThumbs[p.key]; $("glv-load").hidden = !!glThumbs[p.key];
+    if (!glThumbs[p.key]) {
+      const res = await call(`/admin/photo?key=${encodeURIComponent(p.key)}`, null, true);
+      if (res.ok) glThumbs[p.key] = URL.createObjectURL(await res.blob());
+      if (glOrder[glAt] !== p) return; // moved on meanwhile
+      if (!glThumbs[p.key]) { $("glv-load").textContent = "No photo."; return; }
+    }
+    img.src = glThumbs[p.key]; img.hidden = false; $("glv-load").hidden = true;
+  }
+  function glOpen(key) {
+    const i = glOrder.findIndex(p => p.key === key);
+    if (i < 0) return;
+    glView.hidden = false; document.body.style.overflow = "hidden";
+    glShow(i);
+  }
+  function glClose() { glView.hidden = true; document.body.style.overflow = ""; glAt = -1; }
+  $("glv-prev").addEventListener("click", e => { e.stopPropagation(); glShow(glAt - 1); });
+  $("glv-next").addEventListener("click", e => { e.stopPropagation(); glShow(glAt + 1); });
+  $("glv-close").addEventListener("click", glClose);
+  $("glv-stage").addEventListener("click", e => { if (e.target.id === "glv-stage") glClose(); });
+  $("glv-dl").addEventListener("click", () => {
+    const p = glOrder[glAt];
+    if (!p || !glThumbs[p.key]) return;
+    const a = document.createElement("a");
+    a.href = glThumbs[p.key]; a.download = `GPPL ${p.title.replace(/[\\/:*?"<>|]/g, "-")}.jpg`; a.click();
+  });
+  document.addEventListener("keydown", e => {
+    if (glView.hidden) return;
+    if (e.key === "Escape") glClose();
+    else if (e.key === "ArrowLeft") glShow(glAt - 1);
+    else if (e.key === "ArrowRight") glShow(glAt + 1);
+  });
+  let glTouch = null;
+  glView.addEventListener("touchstart", e => { glTouch = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null; }, { passive: true });
+  glView.addEventListener("touchend", e => {
+    if (!glTouch) return;
+    const dx = e.changedTouches[0].clientX - glTouch.x, dy = e.changedTouches[0].clientY - glTouch.y;
+    glTouch = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) glShow(glAt + (dx < 0 ? 1 : -1));
+    else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) glClose(); // swipe down closes
+  });
+
   $("panel-gallery").addEventListener("click", async e => {
+    const th = e.target.closest(".gl-img img");
+    if (th) return glOpen(th.closest(".gl-card").dataset.key);
     const b = e.target.closest("[data-gl]");
     if (!b) return;
     const card = b.closest(".gl-card"), key = card.dataset.key, remove = b.dataset.gl === "remove";
