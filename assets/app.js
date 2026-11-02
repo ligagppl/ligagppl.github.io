@@ -3,6 +3,7 @@
 const { pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
 let results = [], cup = { rounds: [] };
 let matchStatus = {}; // member server: "L:a-b" → "scheduled" | "waiting" (no dates, venues or scores)
+let matchOrder = []; // member server: the scheduled matches soonest first (only the order – no dates)
 
 const sign = n => (n > 0 ? "+" + n : String(n));
 let datesOn = LEAGUE.datesConfirmed !== false; // dates hidden until the start date is set (Admin → League results)
@@ -75,7 +76,7 @@ function statusLine(games) {
 function loadMatchStatus() {
   const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
   if (!api) return;
-  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; renderSchedule(); renderProfile(); }).catch(() => {});
+  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; matchOrder = d.order || []; renderSchedule(); renderProfile(); }).catch(() => {});
 }
 setInterval(() => { if (!document.hidden) loadMatchStatus(); }, 60000); // a match that starts moves to "played" within a minute
 
@@ -251,11 +252,14 @@ function renderProfile() {
   const mdWindow = md => (datesOn ? `${fmt(matchdayWindow(md).from)} – ${fmt(matchdayWindow(md).to)}` : "");
   const todo = [], started = key => matchStatus[key] === "waiting"; // played or already started – no longer "still to play"
   fixtures.forEach((g, i) => g.forEach(([a, b]) => {
-    if ((a === id || b === id) && !GPPL.findResult(results, a, b) && !started(`L:${Math.min(a, b)}-${Math.max(a, b)}`)) todo.push({ opp: a === id ? b : a, md: i + 1, stage: [`Matchday ${i + 1}`, mdWindow(i + 1)].filter(Boolean).join(" · "), st: matchStatus[`L:${Math.min(a, b)}-${Math.max(a, b)}`] || "open" });
+    if ((a === id || b === id) && !GPPL.findResult(results, a, b) && !started(`L:${Math.min(a, b)}-${Math.max(a, b)}`)) todo.push({ key: `L:${Math.min(a, b)}-${Math.max(a, b)}`, opp: a === id ? b : a, md: i + 1, stage: [`Matchday ${i + 1}`, mdWindow(i + 1)].filter(Boolean).join(" · "), st: matchStatus[`L:${Math.min(a, b)}-${Math.max(a, b)}`] || "open" });
   }));
-  cupList.filter(x => !x.done && !started(`C:${x.ri}:${x.mi}`)).forEach(x => todo.unshift({ cup: true, opp: x.opp, round: x.rd.name, stage: `GPPC Cup · ${esc(x.rd.name)}`, st: matchStatus[`C:${x.ri}:${x.mi}`] || "open" }));
-  // next opponent: the open cup match first (it has the shortest window), then a league match with a date set, then the next matchday – no dates shown
-  const next = todo.find(t => t.cup) || todo.find(t => t.st === "scheduled") || todo[0] || null;
+  cupList.filter(x => !x.done && !started(`C:${x.ri}:${x.mi}`)).forEach(x => todo.unshift({ key: `C:${x.ri}:${x.mi}`, cup: true, opp: x.opp, round: x.rd.name, stage: `GPPC Cup · ${esc(x.rd.name)}`, st: matchStatus[`C:${x.ri}:${x.mi}`] || "open" }));
+  // matches with a date first, soonest first (the server only sends their order, never the dates), then the rest as before
+  const soon = t => (t.st === "scheduled" && matchOrder.includes(t.key) ? matchOrder.indexOf(t.key) : Infinity);
+  todo.sort((x, y) => soon(x) - soon(y));
+  // next opponent: the soonest match with a date; without one the open cup match (it has the shortest window), then the next matchday
+  const next = todo.find(t => soon(t) < Infinity) || todo.find(t => t.cup) || todo[0] || null;
   // streak: league results in order (cup: by round)
   const seq = profileScope === "cup" ? cupList.filter(x => x.done) : league, lastRes = seq.length ? seq[seq.length - 1].res : null;
   let streakN = 0;
