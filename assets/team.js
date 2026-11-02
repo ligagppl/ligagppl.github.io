@@ -272,8 +272,8 @@
   function galleryHtml() {
     const list = (state.gallery || []).concat(LEAGUE.gallery || []);
     if (!list.length) return `<div class="card muted">Photos will appear here during the season 📸</div>`;
-    return `<p class="note">Only for league members – please don't share photos of other players outside the league without their permission (Rules §12).</p><div class="gallery">` + list.map(g =>
-      `<figure>${g.key ? `<div class="tm-gal-img" data-gal="${esc(g.key)}">${galleryImgs[g.key] ? `<img src="${galleryImgs[g.key]}" alt="${esc(g.caption)}">` : `<span class="note">Loading…</span>`}</div>`
+    return `<p class="note">Only for league members – please don't share photos of other players outside the league without their permission (Rules §12).</p><div class="gallery">` + list.map((g, i) =>
+      `<figure data-gal-i="${i}">${g.key ? `<div class="tm-gal-img" data-gal="${esc(g.key)}">${galleryImgs[g.key] ? `<img src="${galleryImgs[g.key]}" alt="${esc(g.caption)}">` : `<span class="note">Loading…</span>`}</div>`
         : `<img src="${esc(g.src)}" alt="${esc(g.caption)}" loading="lazy">`}<figcaption>${esc(g.caption)}</figcaption></figure>`).join("") + `</div>`;
   }
   async function loadGalleryPhotos() {
@@ -286,6 +286,58 @@
       const box = el.querySelector(`[data-gal="${CSS.escape(g.key)}"]`);
       if (box && !box.querySelector("img")) box.innerHTML = `<img src="${galleryImgs[g.key]}" alt="${esc(g.caption)}">`;
     }
+  }
+
+  // full-screen viewer: ‹ › / arrow keys / swipe; ✕, Esc, a tap beside the photo or a swipe down closes it (no download – Rules §12)
+  let galView = null, galAt = -1;
+  const galList = () => (state && state.gallery || []).concat(LEAGUE.gallery || []);
+  function galShow(i) {
+    const list = galList();
+    if (!list.length) return;
+    galAt = (i + list.length) % list.length;
+    const g = list[galAt], src = g.key ? galleryImgs[g.key] : g.src, img = galView.querySelector("#tmv-img"), load = galView.querySelector("#tmv-load");
+    galView.querySelector("#tmv-title").textContent = g.caption || "📸 Gallery";
+    galView.querySelector("#tmv-sub").textContent = `${galAt + 1} / ${list.length}`;
+    galView.querySelectorAll(".glv-nav").forEach(n => (n.hidden = list.length < 2));
+    img.hidden = !src; load.hidden = !!src; load.textContent = "Loading photo…";
+    if (src) img.src = src;
+    else call(`/photo?key=${encodeURIComponent(g.key)}`).then(async res => {
+      if (res && res.ok) galleryImgs[g.key] = URL.createObjectURL(await res.blob());
+      if (galAt >= 0 && galList()[galAt] === g) galShow(galAt); // still on this photo
+    }).catch(() => { load.textContent = "Photo not available."; });
+  }
+  function galClose() { galView.hidden = true; document.body.style.overflow = ""; galAt = -1; }
+  function galOpen(i) {
+    if (!galView) {
+      galView = document.createElement("div");
+      galView.id = "tm-view"; galView.className = "glv"; galView.hidden = true;
+      galView.setAttribute("role", "dialog"); galView.setAttribute("aria-modal", "true"); galView.setAttribute("aria-label", "Photo");
+      galView.innerHTML = `<div class="glv-bar"><div class="glv-info"><b id="tmv-title"></b><span id="tmv-sub"></span></div><button class="glv-btn" id="tmv-close" title="Close (Esc)">✕</button></div>
+        <div class="glv-stage" id="tmv-stage"><button class="glv-btn glv-nav glv-prev" aria-label="Previous photo">‹</button><img id="tmv-img" alt=""><span class="glv-load" id="tmv-load"></span><button class="glv-btn glv-nav glv-next" aria-label="Next photo">›</button></div>`;
+      document.body.appendChild(galView);
+      galView.querySelector(".glv-prev").addEventListener("click", () => galShow(galAt - 1));
+      galView.querySelector(".glv-next").addEventListener("click", () => galShow(galAt + 1));
+      galView.querySelector("#tmv-close").addEventListener("click", galClose);
+      galView.querySelector("#tmv-stage").addEventListener("click", e => { if (e.target.id === "tmv-stage") galClose(); });
+      galView.addEventListener("contextmenu", e => e.preventDefault());
+      document.addEventListener("keydown", e => {
+        if (galView.hidden) return;
+        if (e.key === "Escape") galClose();
+        else if (e.key === "ArrowLeft") galShow(galAt - 1);
+        else if (e.key === "ArrowRight") galShow(galAt + 1);
+      });
+      let t = null;
+      galView.addEventListener("touchstart", e => { t = e.touches.length === 1 ? { x: e.touches[0].clientX, y: e.touches[0].clientY } : null; }, { passive: true });
+      galView.addEventListener("touchend", e => {
+        if (!t) return;
+        const dx = e.changedTouches[0].clientX - t.x, dy = e.changedTouches[0].clientY - t.y;
+        t = null;
+        if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy)) galShow(galAt + (dx < 0 ? 1 : -1));
+        else if (dy > 90 && Math.abs(dy) > Math.abs(dx)) galClose();
+      });
+    }
+    galView.hidden = false; document.body.style.overflow = "hidden";
+    galShow(i);
   }
 
   // every league and cup match with a date that hasn't been played yet – soonest first, our own matches highlighted
@@ -760,6 +812,8 @@
   el.addEventListener("toggle", e => { if (e.target.classList.contains("tm-up-filter")) upPaneOpen = e.target.open; }, true);
 
   el.addEventListener("click", async e => {
+    const fig = e.target.closest(".gallery [data-gal-i]");
+    if (fig && e.target.closest("img")) return galOpen(+fig.dataset.galI);
     const b = e.target.closest("[data-act]");
     if (!b) return;
     const key = b.dataset.key, a = b.dataset.act;
