@@ -4,6 +4,7 @@ const { pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
 let results = [], cup = { rounds: [] };
 let matchStatus = {}; // member server: "L:a-b" → "scheduled" | "waiting" (no dates, venues or scores)
 let matchOrder = []; // member server: the scheduled matches soonest first (only the order – no dates)
+let statusReady = false; // until the match states arrive, team profiles leave "Next opponent" empty (no guess from the matchdays)
 
 const sign = n => (n > 0 ? "+" + n : String(n));
 let datesOn = LEAGUE.datesConfirmed !== false; // dates hidden until the start date is set (Admin → League results)
@@ -75,8 +76,9 @@ function statusLine(games) {
 // match states from the member server – the schedule renders first and updates when they arrive
 function loadMatchStatus() {
   const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
-  if (!api) return;
-  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; matchOrder = d.order || []; renderSchedule(); renderProfile(); }).catch(() => {});
+  if (!api) { statusReady = true; return; }
+  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; matchOrder = d.order || []; statusReady = true; renderSchedule(); renderProfile(); })
+    .catch(() => { if (!statusReady) { statusReady = true; renderProfile(); } }); // no answer: fall back to the matchday order
 }
 setInterval(() => { if (!document.hidden) loadMatchStatus(); }, 60000); // a match that starts moves to "played" within a minute
 
@@ -259,7 +261,7 @@ function renderProfile() {
   const soon = t => (t.st === "scheduled" && matchOrder.includes(t.key) ? matchOrder.indexOf(t.key) : Infinity);
   todo.sort((x, y) => soon(x) - soon(y));
   // next opponent: the soonest match with a date; without one the open cup match (it has the shortest window), then the next matchday
-  const next = todo.find(t => soon(t) < Infinity) || todo.find(t => t.cup) || todo[0] || null;
+  const next = !statusReady ? null : todo.find(t => soon(t) < Infinity) || todo.find(t => t.cup) || todo[0] || null;
   // streak: league results in order (cup: by round)
   const seq = profileScope === "cup" ? cupList.filter(x => x.done) : league, lastRes = seq.length ? seq[seq.length - 1].res : null;
   let streakN = 0;
@@ -293,7 +295,7 @@ function renderProfile() {
       ${teamLogo(t.opp)}<div class="pf-row-main"><span class="pf-row-title"><b>vs ${link(t.opp)}</b>${t === next ? `<span class="pf-next">Next match</span>` : ""}</span><span class="note">${t.cup ? `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(t.round)}` : t.stage}</span></div>
 </div>`;
   // the next opponent's card: their league position and form – the date stays private
-  let nextCard = "";
+  let nextCard = statusReady || !todo.length ? "" : `<div class="card pf-side pf-side-wait" aria-busy="true"><h3 class="pf-h">Next opponent</h3></div>`;
   if (next) {
     const o = next.opp, oRank = rows.findIndex(r => r.id === o) + 1, oRow = rows[oRank - 1];
     const oForm = results.filter(r => r.a === o || r.b === o).map(r => { const e = GPPL.evaluate(r); return { opp: vs(r, o), res: e.both ? "-" : e.winner === o ? "W" : "L" }; });
@@ -736,14 +738,16 @@ function renderPoll() {
     : `<div class="tm-pr-nums"><span class="muted">No votes yet${d.open ? " – be the first!" : ""}</span></div>`;
   const team = id => `<div class="poll-team"><a class="team-link" href="${profileHref(id)}">${teamLogo(id).replace('class="mlogo', 'class="poll-logo mlogo')}<b>${pairName(id)}</b></a>${pollForm(id)}</div>`;
   let body, form = false;
-  if (mine) body = `<p class="poll-done">✅ Your vote: <b>${pickText(mine)}</b></p>`;
-  else if (d.voted) body = `<p class="poll-done">✅ A vote from your network has already been counted.</p>`;
+  // a logged-in team votes here once as its team prediction – changing it (and the countdown) only in My team
+  if (d.team && d.teamPick) body = `<p class="poll-done">✅ ${esc(pairName(d.team))}'s prediction: <b>${pickText(d.teamPick)}</b> – change it in <a href="#team">My team → Matches</a>.</p>`;
+  else if (d.team && (!d.teamOpen || !d.open)) body = `<p class="poll-done">🔒 Predictions for teams are closed for this match.</p>`;
+  else if (!d.team && mine) body = `<p class="poll-done">✅ Your vote: <b>${pickText(mine)}</b></p>`;
+  else if (!d.team && d.voted) body = `<p class="poll-done">✅ A vote from your network has already been counted.</p>`;
   else if (!d.open) body = "";
-  else if (d.team) body = `<p class="poll-done">🎾 You're logged in as <b>${esc(pairName(d.team))}</b> – teams predict in <a href="#team">My team → Matches</a>, not in the fan poll.</p>`;
-  else if (poll.confirm) body = `<div class="poll-confirm"><p><b>${pickText(pick)}</b> – your vote can't be changed afterwards.</p>
+  else if (poll.confirm) body = `<div class="poll-confirm"><p><b>${pickText(pick)}</b> – ${d.team ? `this is <b>${esc(pairName(d.team))}</b>'s prediction. You can change it later in My team → Matches.` : "your vote can't be changed afterwards."}</p>
       ${poll.err ? `<div class="msg err">❌ ${esc(poll.err)}</div>` : ""}
       <div class="tm-btns"><button type="button" class="btn" data-poll="send"${poll.busy ? " disabled" : ""}>${poll.busy ? "Sending…" : "✅ Confirm my vote"}</button><button type="button" class="btn ghost" data-poll="back"${poll.busy ? " disabled" : ""}>Back</button></div></div>`;
-  else form = true, body = `<p class="tm-pr-sub">Who wins? Tap a team</p>
+  else form = true, body = `${d.team ? `<p class="note">🎾 You're logged in as <b>${esc(pairName(d.team))}</b> – your vote counts as your team's prediction.</p>` : ""}<p class="tm-pr-sub">Who wins? Tap a team</p>
       <div class="tm-pr-teams">${[a, b].map(id => `<button type="button" class="tm-pr-team${pick.w === id ? " active" : ""}" data-poll-w="${id}">${teamLogo(id)}<b>${pairName(id)}</b>${pollForm(id)}</button>`).join("")}</div>
       <p class="tm-pr-sub">Score in sets</p>
       <div class="tm-pr-scores">${[["2-0", "2–0"], ["2-1", "2–1"]].map(([v, t]) => `<button type="button" class="tm-pr-score${pick.s === v ? " active" : ""}" data-poll-s="${v}">${t}</button>`).join("")}</div>
@@ -768,7 +772,8 @@ document.addEventListener("click", async ev => {
     try {
       const res = await fetch(api + "/poll", { method: "POST", headers: { "Content-Type": "application/json", ...pollAuth() }, body: JSON.stringify({ t: pollToken, winner: poll.pick.w, score: poll.pick.s }) });
       const d = await res.json();
-      if (res.ok) { try { localStorage.setItem("gppl-poll-" + pollToken, JSON.stringify(poll.pick)); } catch {} poll = { pick: {}, data: d }; }
+      if (res.ok) { if (!d.team) try { localStorage.setItem("gppl-poll-" + pollToken, JSON.stringify(poll.pick)); } catch {} poll = { pick: {}, data: d }; }
+      else if (res.status === 409 && poll.data.team) { poll.busy = false; return loadPoll(); } // the team predicted meanwhile – show its pick
       else if (res.status === 409) poll = { pick: {}, data: { ...poll.data, voted: true } };
       else poll.err = d.error || `Error ${res.status}`;
     } catch { poll.err = "Couldn't send the vote – please try again."; }
