@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=74">
+  <link rel="stylesheet" href="assets/style.css?v=75">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -502,7 +502,7 @@
 
     <!-- GALLERY: matchday photos the teams uploaded → My team → Gallery (members only) -->
     <div class="panel" id="panel-gallery">
-      <p class="note" style="margin-top:0">Matchday photos from confirmed results. <b>Publish</b> puts a photo in the 📸 Gallery in <a href="index.html#team" target="_top">🎾 My team</a> – only logged-in teams see it (Rules §12). Photos stay private until you publish them.</p>
+      <p class="note" style="margin-top:0">Matchday photos the teams uploaded with their results – also while a result still waits for approval. <b>Publish</b> (once the result is approved) puts a photo in the 📸 Gallery in <a href="index.html#team" target="_top">🎾 My team</a> – only logged-in teams see it (Rules §12). Photos stay private until you publish them.</p>
       <div class="msg" id="gl-msg"></div>
       <div id="gl-list"><div class="card muted">Loading…</div></div>
     </div>
@@ -547,8 +547,8 @@
   <script src="assets/league.js?v=11"></script>
   <script src="assets/store.js?v=5"></script>
   <script src="assets/lock.js?v=2"></script>
-  <script src="assets/members-admin.js?v=55" defer></script>
-  <script src="assets/share-image.js?v=16"></script>
+  <script src="assets/members-admin.js?v=56" defer></script>
+  <script src="assets/share-image.js?v=17"></script>
   <script>
     const $ = id => document.getElementById(id);
     const name = GPPL.pairName;
@@ -897,7 +897,7 @@
       updItems = confirmedResults().filter(x => !shared.has(x.key));
       $("upd-list").innerHTML = updItems.length
         ? `<p><b>${updItems.length} new result${updItems.length === 1 ? "" : "s"}</b> since the last update:</p><ul class="upd-ul">${updItems.map(x =>
-            `<li>${escA(x.label)}: ${escA(name(x.a))} <b>${x.r.walkover ? "W/O" : GPPL.scoreText(x.r, x.a, !x.fullSets)}</b> ${escA(name(x.b))}</li>`).join("")}</ul>
+            `<li>${x.key.startsWith("C:") ? `${escA(x.label)}: ` : ""}${escA(name(x.a))} <b>${x.r.walkover ? "W/O" : GPPL.scoreText(x.r, x.a, !x.fullSets)}</b> ${escA(name(x.b))}</li>`).join("")}</ul>
           <div class="dp-btns"><button class="btn" data-upd="share">📤 Share update</button><button class="btn ghost" data-upd="img">⬇️ Download</button>
           <button class="btn ghost small" data-upd="done">✅ Mark as shared</button></div>`
         : '<p class="muted">Nothing new since the last update.</p>';

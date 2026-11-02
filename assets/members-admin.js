@@ -331,15 +331,15 @@
       const teams = key => { const m = /^L:(\d+)-(\d+)$/.exec(key); if (m) return [+m[1], +m[2]]; const c = /^C:(\d+):(\d+)$/.exec(key), x = c && cup.rounds[+c[1]] && cup.rounds[+c[1]].matches[+c[2]]; return x ? [x.a, x.b] : []; };
       const caption = key => `${matchLabel(key, cup).replace("League · ", "")} · ${teams(key).map(name).join(" vs ")}`;
       const inGallery = new Map((gallery || []).map(g => [g.key, g]));
-      const items = photos.filter(p => official(p.key) || inGallery.has(p.key));
+      const items = photos; // pending results too – they can only be published once the result is approved
       const card = p => {
         const g = inGallery.get(p.key);
         return `<div class="card gl-card" data-key="${esc(p.key)}">
           <div class="gl-img">${glThumbs[p.key] ? `<img src="${glThumbs[p.key]}" alt="">` : '<span class="note">Loading photo…</span>'}</div>
-          <div class="gl-body"><div class="note">${esc(matchLabel(p.key, cup))}${g ? " · <b>✅ In the gallery</b>" : ""}</div>
+          <div class="gl-body"><div class="note">${esc(matchLabel(p.key, cup))}${g ? " · <b>✅ In the gallery</b>" : official(p.key) ? "" : " · <b>⏳ Result not approved yet</b>"}</div>
             <label class="note">Caption<input class="gl-cap" maxlength="140" value="${esc(g ? g.caption : caption(p.key))}"></label>
             <div class="dp-btns">${g ? `<button class="btn small" data-gl="publish">💾 Update caption</button><button class="btn ghost small" data-gl="remove">✖ Remove from gallery</button>`
-              : `<button class="btn small" data-gl="publish">📸 Publish to gallery</button>`}</div></div></div>`;
+              : official(p.key) ? `<button class="btn small" data-gl="publish">📸 Publish to gallery</button>` : `<button class="btn small" disabled title="Publish once the result is approved">📸 Publish to gallery</button>`}</div></div></div>`;
       };
       const pub = items.filter(p => inGallery.has(p.key)), rest = items.filter(p => !inGallery.has(p.key));
       $("gl-list").innerHTML = `<h3>Not published yet</h3>${rest.map(card).join("") || '<div class="card muted">No new matchday photos.</div>'}

@@ -110,7 +110,7 @@ const GPPLImage = (() => {
     return render({
       title: since ? `Results since ${since}` : "Results so far",
       subtitle,
-      rows: items.map(it => resultRow(it.label.toUpperCase(), it.r, it.a, it.b, it.fullSets)),
+      rows: items.map(it => resultRow(it.key.startsWith("L:") ? "" : it.label.toUpperCase(), it.r, it.a, it.b, it.fullSets)), // league rows without the matchday
       footer: "Table & all results: ligagppl.github.io",
     });
   }
