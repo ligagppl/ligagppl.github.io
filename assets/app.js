@@ -4,6 +4,7 @@ const { pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
 let results = [], cup = { rounds: [] };
 let matchStatus = {}; // member server: "L:a-b" → "scheduled" | "waiting" (no dates, venues or scores)
 let matchOrder = []; // member server: the scheduled matches soonest first (only the order – no dates)
+let top3Ready = false; // member server: every result up to and including the first Super Sunday (15 Nov) is approved
 let statusReady = false; // until the match states arrive, team profiles leave "Next opponent" empty (no guess from the matchdays)
 
 const sign = n => (n > 0 ? "+" + n : String(n));
@@ -77,7 +78,7 @@ function statusLine(games) {
 function loadMatchStatus() {
   const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
   if (!api) { statusReady = true; return; }
-  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; matchOrder = d.order || []; statusReady = true; renderSchedule(); renderProfile(); })
+  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; matchOrder = d.order || []; top3Ready = !!d.top3; statusReady = true; renderSchedule(); renderProfile(); renderHome(); })
     .catch(() => { if (!statusReady) { statusReady = true; renderProfile(); } }); // no answer: fall back to the matchday order
 }
 setInterval(() => { if (!document.hidden) loadMatchStatus(); }, 60000); // a match that starts moves to "played" within a minute
@@ -101,14 +102,12 @@ function renderSchedule() {
   }).join("");
 }
 
-const TOP3_MIN = 9; // pairs that must have played before the Top 3 shows
-
 function renderHome() {
   const n = LEAGUE.pairs.length, total = fixtures.length ? fixtures.reduce((s, g) => s + g.length, 0) : n * (n - 1) / 2; // before the draw: everyone plays everyone once
   const last = matchdayWindow(fixtures.length).to;
-  // the Top 3 only shows once enough pairs have played at least once
-  const ranked = GPPL.rankStandings(results), started = ranked.filter(r => r.p > 0).length, need = Math.min(TOP3_MIN, ranked.length);
-  const top = ranked.length && started >= need ? ranked.filter(r => r.p > 0).slice(0, 3) : [];
+  // the Top 3 only shows once every pair has played, or once every result up to the first Super Sunday (15 Nov) is approved
+  const ranked = GPPL.rankStandings(results), started = ranked.filter(r => r.p > 0).length;
+  const top = ranked.length && (started === ranked.length || top3Ready) ? ranked.filter(r => r.p > 0).slice(0, 3) : [];
   document.getElementById("home-stats").innerHTML = `
     <div class="card"><div class="note">Pairs</div><div style="font-size:1.8rem;font-weight:700">${LEAGUE.pairs.length}</div>
       ${tabAllowed("participants") ? `<a href="#participants">👥 See all teams →</a>` : ""}</div>
@@ -117,7 +116,7 @@ function renderHome() {
     <div class="card top3-card"><div class="note">Top 3</div>
       ${top.length ? `<div class="top3">${top.map((r, i) => `<span>${["🥇", "🥈", "🥉"][i]} ${teamLogo(r.id)}<span class="top3-name"><b>${pairName(r.id)}</b>
           <span class="note">${r.p} played · ${r.w} W · ${r.l} L · <b>${r.pts} pts</b></span></span></span>`).join("")}</div>`
-        : `<div class="top3-wait"><b>${started} of ${ranked.length}</b> pairs have played</div><span class="note">The Top 3 appears once at least ${need} of ${ranked.length} pairs have played a match.</span>`}</div>`;
+        : `<div class="top3-wait"><b>${started} of ${ranked.length}</b> pairs have played</div><span class="note">The Top 3 appears once all Super Sunday results (15 November) are in, or sooner if all ${ranked.length} pairs have played a match.</span>`}</div>`;
   renderMatchdayCard();
 }
 
