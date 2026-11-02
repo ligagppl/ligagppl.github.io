@@ -699,6 +699,14 @@ function closesText(ms) {
 setInterval(() => document.querySelectorAll("[data-closes]").forEach(el => (el.textContent = closesText(+el.dataset.closes))), 1000);
 // a logged-in team is sent along, so the poll can tell teams to predict in My team instead
 const pollAuth = () => { try { const t = localStorage.getItem("gppl-team-token"); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; } };
+// a team's league position and its last 5 league results (oldest → latest) – public data, same badges as the team profile
+function pollForm(id) {
+  const rows = GPPL.rankStandings(results), i = rows.findIndex(r => r.id === id), row = rows[i];
+  const list = results.filter(r => r.a === id || r.b === id).map(r => { const e = GPPL.evaluate(r); return e.both ? "-" : e.winner === id ? "W" : "L"; }).slice(-5);
+  if (!row || !row.p) return `<span class="poll-form"><span class="note">No league results yet</span></span>`;
+  const pos = `${i + 1}${["st", "nd", "rd"][i] || "th"}`, medal = ["🥇", "🥈", "🥉"][i] || "";
+  return `<span class="poll-form"><span class="note">${medal} ${pos} · ${row.pts} pts</span><span class="pf-form pf-form-sm">${Array.from({ length: 5 }, (_, k) => { const x = list[k - (5 - list.length)]; return x ? `<span class="pf-f pf-${x === "W" ? "w" : x === "L" ? "l" : "d"}">${x}</span>` : `<span class="pf-f pf-e" aria-hidden="true"></span>`; }).join("")}</span></span>`;
+}
 const pollSaved = () => { try { return JSON.parse(localStorage.getItem("gppl-poll-" + pollToken) || "null"); } catch { return null; } };
 async function loadPoll() {
   const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), token = pollToken;
@@ -722,7 +730,7 @@ function renderPoll() {
     ? `<div class="tm-pr-bar" aria-hidden="true"><span style="width:${pa}%"></span><span></span></div>
        <div class="tm-pr-nums"><b>${pa}% <small>(${d.n[a] || 0})</small></b><span class="muted">${d.total} vote${d.total === 1 ? "" : "s"}${d.top ? ` · most picked: ${pickText(d.top)}` : ""}</span><b><small>(${d.total - (d.n[a] || 0)})</small> ${100 - pa}%</b></div>`
     : `<div class="tm-pr-nums"><span class="muted">No votes yet${d.open ? " – be the first!" : ""}</span></div>`;
-  const team = id => `<a class="poll-team team-link" href="${profileHref(id)}">${teamLogo(id).replace('class="mlogo', 'class="poll-logo mlogo')}<b>${pairName(id)}</b></a>`;
+  const team = id => `<div class="poll-team"><a class="team-link" href="${profileHref(id)}">${teamLogo(id).replace('class="mlogo', 'class="poll-logo mlogo')}<b>${pairName(id)}</b></a>${pollForm(id)}</div>`;
   let body, form = false;
   if (mine) body = `<p class="poll-done">✅ Your vote: <b>${pickText(mine)}</b></p>`;
   else if (d.voted) body = `<p class="poll-done">✅ A vote from your network has already been counted.</p>`;
@@ -732,7 +740,7 @@ function renderPoll() {
       ${poll.err ? `<div class="msg err">❌ ${esc(poll.err)}</div>` : ""}
       <div class="tm-btns"><button type="button" class="btn" data-poll="send"${poll.busy ? " disabled" : ""}>${poll.busy ? "Sending…" : "✅ Confirm my vote"}</button><button type="button" class="btn ghost" data-poll="back"${poll.busy ? " disabled" : ""}>Back</button></div></div>`;
   else form = true, body = `<p class="tm-pr-sub">Who wins? Tap a team</p>
-      <div class="tm-pr-teams">${[a, b].map(id => `<button type="button" class="tm-pr-team${pick.w === id ? " active" : ""}" data-poll-w="${id}">${teamLogo(id)}<b>${pairName(id)}</b></button>`).join("")}</div>
+      <div class="tm-pr-teams">${[a, b].map(id => `<button type="button" class="tm-pr-team${pick.w === id ? " active" : ""}" data-poll-w="${id}">${teamLogo(id)}<b>${pairName(id)}</b>${pollForm(id)}</button>`).join("")}</div>
       <p class="tm-pr-sub">Score in sets</p>
       <div class="tm-pr-scores">${[["2-0", "2–0"], ["2-1", "2–1"]].map(([v, t]) => `<button type="button" class="tm-pr-score${pick.s === v ? " active" : ""}" data-poll-s="${v}">${t}</button>`).join("")}</div>
       <div class="tm-btns" style="margin-top:14px"><button type="button" class="btn" data-poll="vote"${pick.w && pick.s ? "" : " disabled"}>🔮 Vote</button></div>`;
