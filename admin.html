@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=72">
+  <link rel="stylesheet" href="assets/style.css?v=73">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -85,6 +85,13 @@
     .pairs-table.fp-table th, .pairs-table.fp-table td { padding: 6px 4px; vertical-align: middle; }
     .fp-table .md-teams { display: flex; margin: 2px 0; }
     .fp-btns { display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+    .fp-notice { display: block; margin: 8px 0; background: color-mix(in srgb, #e8912d 14%, var(--card)); }
+    .fp-btns-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+    .move-dlg { width: min(460px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: var(--radius); background: var(--card); color: var(--text); }
+    .move-dlg::backdrop { background: rgba(0, 0, 0, .45); }
+    .move-keep { display: flex; flex-direction: column; gap: 6px; }
+    .move-keep label { display: flex; align-items: center; gap: 8px; }
+    .move-dlg select, .move-dlg input[type="text"] { width: 100%; padding: 8px; font: inherit; box-sizing: border-box; }
     .pp-table .md-teams { flex-wrap: nowrap; gap: 6px; }
     .pp-table .md-teams .dp-logo { width: 22px; height: 22px; flex: none; }
     .pp-table .md-teams span { overflow-wrap: anywhere; }
@@ -285,8 +292,11 @@
         <div class="dp-btns" id="sched-all" hidden><button class="btn" data-sched-all="share">📤 Share upcoming</button><button class="btn ghost" data-sched-all="img">⬇️ Download upcoming as 1 image</button></div>
         <div id="sched-teams"></div>
         <div class="seg" id="sched-view" hidden><button type="button" data-sched-view="list">📋 List</button><button type="button" data-sched-view="cal">🗓️ Calendar</button></div>
+        <div id="move-reqs"></div>
+        <div class="msg" id="sched-msg"></div>
         <div id="sched-list"></div>
       </div>
+      <dialog id="move-dlg" class="move-dlg"></dialog>
     </div>
 
     <!-- SLOT POOL: spare courts offered by teams, requested by others – the organizers decide -->
@@ -433,6 +443,7 @@
         <div id="pp-list"></div>
         <h4 style="margin:18px 0 4px">📣 Fan polls</h4>
         <p class="note">Open a poll for an upcoming match and share the link (e.g. in WhatsApp). Anyone with the link can vote once per connection – no account needed – until the match is over (then the link shows the results), and can't change the vote. Teams and fans only see the combined percentages; here they're kept apart. Fan votes never count for prediction points.</p>
+        <div id="fp-notices"></div>
         <button class="btn ghost small" id="fp-load">🔄 Refresh</button>
         <button class="btn small" id="fp-share">📲 Share open polls on WhatsApp</button>
         <div id="fp-list"></div>
@@ -671,6 +682,7 @@
     }
 
     // ---------- league: due results + matches per matchday (cards like the members see) ----------
+    let moveRequests = []; // teams asking for a new opponent or a cancellation (🔁 in My team)
     let playedDates = {}; // dates and venues of matches that already have a confirmed result (Admin → Scheduled)
     let schedule = {}; // dates, venues and waiting/disputed results – private in the gatekeeper, fetched with the admin key (👥 Member area)
     async function mergePending() {
@@ -682,6 +694,7 @@
         const d = await res.json();
         schedule = d.schedule || {};
         playedDates = d.played || {};
+        moveRequests = d.moveRequests || [];
         d.open.forEach(o => (schedule[o.key] = { ...(schedule[o.key] || {}), pending: o }));
       } catch {}
     }
@@ -998,6 +1011,7 @@
         $("sched-list").innerHTML = '<p class="muted">Dates and venues are private – enter the admin key in <b>👥 Member area</b> to see them.</p>';
         return;
       }
+      renderMoveRequests();
       const list = scheduledList(), upcoming = list.filter(x => !isPast(x.e));
       $("sched-all").hidden = !upcoming.length;
       $("sched-count").textContent = ` (${upcoming.length})`;
@@ -1019,12 +1033,36 @@
       $("sched-list").innerHTML = (list.map(schedRow).join("") || '<p class="muted">No open match has a date.</p>') +
         (done.length ? `<h4 class="sched-sub">✅ Played <span class="note">· ${done.length} · latest first</span></h4>` + done.map(schedRow).join("") : "");
     }
+    // team requests: a new opponent or a cancellation – approve does the same as 🔁 Change / cancel
+    function renderMoveRequests() {
+      const rows = moveRequests.map(r => {
+        const [a, b] = r.key.startsWith("L:") ? r.key.slice(2).split("-").map(Number) : (() => { const [, ri, mi] = r.key.split(":"); const m = ((cup.rounds[+ri] || {}).matches || [])[+mi] || {}; return [m.a, m.b]; })();
+        const e = schedule[r.key] || {};
+        return `<div class="md-row move-req"><span class="md-teams">${teamLogo(r.team)}<b>${escA(name(r.team))}</b>&nbsp;asks:</span>
+          <span class="md-info"><span>${r.type === "cancel" ? `✖️ Cancel <b>${escA(name(a))} vs ${escA(name(b))}</b>` : `🔁 Play <b>${escA(name(r.opp))}</b> instead of <b>${escA(name(r.team === a ? b : a))}</b>`}</span>
+            <span class="md-when">${whenText(e)}</span><span class="note">Reason: ${escA(r.reason)}</span></span>
+          <span class="md-share"><button class="btn small" data-req="${r.key}" data-req-ok="1">✅ Approve</button><button class="btn ghost small" data-req="${r.key}" data-req-ok="0">Reject</button></span></div>`;
+      }).join("");
+      $("move-reqs").innerHTML = rows ? `<h4 class="sched-sub">📨 Requests from teams <span class="note">· ${moveRequests.length}</span></h4>${rows}` : "";
+    }
+    $("move-reqs").addEventListener("click", async e => {
+      const b = e.target.closest("[data-req]");
+      if (!b) return;
+      const ok = b.dataset.reqOk === "1";
+      if (!confirm(ok ? "Approve this request?" : "Reject this request?")) return;
+      b.disabled = true;
+      try {
+        await memberCall("/admin/move-request", { key: b.dataset.req, approve: ok });
+        await mergePending(); renderScheduled(); loadPolls(); loadSlots();
+        flash("sched-msg", ok ? "✅ Done – the request is approved." : "✅ Request rejected.", true);
+      } catch (err) { flash("sched-msg", `❌ ${err.message}`, false); b.disabled = false; }
+    });
     function schedRow({ key, a, b, e, label, done }) {
         const p = !done && e.pending;
         const state = done ? `✅ Played · ${GPPL.scoreText(done, a)}` : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}` : isPast(e) ? "⏰ Result due" : "";
         return `<div class="md-row${done ? " is-done" : ""}">${pairLine(a, b)}
           <span class="md-info"><span class="md-when">${whenText(e)}</span><span class="note">${escA(label)}</span>${state ? `<span class="md-state">${state}</span>` : ""}</span>
-          ${p || done ? "" : `<span class="md-share"><button class="btn ghost small" data-match-share="${key}|${a}|${b}|${escA(label)}">📤 Share</button></span>`}</div>`;
+          ${p || done ? "" : `<span class="md-share"><button class="btn ghost small" data-match-share="${key}|${a}|${b}|${escA(label)}">📤 Share</button>${!isStarted(e) ? `<button class="btn ghost small" data-move="${key}|${a}|${b}">🔁 Change / cancel</button>` : ""}</span>`}</div>`;
     }
 
     // calendar view: a month grid (Monday first) – tap a day to see its matches below
@@ -1055,7 +1093,76 @@
       try { localStorage.setItem("gppl-sched-view", schedView); } catch {}
       renderScheduled();
     });
+    // 🔁 change opponent: one team keeps the date and court, the other match gets them (e.g. a player is sick).
+    // Predictions and fan votes stay with the old pairing; its poll link stops working (a new one can be made later).
+    const isStarted = e => e.date && e.time && new Date(`${e.date}T${e.time}:00`).getTime() <= Date.now();
+    let move = null;
+    const MOVE_REASONS = ["Illness", "Injury", "Home-country trip", "Long business trip", "Court unavailable", "Other"]; // §6 reasons + other
+    function moveOptions(keep) {
+      return LEAGUE.pairs.map(p => p.id).filter(o => o !== move.a && o !== move.b && o !== keep && !GPPL.findResult(results, keep, o))
+        .map(o => ({ o, e: schedule[lkey(keep, o)] || {} })).filter(({ e }) => !e.date && !e.pending)
+        .sort((x, y) => name(x.o).localeCompare(name(y.o)));
+    }
+    const moveReady = () => !!moveReason() && (move.mode === "cancel" || (move.mode === "move" && move.keep && move.opp));
+    const moveReason = () => (move.reason === "Other" ? (move.other || "").trim() && `Other: ${move.other.trim()}` : move.reason || "");
+    function drawMove() {
+      const d = $("move-dlg"), e = schedule[move.key], opts = move.keep ? moveOptions(move.keep) : [], league = move.key.startsWith("L:");
+      const reasonHtml = `<p><b>Reason</b></p><select id="move-reason"><option value="">Choose…</option>${MOVE_REASONS.map(r => `<option${move.reason === r ? " selected" : ""}>${r}</option>`).join("")}</select>
+          ${move.reason === "Other" ? `<input id="move-other" type="text" maxlength="180" placeholder="Write the reason" value="${escA(move.other || "")}" style="width:100%;margin-top:8px">` : ""}`;
+      const head = `<h3 style="margin-top:0">🔁 Change / cancel</h3>
+        <p class="note">${escA(name(move.a))} vs ${escA(name(move.b))} · ${whenText(e)}</p>
+        <div class="move-keep">${league ? `<label><input type="radio" name="move-mode" value="move"${move.mode === "move" ? " checked" : ""}> 🔁 New opponent – one team keeps the date and court</label>` : ""}
+          <label><input type="radio" name="move-mode" value="cancel"${move.mode === "cancel" ? " checked" : ""}> ✖️ Cancel the match – it needs a new date</label></div>`;
+      const done = `${move.err ? `<div class="msg err">❌ ${escA(move.err)}</div>` : ""}
+        <div class="dp-btns"><button class="btn" data-move-go${moveReady() && !move.busy ? "" : " disabled"}>${move.busy ? "Saving…" : move.mode === "cancel" ? "Cancel the match" : "Change opponent"}</button><button class="btn ghost" data-move-cancel>Back</button></div>`;
+      if (move.mode === "cancel") {
+        d.innerHTML = head + reasonHtml + `<p class="note">The date is removed and the match has to be rescheduled. Team predictions and fan votes stay; the poll link stops working – make a new one once it has a new date. A court from the pool goes back to the pool.</p>` + done;
+        return;
+      }
+      if (move.mode !== "move") { d.innerHTML = head + done; return; }
+      d.innerHTML = head + `
+        <p><b>Who keeps the date and court?</b></p>
+        <div class="move-keep">${[move.a, move.b].map(id => `<label><input type="radio" name="move-keep" value="${id}"${move.keep === id ? " checked" : ""}> ${teamLogo(id)} ${escA(name(id))}</label>`).join("")}</div>
+        ${move.keep ? `<p><b>New opponent</b> <span class="note">– teams ${escA(name(move.keep))} hasn't played yet and with no date for that match</span></p>
+          ${opts.length ? `<select id="move-opp"><option value="">Choose…</option>${opts.map(({ o }) => `<option value="${o}"${move.opp === o ? " selected" : ""}>${escA(name(o))}</option>`).join("")}</select>` : '<p class="muted">No possible opponent.</p>'}` : ""}
+        ${move.opp ? reasonHtml : ""}
+        <p class="note">Team predictions and fan votes stay with ${escA(name(move.a))} vs ${escA(name(move.b))} and count again once they have a new date. Its fan poll link stops working – make a new one in 🔮 Predictions when needed.</p>` + done;
+    }
+    $("move-dlg").addEventListener("change", e => {
+      if (e.target.name === "move-mode") { move.mode = e.target.value; move.err = null; }
+      if (e.target.name === "move-keep") { move.keep = +e.target.value; move.opp = null; }
+      if (e.target.id === "move-opp") move.opp = +e.target.value || null;
+      if (e.target.id === "move-reason") move.reason = e.target.value;
+      drawMove();
+      if (e.target.id === "move-reason" && move.reason === "Other") $("move-other").focus();
+    });
+    // typing the other reason only switches the button on/off – a full redraw would lose the cursor
+    $("move-dlg").addEventListener("input", e => {
+      if (e.target.id !== "move-other") return;
+      move.other = e.target.value;
+      $("move-dlg").querySelector("[data-move-go]").disabled = !(moveReady() && !move.busy);
+    });
+    $("move-dlg").addEventListener("click", async e => {
+      if (e.target.closest("[data-move-cancel]")) return $("move-dlg").close();
+      if (!e.target.closest("[data-move-go]") || move.busy) return;
+      move.busy = true; move.err = null; drawMove();
+      try {
+        const cancel = move.mode === "cancel";
+        const r = await memberCall("/admin/move", cancel ? { key: move.key, cancel: true, reason: moveReason() } : { key: move.key, keep: move.keep, opp: move.opp, reason: moveReason() });
+        $("move-dlg").close();
+        await mergePending(); renderScheduled(); loadPolls(); loadSlots();
+        flash("sched-msg", cancel ? `✅ ${name(move.a)} vs ${name(move.b)} is cancelled and needs a new date – its predictions and fan votes are kept.`
+          : `✅ ${name(move.keep)} now play ${name(move.opp)} on ${(schedule[r.key] || {}).date} at ${(schedule[r.key] || {}).time}. ${name(move.a)} vs ${name(move.b)} has no date now – its predictions and fan votes are kept.`, true);
+      } catch (err) { move.err = err.message; move.busy = false; drawMove(); }
+    });
     $("sched-list").addEventListener("click", e => {
+      const mv = e.target.closest("[data-move]");
+      if (mv) {
+        const [key, a, b] = mv.dataset.move.split("|");
+        move = { key, a: +a, b: +b, mode: key.startsWith("L:") ? null : "cancel", keep: null, opp: null, reason: "", other: "", busy: false, err: null };
+        drawMove(); $("move-dlg").showModal();
+        return;
+      }
       const nav = e.target.closest("[data-cal-nav]"), day = e.target.closest("[data-cal-day]");
       if (nav) {
         if (nav.dataset.calNav === "0") { calMonth = ymd(new Date()).slice(0, 7); calDay = ymd(new Date()); }
@@ -1491,21 +1598,41 @@
       try {
         const res = await fetch(api + "/admin/polls", { headers: { Authorization: `Admin ${key}` } });
         if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || `Error ${res.status}`);
-        const polls = (await res.json()).polls || [];
-        openPolls = polls.filter(p => p.fans && !p.fans.closed && !p.over);
+        const data = await res.json(), polls = data.polls || [];
+        renderPollNotices(data.notices || [], polls);
+        openPolls = polls.filter(p => p.fans && p.fans.token && !p.fans.closed && !p.over);
         const split = (t, a) => t.total ? `${Math.round(100 * (t.n[a] || 0) / t.total)}% – ${100 - Math.round(100 * (t.n[a] || 0) / t.total)}% <span class="muted">(${t.total})</span>` : '<span class="muted">–</span>';
         const when = p => p.date ? new Date(`${p.date}T12:00`).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + (p.time ? ` · ${p.time}` : "") : "no date";
         $("fp-list").innerHTML = polls.length ? `<table class="pairs-table fp-table"><thead><tr><th>Match</th><th title="Team predictions">🔮 Teams</th><th title="Fan votes">📣 Fans</th><th></th></tr></thead><tbody>` +
           polls.map(p => `<tr><td><span class="md-teams">${teamLogo(p.a)}<span>${escA(name(p.a))}</span></span><span class="md-teams">${teamLogo(p.b)}<span>${escA(name(p.b))}</span></span>
-              <span class="note">${p.cup ? `🏆 ${escA(p.cup)} · ` : ""}${when(p)}${p.over ? " · voting closed" : p.fans && p.fans.closed ? " · poll closed" : ""}</span></td>
+              <span class="note">${p.cup ? `🏆 ${escA(p.cup)} · ` : ""}${when(p)}${p.over ? " · voting closed" : p.fans && !p.fans.token ? " · moved or cancelled – votes kept, no link" : p.fans && p.fans.closed ? " · poll closed" : ""}</span></td>
             <td>${split(p.teams, p.a)}</td><td>${p.fans ? split(p.fans, p.a) : '<span class="muted">no poll</span>'}</td>
-            <td class="fp-btns">${p.fans
-              ? `<button class="btn small" data-fp-copy="${p.fans.token}">🔗 Copy link</button>${p.over ? "" : `<button class="btn ghost small" data-fp="${p.key}" data-fp-open="${p.fans.closed ? 1 : 0}">${p.fans.closed ? "Reopen" : "Close"}</button>`}`
+            <td class="fp-btns">${p.fans && !p.fans.token
+              ? `<button class="btn ghost small" data-fp="${p.key}" data-fp-open="1">📣 New poll link</button>`
+              : p.fans
+              ? `<button class="btn small" data-fp-copy="${p.fans.token}">🔗 Copy link</button>${p.over ? "" : `<button class="btn ghost small" data-fp="${p.key}" data-fp-open="${p.fans.closed ? 1 : 0}">${p.fans.closed ? "Reopen" : "Close"}</button>`}<button class="btn ghost small" data-fp="${p.key}" data-fp-expire="1" title="The link stops working – the votes stay">⏱️ Expire link</button>`
               : `<button class="btn ghost small" data-fp="${p.key}" data-fp-open="1">📣 Open poll</button>`}</td></tr>`).join("") + `</tbody></table>`
           : '<p class="muted">No upcoming matches with a date.</p>';
       } catch (e) { $("fp-list").innerHTML = `<p class="msg err">❌ ${escA(e.message)}</p>`; }
     }
     $("fp-load").addEventListener("click", loadPolls);
+    // a poll link expired because the match was rescheduled (3+ days later), moved or cancelled – make a new link, then dismiss
+    const keyPair = key => key.startsWith("L:") ? key.slice(2).split("-").map(Number) : (() => { const [, ri, mi] = key.split(":"); const m = ((cup.rounds[+ri] || {}).matches || [])[+mi] || {}; return [m.a, m.b]; })();
+    const dt = t => { const [d, h] = String(t || "").split(" "); return d ? `${new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })} ${h || ""}` : ""; };
+    function renderPollNotices(list, polls) {
+      $("fp-notices").innerHTML = list.map(n => {
+        const [a, b] = keyPair(n.key), p = polls.find(x => x.key === n.key), linkLess = p && p.fans && !p.fans.token;
+        const what = n.why === "rescheduled" ? `was moved from ${dt(n.from)} to <b>${dt(n.to)}</b>${n.team ? ` by ${escA(name(n.team))}` : ""}`
+          : n.why === "moved" ? `(${dt(n.from)}) got a new opponent – it needs a new date` : `(${dt(n.from)}) was cancelled – it needs a new date`;
+        return `<div class="msg fp-notice">⚠️ <b>${escA(name(a))} vs ${escA(name(b))}</b> ${what}. The poll link expired – the votes are kept.
+          <span class="fp-btns-row">${linkLess && n.why === "rescheduled" ? `<button class="btn small" data-fp="${n.key}" data-fp-open="1">📣 New poll link</button>` : ""}<button class="btn ghost small" data-fp-dismiss="${n.id}">Dismiss</button></span></div>`;
+      }).join("");
+    }
+    $("fp-notices").addEventListener("click", async ev => {
+      const b = ev.target.closest("button");
+      if (!b) return;
+      if (b.dataset.fpDismiss) { b.disabled = true; try { await memberCall("/admin/polls", { dismiss: b.dataset.fpDismiss }); } catch (e) { flash("fp-msg", `❌ ${e.message}`, false); } return loadPolls(); }
+    });
     // one WhatsApp message with every open poll – opens WhatsApp's share box (choose the chat there)
     $("fp-share").addEventListener("click", () => {
       if (!openPolls.length) return flash("fp-msg", "❌ No open polls – open a poll for a match first.", false);
@@ -1518,7 +1645,7 @@
       else whatsapp();
       flash("fp-msg", "✅ Message ready – it's also copied, in case you want to paste it yourself.", true);
     });
-    $("fp-list").addEventListener("click", async ev => {
+    const fpClick = async ev => {
       const b = ev.target.closest("button");
       if (!b) return;
       if (b.dataset.fpCopy) {
@@ -1528,17 +1655,21 @@
         return;
       }
       if (!b.dataset.fp) return;
+      if (b.dataset.fpExpire && !confirm("Expire this poll link? It stops working right away – the votes stay, and you can make a new link.")) return;
       const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
       b.disabled = true;
       try {
-        const res = await fetch(api + "/admin/polls", { method: "POST", headers: { Authorization: `Admin ${key}`, "Content-Type": "application/json" }, body: JSON.stringify({ key: b.dataset.fp, open: b.dataset.fpOpen === "1" }) });
+        const res = await fetch(api + "/admin/polls", { method: "POST", headers: { Authorization: `Admin ${key}`, "Content-Type": "application/json" }, body: JSON.stringify(b.dataset.fpExpire ? { key: b.dataset.fp, expire: true } : { key: b.dataset.fp, open: b.dataset.fpOpen === "1" }) });
         const d = await res.json();
         if (!res.ok) throw new Error(d.error || `Error ${res.status}`);
         if (d.token) { const link = pollLink(d.token); try { await navigator.clipboard.writeText(link); flash("fp-msg", `✅ Poll open – link copied: ${link}`, true); } catch { flash("fp-msg", `✅ Poll open – share this link: ${link}`, true); } }
+        else if (b.dataset.fpExpire) flash("fp-msg", "✅ Link expired – the votes are kept. Use 📣 New poll link for a new one.", true);
         else flash("fp-msg", "✅ Poll closed – the link now shows the results.", true);
         await loadPolls();
       } catch (e) { flash("fp-msg", `❌ ${e.message}`, false); b.disabled = false; }
-    });
+    };
+    $("fp-list").addEventListener("click", fpClick);
+    $("fp-notices").addEventListener("click", ev => { if (ev.target.closest("[data-fp]")) fpClick(ev); });
     function fillPredictTop() {
       const mode = siteSettings.predictShowTop === false ? "hide" : "show";
       document.querySelectorAll('input[name="predict-top"]').forEach(r => (r.checked = r.value === mode));

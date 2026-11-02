@@ -85,6 +85,7 @@
   const mapsUrl = place => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
   // days until a date: "today", "tomorrow", "in 6 days"
   const inDays = d => { const n = Math.round((new Date(d + "T12:00:00") - new Date(new Date().toDateString() + " 12:00")) / 864e5); return n === 0 ? "<b>today</b>" : n === 1 ? "<b>tomorrow</b>" : `in ${n} days`; };
+  const nowLocal = () => { const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); }; // for min= on date pickers
   const dayText = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
   // result deadlines (Rules §11): 48 hours after the booked time to enter the result, then 48 hours to confirm
@@ -422,7 +423,13 @@
           ? `<button type="button" class="btn ghost small" data-act="fp-copy" data-token="${esc(token)}">🔗 Copy poll link</button>`
           : `<button type="button" class="btn small" data-act="fp-open" data-key="${esc(k)}">📣 Open poll</button>`}</div></div>`;
     }).join("");
-    return `<div class="card tm-fp"><p class="note">Open a poll for a match, then share all open polls in one WhatsApp message. Fans can vote until the match is over. Only the organizers can close a poll.</p>
+    const notices = (state.pollNotices || []).map(n => {
+      const [a, b] = keyTeams(n.key), when = t => { const [d, h] = String(t || "").split(" "); return d ? `${dayText(d)} ${h || ""}` : ""; };
+      const what = n.why === "rescheduled" ? `was moved from ${when(n.from)} to <b>${when(n.to)}</b>` : n.why === "moved" ? `(${when(n.from)}) got a new opponent – it needs a new date` : `(${when(n.from)}) was cancelled – it needs a new date`;
+      return `<div class="msg tm-fp-notice">⚠️ <b>${esc(teamName(a))} vs ${esc(teamName(b))}</b> ${what}. The poll link expired – the votes are kept${n.why === "rescheduled" ? ". Open a new poll below and share the new link" : ""}.
+        <div class="tm-btns"><button type="button" class="btn ghost small" data-act="fp-dismiss" data-id="${esc(n.id)}">Dismiss</button></div></div>`;
+    }).join("");
+    return notices + `<div class="card tm-fp"><p class="note">Open a poll for a match, then share all open polls in one WhatsApp message. Fans can vote until the match is over. Only the organizers can close a poll.</p>
       <div class="tm-btns"><button type="button" class="btn" data-act="fp-share"${open.length ? "" : " disabled"}>📲 Share open polls on WhatsApp (${open.length})</button></div>
       ${fpMsg ? `<div class="msg ${fpMsg.ok ? "ok" : "err"}">${esc(fpMsg.text)}</div>` : ""}</div>
       ${keys.length ? `<div class="card tm-fp-list">${rows}</div>` : `<div class="card muted">No upcoming match with a date and time.</div>`}`;
@@ -603,7 +610,7 @@
       body = when + due + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share on WhatsApp</button>` : ""}${locked ? "" : `<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>`}
         ${late ? contactBtn(m) : entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule` && !locked) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
-        <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="900" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
+        <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="900" min="${nowLocal()}" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
         <label>Duration<select name="duration">${[60, 90, 120].map(d => `<option value="${d}" ${(+entry.duration || 90) === d ? "selected" : ""}>${d} minutes</option>`).join("")}</select></label></div>
         <div class="tm-venue"><label for="court-${m.key}">Court / venue</label>
           <input id="court-${m.key}" name="court" maxlength="160" autocomplete="off" value="${esc(entry.court || "")}" placeholder="Pick a club or search an address…">
@@ -614,12 +621,41 @@
           ${entry.date ? `<button class="btn ghost small" type="button" data-act="unschedule" data-key="${m.key}">Remove date</button>` : ""}</div>
         <span class="note">Visible to both teams.</span></form>`;
       if (form === `${m.key}|result` && entry.date && !late) body += resultForm(m);
+      if (entry.date && !locked) body += changeRequestHtml(m);
     }
     if (photos[m.key]) body += `<img class="tm-photo" src="${photos[m.key]}" alt="Matchday photo">`;
     return `<div class="card tm-match st-${st.cls}">
       <div class="tm-head"><span class="tm-label">${esc(m.label)}</span><span class="tm-chip">${st.text}</span></div>
       <div class="tm-vs">${logo(m.opp)}<div><b>${esc(teamName(m.opp))}</b><span class="tm-players">${players(m.opp)}</span></div></div>
       ${body}${msgHtml(m.key)}</div>`;
+  }
+
+  // ask the organizers for a new opponent (we keep the date and court) or to cancel the match (it needs a new date) –
+  // e.g. a player is sick. The organizers decide in Admin → 📅 Scheduled.
+  const REQ_REASONS = ["Illness", "Injury", "Home-country trip", "Long business trip", "Court unavailable", "Other"];
+  function changeRequestHtml(m) {
+    const req = (state.moveRequests || []).find(r => r.key === m.key);
+    if (req) {
+      const what = req.type === "cancel" ? "to cancel this match" : `to play <b>${esc(teamName(req.opp))}</b> instead`;
+      return req.team === state.team
+        ? `<div class="tm-req"><p>📨 You asked the organizers ${what} (${esc(req.reason)}). Waiting for their decision.</p><div class="tm-btns"><button class="btn ghost small" data-act="req-withdraw" data-key="${m.key}">Withdraw request</button></div></div>`
+        : `<div class="tm-req"><p>📨 <b>${esc(teamName(m.opp))}</b> asked the organizers ${what} (${esc(req.reason)}). Waiting for their decision.</p></div>`;
+    }
+    const league = m.key.startsWith("L:"), k = (a, b) => `L:${Math.min(a, b)}-${Math.max(a, b)}`;
+    const opts = league ? state.pairs.map(p => p.id).filter(o => o !== state.team && o !== m.opp && !GPPL.findResult(state.results, state.team, o))
+      .filter(o => { const e = state.matches[k(state.team, o)] || {}; return !e.date && !e.pending; }).sort((x, y) => teamName(x).localeCompare(teamName(y))) : [];
+    const reason = `<label>Reason<select name="reason" required><option value="">Choose…</option>${REQ_REASONS.map(r => `<option>${r}</option>`).join("")}</select></label>
+      <input name="other" maxlength="180" placeholder="Write the reason" hidden>`;
+    const btns = `<div class="tm-btns">${league ? `<button class="btn ghost small" data-act="form" data-form="${m.key}|move-req">🔁 Ask for a new opponent</button>` : ""}<button class="btn ghost small" data-act="form" data-form="${m.key}|cancel-req">✖️ Ask to cancel</button></div>`;
+    if (form === `${m.key}|move-req`) return btns + `<form class="tm-form" data-submit="move-req" data-key="${m.key}">
+      <p class="note">Can't play ${esc(teamName(m.opp))} on this date? Keep the date and court and play another team instead – the organizers decide.</p>
+      ${opts.length ? `<label>New opponent<select name="opp" required><option value="">Choose…</option>${opts.map(o => `<option value="${o}">${esc(teamName(o))}</option>`).join("")}</select></label>` : `<p class="muted">No other team is free – every match you haven't played already has a date.</p>`}
+      ${reason}<span class="note">Talk to the new opponent first – they have to be able to play at this date and court.</span>
+      <div class="tm-btns"><button class="btn small" type="submit"${opts.length ? "" : " disabled"}>Send to the organizers</button><button class="btn ghost small" type="button" data-act="form" data-form="${m.key}|move-req">Cancel</button></div></form>`;
+    if (form === `${m.key}|cancel-req`) return btns + `<form class="tm-form" data-submit="cancel-req" data-key="${m.key}">
+      <p class="note">The match loses its date and has to be played on a new date (Rules §6) – the organizers decide.</p>
+      ${reason}<div class="tm-btns"><button class="btn small" type="submit">Send to the organizers</button><button class="btn ghost small" type="button" data-act="form" data-form="${m.key}|cancel-req">Back</button></div></form>`;
+    return btns;
   }
 
   // WhatsApp message to the organizers (number comes from the gatekeeper after login, never from the website)
@@ -726,6 +762,7 @@
       drawPredict(); predictDialog().showModal();
       return;
     }
+    if (a === "req-withdraw") return act(key, () => call("/move-request", { key, withdraw: true }), "Request withdrawn.");
     if (a === "fp-open") {
       b.disabled = true;
       try {
@@ -734,6 +771,10 @@
         try { await navigator.clipboard.writeText(pollLink(token)); fpMsg = { ok: true, text: `✅ Poll open – link copied: ${pollLink(token)}` }; }
         catch { fpMsg = { ok: true, text: `✅ Poll open – link: ${pollLink(token)}` }; }
       } catch (err) { fpMsg = { ok: false, text: `❌ ${err.message}` }; }
+      return render();
+    }
+    if (a === "fp-dismiss") {
+      try { await call("/team-poll", { dismiss: b.dataset.id }); state = await call("/me"); } catch (err) { fpMsg = { ok: false, text: `❌ ${err.message}` }; }
       return render();
     }
     if (a === "fp-copy") {
@@ -808,9 +849,16 @@
       } catch (err) { msg = { key: "top", text: err.message, ok: false }; tsToken = null; return render(); }
     }
     const v = n => (f.elements[n] ? f.elements[n].value.trim() : "");
+    if (kind === "move-req" || kind === "cancel-req") return act(key, () => {
+      const reason = v("reason") === "Other" ? (v("other") && `Other: ${v("other")}`) : v("reason");
+      if (!reason) throw new Error("Please give a reason.");
+      if (kind === "move-req" && !v("opp")) throw new Error("Please pick the new opponent.");
+      return call("/move-request", kind === "cancel-req" ? { key, type: "cancel", reason } : { key, type: "move", opp: +v("opp"), reason });
+    }, "Sent – the organizers will decide.");
     if (kind === "schedule") return act(key, () => {
       const [date = "", time = ""] = v("when").split("T");
       if (!date || !time) throw new Error("Please pick the date and time.");
+      if (new Date(`${date}T${time}`).getTime() <= Date.now()) throw new Error("This date and time is in the past – please pick a future one.");
       if (!v("court")) throw new Error("Please add the court / venue.");
       return call("/schedule", { key, date, time: time.slice(0, 5), duration: +v("duration") || 90, court: v("court") });
     }, "Saved.");
@@ -884,6 +932,12 @@
     }, 350);
   }
   el.addEventListener("input", e => { if (e.target.name === "court") venueInput(e.target); });
+  // "Other" reason → a text field to write it
+  el.addEventListener("change", e => {
+    if (e.target.name !== "reason") return;
+    const other = e.target.form && e.target.form.elements.other;
+    if (other) { other.hidden = e.target.value !== "Other"; other.required = !other.hidden; if (!other.hidden) other.focus(); }
+  });
   // focusing the empty field shows the whole club list
   el.addEventListener("focusin", e => { if (e.target.name === "court" && !e.target.value.trim()) venueInput(e.target); });
   el.addEventListener("click", e => {
