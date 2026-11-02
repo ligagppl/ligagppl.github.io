@@ -1592,6 +1592,7 @@
     // fan polls: team picks and fan votes side by side (teams and fans only ever see them combined)
     const pollLink = token => `${location.origin}/#poll/${token}`;
     let openPolls = []; // polls fans can vote in right now – for the WhatsApp message
+    const superDay = (d, n) => { const t = new Date(d + "T12:00:00"); return `🔥 *Super ${t.toLocaleDateString("en-GB", { weekday: "long" })}* – ${n} matches on ${t.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`; };
     async function loadPolls() {
       const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
       if (!api || !key) { $("fp-list").innerHTML = '<p class="muted">Enter the admin key in <b>👥 Member area</b> first.</p>'; return; }
@@ -1636,7 +1637,14 @@
     // one WhatsApp message with every open poll – opens WhatsApp's share box (choose the chat there)
     $("fp-share").addEventListener("click", () => {
       if (!openPolls.length) return flash("fp-msg", "❌ No open polls – open a poll for a match first.", false);
-      const n = openPolls.length, lines = openPolls.map((p, i) => `${i + 1}. *${name(p.a)} vs ${name(p.b)}*${p.cup ? " 🏆 Cup" : ""}\n👉 ${pollLink(p.fans.token)}`); // *…* = bold in WhatsApp
+      // 4+ matches on one day → a "🔥 Super Sunday" heading above that day's matches
+      const perDay = {}, lines = [];
+      openPolls.forEach(p => p.date && (perDay[p.date] = (perDay[p.date] || 0) + 1));
+      openPolls.forEach((p, i) => {
+        if (p.date && perDay[p.date] >= 4 && (i === 0 || openPolls[i - 1].date !== p.date)) lines.push(superDay(p.date, perDay[p.date]));
+        lines.push(`${i + 1}. *${name(p.a)} vs ${name(p.b)}*${p.cup ? " 🏆 Cup" : ""}\n👉 ${pollLink(p.fans.token)}`); // *…* = bold in WhatsApp
+      });
+      const n = openPolls.length;
       const text = `*🇵🇰 GPPL 🇩🇪*\n\nWe have ${n} upcoming liga match${n === 1 ? "" : "es"} and you can vote directly for your team\n\n${lines.join("\n\n")}\n\nIf you don't know who they are, you can check their details on ${location.origin}/#participants`;
       // the phone's share box keeps emojis and flags intact (wa.me's redirect breaks them); on a computer: WhatsApp's send page
       try { navigator.clipboard.writeText(text); } catch {}

@@ -436,7 +436,17 @@
   }
   function pollMessage() {
     const keys = Object.keys(state.fanPolls || {}).filter(stillOn).sort(byStart);
-    const lines = keys.map((k, i) => { const [a, b] = keyTeams(k); return `${i + 1}. *${teamName(a)} vs ${teamName(b)}*${k.startsWith("C:") ? " 🏆 Cup" : ""}\n👉 ${pollLink(state.fanPolls[k])}`; }); // *…* = bold in WhatsApp
+    // 4+ matches on one day → a "🔥 Super Sunday" heading above that day's matches
+    const day = k => state.upcoming[k].date, perDay = {}, lines = [];
+    keys.forEach(k => (perDay[day(k)] = (perDay[day(k)] || 0) + 1));
+    keys.forEach((k, i) => {
+      if (perDay[day(k)] >= 4 && (i === 0 || day(keys[i - 1]) !== day(k))) {
+        const t = new Date(day(k) + "T12:00:00");
+        lines.push(`🔥 *Super ${t.toLocaleDateString("en-GB", { weekday: "long" })}* – ${perDay[day(k)]} matches on ${t.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`);
+      }
+      const [a, b] = keyTeams(k);
+      lines.push(`${i + 1}. *${teamName(a)} vs ${teamName(b)}*${k.startsWith("C:") ? " 🏆 Cup" : ""}\n👉 ${pollLink(state.fanPolls[k])}`); // *…* = bold in WhatsApp
+    });
     const n = keys.length;
     return `*🇵🇰 GPPL 🇩🇪*\n\nWe have ${n} upcoming liga match${n === 1 ? "" : "es"} and you can vote directly for your team\n\n${lines.join("\n\n")}\n\nIf you don't know who they are, you can check their details on ${location.origin}${location.pathname}#participants`;
   }
