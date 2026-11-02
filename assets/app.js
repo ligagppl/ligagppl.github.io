@@ -101,12 +101,14 @@ function renderSchedule() {
   }).join("");
 }
 
+const TOP3_MIN = 9; // pairs that must have played before the Top 3 shows
+
 function renderHome() {
   const n = LEAGUE.pairs.length, total = fixtures.length ? fixtures.reduce((s, g) => s + g.length, 0) : n * (n - 1) / 2; // before the draw: everyone plays everyone once
   const last = matchdayWindow(fixtures.length).to;
-  // the Top 3 only means something once every pair has played at least once
-  const ranked = GPPL.rankStandings(results), started = ranked.filter(r => r.p > 0).length;
-  const top = ranked.length && started === ranked.length ? ranked.slice(0, 3) : [];
+  // the Top 3 only shows once enough pairs have played at least once
+  const ranked = GPPL.rankStandings(results), started = ranked.filter(r => r.p > 0).length, need = Math.min(TOP3_MIN, ranked.length);
+  const top = ranked.length && started >= need ? ranked.filter(r => r.p > 0).slice(0, 3) : [];
   document.getElementById("home-stats").innerHTML = `
     <div class="card"><div class="note">Pairs</div><div style="font-size:1.8rem;font-weight:700">${LEAGUE.pairs.length}</div>
       ${tabAllowed("participants") ? `<a href="#participants">👥 See all teams →</a>` : ""}</div>
@@ -115,7 +117,7 @@ function renderHome() {
     <div class="card top3-card"><div class="note">Top 3</div>
       ${top.length ? `<div class="top3">${top.map((r, i) => `<span>${["🥇", "🥈", "🥉"][i]} ${teamLogo(r.id)}<span class="top3-name"><b>${pairName(r.id)}</b>
           <span class="note">${r.p} played · ${r.w} W · ${r.l} L · <b>${r.pts} pts</b></span></span></span>`).join("")}</div>`
-        : `<div class="top3-wait"><b>${started} of ${ranked.length}</b> pairs have played</div><span class="note">The Top 3 appears once every pair has played at least one match.</span>`}</div>`;
+        : `<div class="top3-wait"><b>${started} of ${ranked.length}</b> pairs have played</div><span class="note">The Top 3 appears once at least ${need} of ${ranked.length} pairs have played a match.</span>`}</div>`;
   renderMatchdayCard();
 }
 
