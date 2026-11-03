@@ -85,7 +85,8 @@
   const mapsUrl = place => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
   // days until a date: "today", "tomorrow", "in 6 days"
   const inDays = d => { const n = Math.round((new Date(d + "T12:00:00") - new Date(new Date().toDateString() + " 12:00")) / 864e5); return n === 0 ? "<b>today</b>" : n === 1 ? "<b>tomorrow</b>" : `in ${n} days`; };
-  const nowLocal = () => { const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); }; // for min= on date pickers
+  // for min= on date pickers – rounded down to the half hour, because step="1800" counts from min (14:00 must stay valid at 15:23)
+  const nowLocal = () => { const d = new Date(Math.floor(Date.now() / 1800000) * 1800000 - new Date().getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
   const dayText = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
   // result deadlines (Rules §11): 48 hours after the booked time to enter the result, then 48 hours to confirm
@@ -250,7 +251,7 @@
     const taken = all.filter(c => c.taken).map(c => row(c, `<span class="tm-up-label muted">Given to another team</span>`));
 
     const offerForm = form === "slots|slot-offer" ? `<form class="tm-form" data-submit="slot-offer" data-key="slots">
-        <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="900"></label>
+        <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="1800"></label>
         <label>Duration<select name="duration">${[60, 90, 120].map(d => `<option value="${d}" ${d === 90 ? "selected" : ""}>${d} minutes</option>`).join("")}</select></label></div>
         <div class="tm-venue"><label for="court-slot">Court / venue</label>
           <input id="court-slot" name="court" maxlength="160" autocomplete="off" placeholder="Pick a club or search an address…">
@@ -672,7 +673,7 @@
       body = when + due + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share on WhatsApp</button>` : ""}${locked ? "" : `<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>`}
         ${late ? contactBtn(m) : entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule` && !locked) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
-        <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="900" min="${nowLocal()}" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
+        <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="1800" min="${nowLocal()}" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
         <label>Duration<select name="duration">${[60, 90, 120].map(d => `<option value="${d}" ${(+entry.duration || 90) === d ? "selected" : ""}>${d} minutes</option>`).join("")}</select></label></div>
         <div class="tm-venue"><label for="court-${m.key}">Court / venue</label>
           <input id="court-${m.key}" name="court" maxlength="160" autocomplete="off" value="${esc(entry.court || "")}" placeholder="Pick a club or search an address…">
