@@ -711,14 +711,18 @@
     // ---------- league: due results + matches per matchday (cards like the members see) ----------
     let moveRequests = []; // teams asking for a new opponent or a cancellation (🔁 in My team)
     let playedDates = {}; // dates and venues of matches that already have a confirmed result (Admin → Scheduled)
+    let schedLoadedAt = 0; // when the list on screen was fetched – a visit only counts what was actually shown
+    const isNewSched = e => !!(e && e.at && Date.parse(e.at) > schedSeenBefore);
     let schedule = {}; // dates, venues and waiting/disputed results – private in the gatekeeper, fetched with the admin key (👥 Member area)
     async function mergePending() {
       const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
       if (!api || !key) return;
       try {
+        const asked = Date.now();
         const res = await fetch(api + "/admin/open", { headers: { Authorization: `Admin ${key}` } });
         if (!res.ok) return;
         const d = await res.json();
+        schedLoadedAt = asked;
         schedule = d.schedule || {};
         playedDates = d.played || {};
         moveRequests = d.moveRequests || [];
@@ -1004,9 +1008,9 @@
     // all matches with a date and no official result, by date (league and cup together)
     // the team that entered the date goes on the left
     const setterLeft = (a, b, e) => e.by === b ? { a: b, b: a } : { a, b };
-    // 🆕 dates set or changed since the admin last opened 📅 Scheduled (in this browser)
-    const schedSeenBefore = +localStorage.getItem("gppl-sched-seen") || 0;
-    const isNewSched = e => !!(schedSeenBefore && e && e.at && Date.parse(e.at) > schedSeenBefore);
+    // 🆕 dates set or changed since the admin last saw 📅 Scheduled (in this browser) – the first time: the last 24 hours
+    const schedSeenStored = +localStorage.getItem("gppl-sched-seen") || 0;
+    const schedSeenBefore = schedSeenStored || Date.now() - 24 * 3600000;
     function scheduledList() {
       const list = [];
       fixtureList.forEach((games, i) => games.forEach(([a, b]) => {
@@ -1061,7 +1065,7 @@
       $("sched-view").querySelectorAll("button").forEach(x => x.classList.toggle("active", x.dataset.schedView === schedView));
       const done = playedList();
       if (schedView === "cal") { $("sched-list").innerHTML = calendarHtml(list.concat(done)); return; }
-      $("sched-list").innerHTML = (fresh ? `<p class="sched-new-note">🆕 <b>${fresh} ${fresh === 1 ? "match" : "matches"}</b> scheduled or changed since your last visit (${new Date(schedSeenBefore).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })})</p>` : "") +
+      $("sched-list").innerHTML = (fresh ? `<p class="sched-new-note">🆕 <b>${fresh} ${fresh === 1 ? "match" : "matches"}</b> scheduled or changed ${schedSeenStored ? `since your last visit (${new Date(schedSeenBefore).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })})` : "in the last 24 hours"}</p>` : "") +
         (list.map(schedRow).join("") || '<p class="muted">No open match has a date.</p>') +
         (done.length ? `<h4 class="sched-sub">✅ Played <span class="note">· ${done.length} · latest first</span></h4>` + done.map(schedRow).join("") : "");
     }
@@ -2030,8 +2034,10 @@
     });
 
     // ---------- tabs ----------
-    // opening 📅 Scheduled counts as a visit – the 🆕 marks stay until the page is reloaded
-    document.querySelector('.subnav button[data-panel="scheduled"]').addEventListener("click", () => { try { localStorage.setItem("gppl-sched-seen", String(Date.now())); } catch {} });
+    // opening 📅 Scheduled counts as a visit up to the moment its list was fetched – the 🆕 marks stay until the page is reloaded
+    document.querySelector('.subnav button[data-panel="scheduled"]').addEventListener("click", () => {
+      try { if (schedLoadedAt > (+localStorage.getItem("gppl-sched-seen") || 0)) localStorage.setItem("gppl-sched-seen", String(schedLoadedAt)); } catch {}
+    });
     document.querySelectorAll(".subnav button").forEach(btn => btn.addEventListener("click", async () => {
       document.querySelectorAll(".subnav button").forEach(b => b.classList.toggle("active", b === btn));
       document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "panel-" + btn.dataset.panel));
