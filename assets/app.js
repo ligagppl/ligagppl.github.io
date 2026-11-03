@@ -131,6 +131,10 @@ function renderHome() {
   box.hidden = !recent.length;
   box.innerHTML = `<h3 class="home-h">✅ Results</h3>${recent.map(r => matchRow(r.a, r.b)).join("")}
     ${results.length > recent.length ? `<a class="home-more" href="#schedule">All ${results.length} results →</a>` : ""}`;
+  renderHomeCup();
+  // every team, logo first – tap for its profile
+  document.getElementById("home-teams").innerHTML = `<h3 class="home-h">👥 The ${n} pairs</h3><div class="home-teams">${LEAGUE.pairs.map(p =>
+    `<a class="ht" href="${profileHref(p.id)}">${teamLogo(p.id)}<span>${esc(p.name)}</span></a>`).join("")}</div>`;
   renderMatchdayCard();
 }
 
@@ -158,14 +162,36 @@ function renderMatchdayCard() {
       : `<h3 style="margin-top:0">🏁 The league season is over</h3><p class="muted">Thanks for playing – see the final table.</p>`;
     return;
   }
-  const { from, to } = matchdayWindow(cur), games = fixtures[cur - 1] || [];
-  const played = games.filter(([a, b]) => GPPL.findResult(results, a, b)).length;
+  // matches can be played in any order (Rules §2) – what counts is the next milestone
+  const n = LEAGUE.pairs.length, ms = (LEAGUE.milestonesByPairs || {})[n] || [];
+  const mi = ms.findIndex(m => matchdayWindow(m.md).to.getTime() + DAY > Date.now()), m = ms[mi];
+  if (!m) { el.hidden = true; return; }
+  const to = matchdayWindow(m.md).to, min = m.min === "all" ? n - 1 : m.min;
+  const reached = GPPL.rankStandings(results).filter(r => r.p >= min).length;
   const daysLeft = Math.max(0, Math.ceil((to.getTime() + DAY - Date.now()) / DAY));
-  el.innerHTML = `<div class="md-now"><div><span class="pill">In progress</span>
-      <h3 style="margin:8px 0 2px">Matchday ${cur} of ${fixtures.length}</h3>
-      <span class="note">${fmt(from)} – ${fmt(to)} · ${daysLeft === 1 ? "last day" : `${daysLeft} days left`}</span></div>
-      <div class="md-now-count"><b>${played}/${games.length}</b><span class="note">matches played</span></div></div>
-    <div class="md-now-bar"><span style="width:${games.length ? (100 * played / games.length).toFixed(0) : 0}%"></span></div>`;
+  el.innerHTML = `<div class="md-now"><div><span class="pill">Next milestone · ${mi + 1} of ${ms.length}</span>
+      <h3 style="margin:8px 0 2px">${m.min === "all" ? "All matches played" : `At least ${min} matches per pair`} by ${to.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}</h3>
+      <span class="note">${daysLeft === 1 ? "Last day" : `${daysLeft} days left`} · matches can be played in any order (<a href="#rules">§2</a>)</span></div>
+      <div class="md-now-count"><b>${reached}/${n}</b><span class="note">pairs there</span></div></div>
+    <div class="md-now-bar"><span style="width:${n ? Math.round(100 * reached / n) : 0}%"></span></div>`;
+}
+
+// home: where the GPPC Cup stands (draw dates, the running round or the champions)
+function renderHomeCup() {
+  const el = document.getElementById("home-cup");
+  let body;
+  if (!cup.rounds.length) {
+    const first = ((LEAGUE.cupWindowsByPairs || {})[LEAGUE.pairs.length] || [])[0];
+    const when = first && datesOn ? matchdayWindow(first.from) : null;
+    body = when ? `<p>The draw is between <b>${fmt(new Date(when.from.getTime() - 7 * DAY))} and ${fmt(when.from)}</b>.</p>
+      <p class="note">${esc(first.round)}: ${fmt(when.from)} – ${fmt(matchdayWindow(first.to).to)}</p>`
+      : `<p class="muted">The draw is in the second half of the league.</p>`;
+  } else {
+    const ns = GPPL.cupNextStage(cup), last = cup.rounds[cup.rounds.length - 1];
+    body = ns.type === "done" && ns.champion ? `<p>🏆 Champions: <b>${pairName(ns.champion)}</b></p>`
+      : `<p><b>${esc(last.name)}</b> · ${(last.matches || []).filter(GPPL.cupWinner).length} of ${(last.matches || []).length} matches decided</p>`;
+  }
+  el.innerHTML = `<h3 class="home-h">🏆 GPPC Cup</h3>${body}${tabAllowed("cup") ? `<a class="home-more" href="#cup">See the cup →</a>` : ""}`;
 }
 
 function renderCup() {

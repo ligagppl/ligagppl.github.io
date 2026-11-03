@@ -616,6 +616,25 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .pod-pts { font-weight: 800; color: var(--win); }
 @media (max-width: 520px) { .pod .note { display: none; } .pod .mlogo { width: 40px; height: 40px; } .pod-1 .mlogo { width: 50px; height: 50px; } .pod-name { font-size: .9rem; } }
 #home-results[hidden] { display: none; }
+#home-md[hidden] { display: none; }
+.home-2 { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.home-2 > .card, .home-side > .card:last-child { margin-bottom: 0; }
+.home-2 { margin-bottom: 16px; }
+.home-side { display: flex; flex-direction: column; gap: 16px; }
+.home-side .card { margin-bottom: 0; }
+.home-side p { margin: 0 0 4px; }
+@media (max-width: 820px) { .home-2 { grid-template-columns: 1fr; } }
+.how-steps { margin: 0; padding: 0; list-style: none; counter-reset: how; display: flex; flex-direction: column; gap: 10px; }
+.how-steps li { counter-increment: how; position: relative; padding-left: 36px; font-size: .95rem; line-height: 1.4; }
+.how-steps li::before { content: counter(how); position: absolute; left: 0; top: -1px; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--green-2); color: #fff; font-weight: 800; font-size: .85rem; display: flex; align-items: center; justify-content: center; }
+.home-teams { display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 10px; }
+.ht { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 6px; border-radius: 12px; text-align: center;
+  border: 1px solid var(--line); color: inherit !important; text-decoration: none; font-size: .85rem; font-weight: 600; line-height: 1.2; }
+.ht:hover { border-color: var(--green-2); background: color-mix(in srgb, var(--green-2) 6%, transparent); }
+.ht .mlogo { width: 54px; height: 54px; }
+.ht span { overflow-wrap: anywhere; }
+@media (max-width: 520px) { .home-teams { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; } .ht .mlogo { width: 44px; height: 44px; } .ht { font-size: .78rem; } }
 
 /* ---------- GPPC Cup tab: score boards ---------- */
 .cup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
@@ -873,3 +892,11 @@ a.tbl-team { color: inherit; text-decoration: none; }
 .tm-req p { margin: 0 0 6px; }
 .tm-fp-notice { display: block; margin-bottom: 10px; background: color-mix(in srgb, #e8912d 14%, var(--card)); }
 .pf-side-wait { min-height: 220px; }
+@media (max-width: 520px) {
+  #home-results .match { font-size: .84rem; gap: 6px; }
+  #home-results .match .mlogo { width: 26px; height: 26px; }
+  #home-results .match .a, #home-results .match .b { gap: 6px; }
+  #home-results .match .tn { overflow-wrap: normal; }
+  #home-results .match .score { min-width: 0; }
+  #home-md .md-now-count { flex-direction: row; align-items: baseline; gap: 6px; }
+}
