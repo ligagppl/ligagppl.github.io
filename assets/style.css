@@ -706,6 +706,9 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tm-up-livechip { display: inline-block; font-size: .78rem; font-weight: 700; padding: 1px 9px; border-radius: 999px; background: #d93025; color: #fff; animation: tm-live 1.6s ease-in-out infinite; }
 @keyframes tm-live { 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .tm-up-livechip { animation: none; } }
+.tm-up-new { font-size: .72rem; font-weight: 800; padding: 1px 8px; border-radius: 999px; background: var(--ball); color: #04240f; margin-right: 4px; }
+.tm-up-newnote { margin: 6px 0 10px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, var(--ball) 30%, transparent); font-size: .92rem; }
+.tm-cal-m.new { outline: 2px solid var(--ball); outline-offset: 1px; border-radius: 6px; }
 .tm-up-chip { font-size: .78rem; font-weight: 700; padding: 2px 10px; border-radius: 999px; background: var(--ball); color: #14201a; margin-left: 6px; }
 
 /* Rules: what changed in the latest version */

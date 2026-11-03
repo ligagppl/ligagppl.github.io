@@ -51,7 +51,10 @@
     if (!ls.get(TOKEN_KEY)) { state = null; return render(); }
     loading = true; render();
     Object.keys(matchImgs).forEach(k => delete matchImgs[k]);
-    try { state = await call("/me"); } catch (e) { msg = { key: "top", text: e.message, ok: false }; }
+    const asked = Date.now();
+    try { state = await call("/me"); meAt = asked; } catch (e) { msg = { key: "top", text: e.message, ok: false }; }
+    // 🆕 in 📅 Matches: set or changed after the team last opened the list (the first time: the last 24 hours) – stays for this page visit
+    if (state && seenBefore === null) seenBefore = state.schedSeen || Date.now() - 24 * 3600000;
     loading = false; render();
   }
 
@@ -158,6 +161,7 @@
   function render() {
     updateNav();
     if (!api()) return;
+    if (state && view === "upcoming" && location.hash.startsWith("#team")) markMatchesSeen();
     if (!state && !loading) {
       el.innerHTML = `<div class="card tm-login">
         <p>Log in with the <b>team code</b> the organizers sent you on WhatsApp. Both players of a team use the same code.</p>
@@ -204,7 +208,7 @@
     el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team"><a class="team-link" href="${profileOf(state.team)}">${esc(pair.name)}</a></b>
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><a class="btn ghost small" href="${profileOf(state.team)}">👁 Public profile</a><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
-      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Matches (${upcomingList().length})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button>${state.fanPolls ? `<button role="tab" data-act="view" data-view="fanpolls" class="${view === "fanpolls" ? "active" : ""}">📣 Fan polls</button>` : ""}</div>
+      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Matches (${upcomingList().length}${(n => n ? ` · 🆕 ${n}` : "")(upcomingList().filter(x => isNewUp(x.e)).length)})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button>${state.fanPolls ? `<button role="tab" data-act="view" data-view="fanpolls" class="${view === "fanpolls" ? "active" : ""}">📣 Fan polls</button>` : ""}</div>
       ${view === "upcoming" ? upcomingHtml() : view === "fanpolls" && state.fanPolls ? fanPollsHtml() : view === "gallery" ? galleryHtml() : view === "courts" ? courtsHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
       ${msgHtml("top")}
@@ -349,6 +353,15 @@
     if (key.startsWith("C:")) { const [, ri, mi] = key.split(":"); const m = (((state.cup.rounds || [])[ri] || {}).matches || [])[mi] || {}; return [m.a, m.b]; }
     return key.slice(2).split("-").map(Number);
   };
+  let meAt = 0, seenBefore = null, seenPosted = false;
+  const isNewUp = e => !!(seenBefore && e && e.at && Date.parse(e.at) > seenBefore);
+  // opening 📅 Matches: what was fetched counts as seen (once per page visit)
+  function markMatchesSeen() {
+    if (seenPosted || !meAt || meAt <= (state.schedSeen || 0)) return;
+    seenPosted = true;
+    call("/matches-seen", { at: meAt }).catch(() => { seenPosted = false; });
+  }
+
   function upcomingList() {
     return Object.entries(state.upcoming || {}).map(([key, e]) => ({ key, e, t: keyTeams(key) }))
       .filter(x => x.e.date && x.t[0] && x.t[1] && (matchEnd(x.e) || Date.parse(x.e.date + "T23:59:00")) > Date.now())
@@ -410,10 +423,11 @@
       return `<div class="tm-up${ours ? " tm-up-ours" : ""}${live ? " tm-up-live" : ""}">
         <span class="tm-up-pair">${side(a, "tm-up-a")}<span class="muted">vs</span>${side(b, "tm-up-b")}</span>
         <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""} · ${live ? `<span class="tm-up-livechip">🔴 Playing now</span>` : inDays(e.date)}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>
-        <span class="tm-up-label">${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span>
+        <span class="tm-up-label">${isNewUp(e) ? `<span class="tm-up-new" title="Date set or changed since you last opened 📅 Matches">🆕 New</span> ` : ""}${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span>
         ${predictHtml(key, a, b, e)}</div>`;
     };
-    const intro = `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted. Played matches are in the calendar.</p>${filter}${seg}`;
+    const fresh = list.filter(x => isNewUp(x.e)).length;
+    const intro = `<p class="note">Every match with a date set – come and watch! Your own matches are highlighted. Played matches are in the calendar.</p>${fresh ? `<p class="tm-up-newnote">🆕 <b>${fresh} ${fresh === 1 ? "match" : "matches"}</b> scheduled or changed since your last visit</p>` : ""}${filter}${seg}`;
     if (upView === "cal") return intro + calendarHtml(shown.concat(shownDone), row); // the calendar also shows played matches (with the score)
     return intro + (shown.length ? `<div class="card tm-up-list">` + shown.map(row).join("") + `</div>` : `<div class="card muted">No upcoming match has a date yet.</div>`);
   }
@@ -429,7 +443,7 @@
     for (let i = 0; i < (first.getDay() + 6) % 7; i++) cells.push(`<span class="tm-cal-d out"></span>`);
     for (let d = 1; d <= days; d++) {
       const date = `${calMonth}-${String(d).padStart(2, "0")}`, ms = byDay[date] || [], ours = ms.some(({ t }) => t.includes(state.team));
-      const chips = ms.slice(0, 2).map(({ key, e, t: [a, b], played }) => `<span class="tm-cal-m${played ? " done" : ""}${key.startsWith("C:") ? " cup" : ""}${a === state.team || b === state.team ? " ours" : ""}${liveNow(e) ? " live" : ""}"${key.startsWith("C:") ? ' title="GPPC Cup"' : ""}><span class="t">${esc(e.time || "")}</span>${logo(a, "tm-cal-logo")}${logo(b, "tm-cal-logo")}${key.startsWith("C:") ? '<span class="cup-i" aria-label="Cup">🏆</span>' : ""}</span>`).join("");
+      const chips = ms.slice(0, 2).map(({ key, e, t: [a, b], played }) => `<span class="tm-cal-m${played ? " done" : ""}${!played && isNewUp(e) ? " new" : ""}${key.startsWith("C:") ? " cup" : ""}${a === state.team || b === state.team ? " ours" : ""}${liveNow(e) ? " live" : ""}"${key.startsWith("C:") ? ' title="GPPC Cup"' : ""}><span class="t">${esc(e.time || "")}</span>${logo(a, "tm-cal-logo")}${logo(b, "tm-cal-logo")}${key.startsWith("C:") ? '<span class="cup-i" aria-label="Cup">🏆</span>' : ""}</span>`).join("");
       cells.push(`<button type="button" class="tm-cal-d${ms.length ? " has" : ""}${ours ? " ours" : ""}${date === today ? " today" : ""}${date === calDay ? " sel" : ""}" data-act="cal-day" data-day="${date}" aria-label="${date}: ${ms.length} match${ms.length === 1 ? "" : "es"}"><span class="n">${d}</span>${chips}${ms.length > 2 ? `<span class="tm-cal-more">+${ms.length - 2}</span>` : ""}</button>`);
     }
     const n = list.filter(x => x.e.date.startsWith(calMonth)).length, sel = byDay[calDay] || [];

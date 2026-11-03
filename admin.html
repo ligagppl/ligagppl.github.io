@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=78">
+  <link rel="stylesheet" href="assets/style.css?v=79">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -96,6 +96,7 @@
     .md-match { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .md-when { font-size: .85rem; color: var(--muted); padding-left: 2px; }
     .sched-new { display: inline-block; font-size: .72rem; font-weight: 800; color: #04240f; background: #d7f23a; padding: 1px 7px; border-radius: 999px; margin-right: 4px; }
+    .sched-new-note .btn { margin-left: 6px; vertical-align: middle; }
     .sched-new-note { margin: 6px 0 10px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, #d7f23a 30%, transparent); font-size: .92rem; }
     .cal-m.new { outline: 2px solid #d7f23a; outline-offset: 1px; border-radius: 6px; }
     .pp-table { margin-top: 8px; font-size: .85rem; }
@@ -778,8 +779,10 @@
     let mdOpen = null; // matchday shown open in the per-matchday view
     function renderMatchdays() {
       const cur = defaultMatchday();
-      $("md-view").innerHTML = fixtureList.map((games, i) => {
-        const md = i + 1, done = games.filter(([a, b]) => GPPL.findResult(results, a, b)).length;
+      const isNew = (a, b) => !GPPL.findResult(results, a, b) && isNewSched(schedule[lkey(a, b)]);
+      const fresh = fixtureList.reduce((n, games) => n + games.filter(([a, b]) => isNew(a, b)).length, 0);
+      $("md-view").innerHTML = newSchedNote(fresh) + fixtureList.map((games, i) => {
+        const md = i + 1, done = games.filter(([a, b]) => GPPL.findResult(results, a, b)).length, news = games.filter(([a, b]) => isNew(a, b)).length;
         const disputed = games.filter(([a, b]) => ((schedule[lkey(a, b)] || {}).pending || {}).status === "disputed").length;
         // played matches at the end of the matchday
         const ordered = games.filter(([a, b]) => !GPPL.findResult(results, a, b)).concat(games.filter(([a, b]) => GPPL.findResult(results, a, b)));
@@ -789,13 +792,13 @@
             : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}`
             : e.date && isPast(e) ? "⏰ Result due" : "";
           return `<div class="md-row ${r ? "is-done" : ""}">${pairLine(a, b)}
-            <span class="md-info">${!r ? `<span class="md-when">${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}
+            <span class="md-info">${!r ? `<span class="md-when">${isNew(a, b) ? '<span class="sched-new" title="Date set or changed since you last marked them as seen">🆕 New</span> ' : ""}${e.date ? whenText(e) : "Not scheduled yet"}</span>` : ""}${state ? `<span class="md-state">${state}</span>` : ""}
               ${e.date && !r && !p ? `<span class="md-share"><button class="btn ghost small" data-match-share="${lkey(a, b)}|${a}|${b}|Matchday ${md}">📤 Share</button><button class="btn ghost small" data-match-img="${lkey(a, b)}|${a}|${b}|Matchday ${md}">⬇️ Image</button></span>` : ""}
               ${r ? `<span class="md-share"><button class="btn ghost small" data-win="L|${a}|${b}|${md}|share">🏆 Share</button><button class="btn ghost small" data-win="L|${a}|${b}|${md}|img">⬇️ Image</button></span>` : ""}</span>
             <button class="btn ghost small" data-open-editor="${a}-${b}|${md}">${r ? "Edit" : p ? "View" : "Enter result"}</button></div>`;
         }).join("");
         return `<details class="md-day" data-md="${md}" ${md === (mdOpen || cur) ? "open" : ""}><summary><b>Matchday ${md}</b>
-          <span class="note">${done}/${games.length} played${disputed ? ` · ❗ ${disputed} disputed` : ""}${md === cur ? " · current" : ""}</span>
+          <span class="note">${done}/${games.length} played${news ? ` · 🆕 ${news} new` : ""}${disputed ? ` · ❗ ${disputed} disputed` : ""}${md === cur ? " · current" : ""}</span>
           <button class="btn ghost small md-img-btn" data-md-image="${md}">🖼️ Image</button>
           <button class="btn ghost small" data-md-share="${md}">📤 WhatsApp</button></summary>${rows}<div class="md-editor"></div></details>`;
       }).join("") || '<p class="muted">No pairs yet.</p>';
@@ -1008,9 +1011,21 @@
     // all matches with a date and no official result, by date (league and cup together)
     // the team that entered the date goes on the left
     const setterLeft = (a, b, e) => e.by === b ? { a: b, b: a } : { a, b };
-    // 🆕 dates set or changed since the admin last saw 📅 Scheduled (in this browser) – the first time: the last 24 hours
-    const schedSeenStored = +localStorage.getItem("gppl-sched-seen") || 0;
-    const schedSeenBefore = schedSeenStored || Date.now() - 24 * 3600000;
+    // 🆕 dates set or changed since the admin last tapped "✓ Mark all as seen" (in this browser) – before the first tap: the last 24 hours
+    let schedSeenStored = 0;
+    try { schedSeenStored = +localStorage.getItem("gppl-sched-seen2") || 0; } catch {}
+    let schedSeenBefore = schedSeenStored || Date.now() - 24 * 3600000;
+    // the note above a list: how many are new, and the button that clears the marks
+    const newSchedNote = fresh => fresh ? `<p class="sched-new-note">🆕 <b>${fresh} ${fresh === 1 ? "match" : "matches"}</b> scheduled or changed ${schedSeenStored
+      ? `since you last marked them as seen (${new Date(schedSeenStored).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })})` : "in the last 24 hours"}
+      <button type="button" class="btn ghost small" data-sched-seen>✓ Mark all as seen</button></p>` : "";
+    document.addEventListener("click", e => {
+      if (!e.target.closest("[data-sched-seen]") || !schedLoadedAt) return;
+      // only what was fetched counts as seen – a match set a second later stays new
+      schedSeenStored = schedSeenBefore = schedLoadedAt;
+      try { localStorage.setItem("gppl-sched-seen2", String(schedLoadedAt)); } catch {}
+      renderMatchdays(); renderScheduled();
+    });
     function scheduledList() {
       const list = [];
       fixtureList.forEach((games, i) => games.forEach(([a, b]) => {
@@ -1065,7 +1080,7 @@
       $("sched-view").querySelectorAll("button").forEach(x => x.classList.toggle("active", x.dataset.schedView === schedView));
       const done = playedList();
       if (schedView === "cal") { $("sched-list").innerHTML = calendarHtml(list.concat(done)); return; }
-      $("sched-list").innerHTML = (fresh ? `<p class="sched-new-note">🆕 <b>${fresh} ${fresh === 1 ? "match" : "matches"}</b> scheduled or changed ${schedSeenStored ? `since your last visit (${new Date(schedSeenBefore).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })})` : "in the last 24 hours"}</p>` : "") +
+      $("sched-list").innerHTML = newSchedNote(fresh) +
         (list.map(schedRow).join("") || '<p class="muted">No open match has a date.</p>') +
         (done.length ? `<h4 class="sched-sub">✅ Played <span class="note">· ${done.length} · latest first</span></h4>` + done.map(schedRow).join("") : "");
     }
@@ -1097,7 +1112,7 @@
         const p = !done && e.pending;
         const state = done ? `✅ Played · ${GPPL.scoreText(done, a)}` : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}` : isPast(e) ? "⏰ Result due" : "";
         return `<div class="md-row${done ? " is-done" : ""}">${pairLine(a, b)}
-          <span class="md-info"><span class="md-when">${!done && isNewSched(e) ? '<span class="sched-new" title="Date set or changed since your last visit">🆕 New</span> ' : ""}${whenText(e)}</span><span class="note">${escA(label)}</span>${state ? `<span class="md-state">${state}</span>` : ""}</span>
+          <span class="md-info"><span class="md-when">${!done && isNewSched(e) ? '<span class="sched-new" title="Date set or changed since you last marked them as seen">🆕 New</span> ' : ""}${whenText(e)}</span><span class="note">${escA(label)}</span>${state ? `<span class="md-state">${state}</span>` : ""}</span>
           ${p || done ? "" : `<span class="md-share"><button class="btn ghost small" data-match-share="${key}|${a}|${b}|${escA(label)}">📤 Share</button>${!isStarted(e) ? `<button class="btn ghost small" data-move="${key}|${a}|${b}">🔁 Change / cancel</button>` : ""}</span>`}</div>`;
     }
 
@@ -2034,10 +2049,6 @@
     });
 
     // ---------- tabs ----------
-    // opening 📅 Scheduled counts as a visit up to the moment its list was fetched – the 🆕 marks stay until the page is reloaded
-    document.querySelector('.subnav button[data-panel="scheduled"]').addEventListener("click", () => {
-      try { if (schedLoadedAt > (+localStorage.getItem("gppl-sched-seen") || 0)) localStorage.setItem("gppl-sched-seen", String(schedLoadedAt)); } catch {}
-    });
     document.querySelectorAll(".subnav button").forEach(btn => btn.addEventListener("click", async () => {
       document.querySelectorAll(".subnav button").forEach(b => b.classList.toggle("active", b === btn));
       document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "panel-" + btn.dataset.panel));
