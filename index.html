@@ -6,7 +6,7 @@
   <title>GPPL – German Pakistan Padel Liga</title>
   <meta name="description" content="GPPL – German Pakistan Padel Liga: rules, schedule, table and the GPPC Cup.">
   <link rel="icon" href="img/gppl-logo.svg?v=1" type="image/svg+xml">
-  <link rel="stylesheet" href="assets/style.css?v=76">
+  <link rel="stylesheet" href="assets/style.css?v=77">
   <style>html:not(.tabs-ready) #nav { visibility: hidden; }</style>
 </head>
 <body>
@@ -33,12 +33,29 @@
   <main>
     <!-- HOME -->
     <section id="home">
-      <div class="card">
-        <h2 style="margin-top:0">Welcome to the GPPL 🎾</h2>
-        <p>A league from our Pakistani community in Germany – open to all padel friends 🌍.</p>
+      <div class="home-hero">
+        <div class="hh-video">
+          <video id="hh-vid" src="media/gppl-intro.mp4?v=1" poster="media/gppl-intro.jpg?v=1" muted playsinline preload="metadata" aria-label="GPPL intro video"></video>
+          <div class="hh-ctrl">
+            <button type="button" class="hh-btn" id="hh-play" aria-label="Play the intro">↻</button>
+            <button type="button" class="hh-btn" id="hh-sound" aria-label="Sound on">🔇</button>
+          </div>
+        </div>
+        <div class="hh-text">
+          <span class="hh-kicker">Season 1 · League &amp; GPPC Cup</span>
+          <h2>Welcome to the GPPL 🎾</h2>
+          <p>A league from our Pakistani community in Germany – open to all padel friends 🌍.</p>
+          <div class="hh-links">
+            <a class="hh-link main" href="#table">📊 Table</a>
+            <a class="hh-link" href="#schedule">📅 Schedule</a>
+            <a class="hh-link" href="#team">🎾 My team</a>
+          </div>
+        </div>
       </div>
-      <div class="grid" id="home-stats"></div>
+      <div class="home-stats" id="home-stats"></div>
       <div class="card" id="home-md"></div>
+      <div class="card top3-card" id="home-top3"></div>
+      <div class="card" id="home-results"></div>
     </section>
 
     <!-- RULES (rulebook) -->
@@ -497,7 +514,7 @@
   <script src="assets/pairs-loader.js?v=8"></script>
   <script src="assets/league.js?v=10"></script>
   <script src="assets/store.js?v=5"></script>
-  <script src="assets/app.js?v=72"></script>
+  <script src="assets/app.js?v=73"></script>
   <script src="assets/share-image.js?v=17"></script>
   <script src="assets/team.js?v=73"></script>
 </body>

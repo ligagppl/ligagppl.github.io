@@ -108,15 +108,29 @@ function renderHome() {
   // the Top 3 only shows once every pair has played, or once every result up to the first Super Sunday (15 Nov) is approved
   const ranked = GPPL.rankStandings(results), started = ranked.filter(r => r.p > 0).length;
   const top = ranked.length && (started === ranked.length || top3Ready) ? ranked.filter(r => r.p > 0).slice(0, 3) : [];
+  const pct = (x, of) => (of ? Math.round(100 * x / of) : 0);
   document.getElementById("home-stats").innerHTML = `
-    <div class="card"><div class="note">Pairs</div><div style="font-size:1.8rem;font-weight:700">${LEAGUE.pairs.length}</div>
-      ${tabAllowed("participants") ? `<a href="#participants">👥 See all teams →</a>` : ""}</div>
-    <div class="card"><div class="note">Matches played</div><div style="font-size:1.8rem;font-weight:700">${results.length} / ${total}</div></div>
-    <div class="card"><div class="note">Season</div><div style="font-size:1.1rem;font-weight:700">${datesOn ? `${fmt(GPPL.start)} – ${fmt(last)}` : "Dates follow"}</div></div>
-    <div class="card top3-card"><div class="note">Top 3</div>
-      ${top.length ? `<div class="top3">${top.map((r, i) => `<span>${["🥇", "🥈", "🥉"][i]} ${teamLogo(r.id)}<span class="top3-name"><b>${pairName(r.id)}</b>
-          <span class="note">${r.p} played · ${r.w} W · ${r.l} L · <b>${r.pts} pts</b></span></span></span>`).join("")}</div>`
-        : `<div class="top3-wait"><b>${started} of ${ranked.length}</b> pairs have played</div><span class="note">The Top 3 appears once all Super Sunday results (15 November) are in, or sooner if all ${ranked.length} pairs have played a match.</span>`}</div>`;
+    <div class="card hs"><span class="hs-ico">👥</span><div class="note">Pairs</div><b class="hs-n">${n}</b>
+      ${tabAllowed("participants") ? `<a href="#participants">See all teams →</a>` : ""}</div>
+    <div class="card hs"><span class="hs-ico">🎾</span><div class="note">Matches played</div><b class="hs-n">${results.length}<small> / ${total}</small></b>
+      <div class="md-now-bar thin"><span style="width:${pct(results.length, total)}%"></span></div></div>
+    <div class="card hs"><span class="hs-ico">📅</span><div class="note">Season</div><b class="hs-n hs-d">${datesOn ? `${fmt(GPPL.start)} – ${fmt(last)}` : "Dates follow"}</b></div>`;
+  // podium: 2nd · 1st · 3rd
+  const podium = top.map((r, i) => ({ r, i })), order = [1, 0, 2].map(i => podium[i]).filter(Boolean);
+  document.getElementById("home-top3").innerHTML = `<h3 class="home-h">🏆 Top 3</h3>` + (top.length
+    ? `<div class="podium">${order.map(({ r, i }) => `<a class="pod pod-${i + 1}" href="${profileHref(r.id)}">
+        <span class="pod-medal">${["🥇", "🥈", "🥉"][i]}</span>${teamLogo(r.id)}<b class="pod-name">${pairName(r.id)}</b>
+        <span class="note">${r.p} played · ${r.w} W · ${r.l} L</span><span class="pod-pts">${r.pts} pts</span></a>`).join("")}</div>
+      <a class="home-more" href="#table">Full table →</a>`
+    : `<div class="top3-wait"><b>${started} of ${ranked.length}</b> pairs have played</div>
+      <div class="md-now-bar"><span style="width:${pct(started, ranked.length)}%"></span></div>
+      <p class="note" style="margin-bottom:0">The Top 3 appears once all Super Sunday results (15 November) are in, or sooner if all ${ranked.length} pairs have played a match.</p>`);
+  // the newest results in the file come last
+  const recent = results.slice(-5).reverse();
+  const box = document.getElementById("home-results");
+  box.hidden = !recent.length;
+  box.innerHTML = `<h3 class="home-h">✅ Results</h3>${recent.map(r => matchRow(r.a, r.b)).join("")}
+    ${results.length > recent.length ? `<a class="home-more" href="#schedule">All ${results.length} results →</a>` : ""}`;
   renderMatchdayCard();
 }
 
@@ -801,6 +815,7 @@ function showTab() {
   }
   if (id === "profile") renderProfile();
   document.querySelectorAll("main > section").forEach(s => s.classList.toggle("active", s.id === id));
+  if (id === "home") homeVideo.show(); else homeVideo.hide();
   document.querySelectorAll("#nav a").forEach(a => a.classList.toggle("active", a.getAttribute("href") === "#" + (id === "profile" ? "table" : id)));
   window.scrollTo(0, 0);
 }
@@ -846,6 +861,22 @@ const siteLogo = (() => {
   img.addEventListener("click", () => !reduce && set(!playing));
   window.addEventListener("load", () => { new Image().src = img.dataset.anim; });
   return { apply() { always = settings.siteLogoAnimation === "always" && !reduce; set(playing); } };
+})();
+
+// home intro video: plays once (muted) the first time Home is shown, then rests on the logo; ↻ replays, 🔇/🔊 sound
+const homeVideo = (() => {
+  const v = document.getElementById("hh-vid");
+  if (!v) return { show() {} };
+  const reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const play = document.getElementById("hh-play"), sound = document.getElementById("hh-sound");
+  let started = false;
+  const icons = () => { sound.textContent = v.muted ? "🔇" : "🔊"; sound.setAttribute("aria-label", v.muted ? "Sound on" : "Sound off"); play.textContent = v.paused ? (v.ended || v.currentTime ? "↻" : "▶") : "❚❚"; };
+  const start = () => { if (v.ended) v.currentTime = 0; v.play().catch(icons); };
+  play.addEventListener("click", () => (v.paused ? start() : v.pause()));
+  sound.addEventListener("click", () => { v.muted = !v.muted; if (!v.muted && v.paused) start(); icons(); });
+  ["play", "pause", "ended", "volumechange"].forEach(e => v.addEventListener(e, icons));
+  icons();
+  return { show() { if (started || reduce) return; started = true; v.preload = "auto"; start(); }, hide() { if (!v.paused) v.pause(); } };
 })();
 
 // once registration is closed, Register and Participants leave the menu (the pages still open from links)

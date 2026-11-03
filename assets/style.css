@@ -549,7 +549,6 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 #team .msg.err { color: #c62828; }
 
 /* ---------- Home: running matchday + upcoming matches ---------- */
-.top3-card { grid-column: 1 / -1; }
 .top3 { display: flex; flex-direction: column; gap: 8px; margin-top: 6px; font-size: 1.05rem; }
 .top3 > span { display: flex; align-items: center; gap: 10px; }
 .top3 .mlogo { width: 40px; height: 40px; }
@@ -560,6 +559,63 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .md-now-count b { font-size: 1.8rem; line-height: 1; }
 .md-now-bar { height: 10px; border-radius: 999px; margin-top: 12px; background: color-mix(in srgb, var(--line) 60%, transparent); overflow: hidden; }
 .md-now-bar span { display: block; height: 100%; background: var(--green-2); border-radius: 999px; }
+
+/* ---------- Home: intro video, stats, Top 3 podium, results ---------- */
+.home-hero { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); margin-bottom: 16px; border-radius: var(--radius); overflow: hidden;
+  background: radial-gradient(120% 140% at 100% 0%, #0b6b34 0%, #01411c 55%, #04240f 100%); color: #fff; box-shadow: 0 10px 30px rgba(1, 65, 28, .18); }
+.hh-video { position: relative; background: #05110a; aspect-ratio: 848 / 480; }
+.hh-video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.hh-ctrl { position: absolute; right: 10px; bottom: 10px; display: flex; gap: 6px; }
+.hh-btn { width: 38px; height: 38px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, .25); background: rgba(0, 0, 0, .45); color: #fff;
+  font-size: 1rem; line-height: 1; cursor: pointer; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.hh-btn:hover { background: rgba(0, 0, 0, .65); }
+.hh-btn:focus-visible { outline: 2px solid var(--ball); outline-offset: 2px; }
+.hh-text { padding: 26px 26px 24px; display: flex; flex-direction: column; justify-content: center; min-width: 0; }
+.hh-kicker { align-self: flex-start; font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; color: #04240f;
+  background: var(--ball); padding: 3px 10px; border-radius: 999px; }
+.hh-text h2 { margin: 12px 0 6px; font-size: clamp(1.4rem, 3vw, 1.9rem); line-height: 1.15; letter-spacing: -.3px; }
+.hh-text p { margin: 0 0 18px; opacity: .85; }
+.hh-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.hh-link { padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: .95rem; text-decoration: none; color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, .3); background: rgba(255, 255, 255, .08); }
+.hh-link:hover { background: rgba(255, 255, 255, .16); }
+.hh-link.main { background: var(--ball); border-color: var(--ball); color: #04240f !important; }
+.hh-link.main:hover { filter: brightness(1.05); }
+@media (max-width: 760px) {
+  .home-hero { grid-template-columns: 1fr; }
+  .hh-text { padding: 18px 18px 20px; }
+}
+
+.home-stats { display: grid; gap: 16px; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-bottom: 16px; }
+.home-stats .card { margin-bottom: 0; }
+.hs { position: relative; }
+.hs-ico { position: absolute; top: 14px; right: 16px; font-size: 1.3rem; opacity: .9; }
+.hs-n { display: block; font-size: 1.8rem; line-height: 1.2; margin: 2px 0 4px; font-variant-numeric: tabular-nums; }
+.hs-n small { font-size: 1rem; color: var(--muted); font-weight: 600; }
+.hs-n.hs-d { font-size: 1.15rem; margin-top: 8px; }
+.md-now-bar.thin { height: 6px; margin-top: 8px; }
+@media (max-width: 640px) {
+  .home-stats { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .home-stats .hs:last-child { grid-column: 1 / -1; }
+  .hs { padding: 14px; }
+  .hs-n { font-size: 1.5rem; }
+}
+
+.home-h { margin: 0 0 10px; }
+.home-more { display: inline-block; margin-top: 10px; font-weight: 600; }
+.podium { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; align-items: end; }
+.pod { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; padding: 14px 8px; border-radius: 12px;
+  color: inherit !important; text-decoration: none; border: 1px solid var(--line); background: color-mix(in srgb, var(--line) 25%, transparent); min-width: 0; }
+.pod:hover { border-color: var(--green-2); }
+.pod .mlogo { width: 52px; height: 52px; }
+.pod-1 { padding-top: 22px; padding-bottom: 22px; border-color: color-mix(in srgb, #d9a521 60%, var(--line));
+  background: linear-gradient(180deg, color-mix(in srgb, #d9a521 18%, transparent), transparent); }
+.pod-1 .mlogo { width: 66px; height: 66px; }
+.pod-medal { font-size: 1.6rem; line-height: 1; }
+.pod-name { overflow-wrap: anywhere; line-height: 1.2; }
+.pod-pts { font-weight: 800; color: var(--win); }
+@media (max-width: 520px) { .pod .note { display: none; } .pod .mlogo { width: 40px; height: 40px; } .pod-1 .mlogo { width: 50px; height: 50px; } .pod-name { font-size: .9rem; } }
+#home-results[hidden] { display: none; }
 
 /* ---------- GPPC Cup tab: score boards ---------- */
 .cup-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
