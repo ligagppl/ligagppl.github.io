@@ -392,7 +392,7 @@
     const list = upcomingList(), done = playedList();
     if (!list.length && !done.length) return `<div class="card muted">No match has a date yet.</div>`;
     const side = (id, cls) => `<span class="${cls}">${logo(id, "tm-logo-sm")}<b><a class="team-link" href="${profileOf(id)}">${esc(teamName(id))}</a></b></span>`;
-    // filter by team: only teams with an upcoming match, A–Z (no ranking, no zeros)
+    // filter by team: teams with the most matches (upcoming + played) first, then A–Z
     const per = new Map();
     list.forEach(({ t }) => t.forEach(id => per.set(id, (per.get(id) || 0) + 1)));
     done.forEach(({ t }) => t.forEach(id => per.has(id) || per.set(id, 0))); // teams with only played matches can be picked too
@@ -406,7 +406,7 @@
     if (upTeam !== null && !per.has(upTeam)) upTeam = null;
     const chip = (id, text, n) => `<button type="button" class="tm-up-team${id === null ? " all" : ""}${upTeam === id ? " active" : ""}" data-act="up-team" data-team="${id === null ? "" : id}">${id === null ? "" : logo(id, "tm-logo-sm")}<span>${text}</span>${id !== null ? `<small>${n} (${n + (played.get(id) || 0)})</small>` : ""}</button>`;
     const filter = `<details class="card tm-up-filter"${upPaneOpen ? " open" : ""}><summary>🔎 Filter by team${upTeam !== null ? `: <b>${esc(teamName(upTeam))}</b>` : ""}</summary><p class="note">Number of upcoming matches – in brackets: upcoming + played.</p><div class="tm-up-teams">` +
-      chip(null, "All teams") + [...per].sort((x, y) => teamName(x[0]).localeCompare(teamName(y[0]))).map(([id, n]) => chip(id, esc(teamName(id)), n)).join("") + `</div></details>`;
+      chip(null, "All teams") + [...per].sort((x, y) => (y[1] + (played.get(y[0]) || 0)) - (x[1] + (played.get(x[0]) || 0)) || teamName(x[0]).localeCompare(teamName(y[0]))).map(([id, n]) => chip(id, esc(teamName(id)), n)).join("") + `</div></details>`;
     const shown = upTeam === null ? list : list.filter(({ t }) => t.includes(upTeam));
     const shownDone = upTeam === null ? done : done.filter(({ t }) => t.includes(upTeam));
     const seg = `<div class="tm-seg" role="group" aria-label="View">${[["list", "📋 List"], ["cal", "🗓️ Calendar"]].map(([v, t]) => `<button type="button" data-act="up-view" data-view="${v}" class="${upView === v ? "active" : ""}">${t}</button>`).join("")}</div>`;
