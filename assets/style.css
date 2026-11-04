@@ -665,13 +665,14 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .tm-up-list { padding-top: 4px; padding-bottom: 4px; }
 .tm-up-filter { padding-top: 12px; padding-bottom: 12px; }
 .tm-up-filter summary { cursor: pointer; font-weight: 600; }
-.tm-up-teams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 10px; }
+/* top to bottom, then the next column: "All teams" on its own row, the teams below it (most matches first) */
+.tm-up-teams { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto repeat(var(--rows, 1), auto); grid-auto-flow: column; gap: 6px; margin-top: 10px; }
 .tm-up-team { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 6px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); font: inherit; font-size: .9rem; font-weight: 600; text-align: left; cursor: pointer; }
 .tm-up-team span { min-width: 0; overflow-wrap: anywhere; }
 .tm-up-team small { margin-left: auto; color: var(--muted); font-weight: 700; }
 .tm-up-team.active { background: var(--green); border-color: var(--green); color: #fff; }
 .tm-up-team.active small { color: #fff; }
-.tm-up-team.all { grid-column: 1 / -1; justify-content: center; }
+.tm-up-team.all { grid-column: 1 / -1; grid-row: 1; justify-content: center; }
 .tm-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; margin: 0 0 12px; }
 .tm-seg button { border: 0; background: transparent; color: var(--text); padding: 6px 14px; font: inherit; font-size: .9rem; cursor: pointer; }
 .tm-seg button.active { background: var(--green); color: #fff; font-weight: 700; }

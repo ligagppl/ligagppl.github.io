@@ -405,7 +405,7 @@
     Object.entries(state.upcoming || {}).forEach(([key, e]) => e.date && (matchEnd(e) || Date.parse(e.date + "T23:59:00")) <= Date.now() && addPlayed(keyTeams(key)));
     if (upTeam !== null && !per.has(upTeam)) upTeam = null;
     const chip = (id, text, n) => `<button type="button" class="tm-up-team${id === null ? " all" : ""}${upTeam === id ? " active" : ""}" data-act="up-team" data-team="${id === null ? "" : id}">${id === null ? "" : logo(id, "tm-logo-sm")}<span>${text}</span>${id !== null ? `<small>${n} (${n + (played.get(id) || 0)})</small>` : ""}</button>`;
-    const filter = `<details class="card tm-up-filter"${upPaneOpen ? " open" : ""}><summary>🔎 Filter by team${upTeam !== null ? `: <b>${esc(teamName(upTeam))}</b>` : ""}</summary><p class="note">Number of upcoming matches – in brackets: upcoming + played.</p><div class="tm-up-teams">` +
+    const filter = `<details class="card tm-up-filter"${upPaneOpen ? " open" : ""}><summary>🔎 Filter by team${upTeam !== null ? `: <b>${esc(teamName(upTeam))}</b>` : ""}</summary><p class="note">Number of upcoming matches – in brackets: upcoming + played.</p><div class="tm-up-teams" style="--rows:${Math.ceil(per.size / 2)}">` +
       chip(null, "All teams") + [...per].sort((x, y) => (y[1] + (played.get(y[0]) || 0)) - (x[1] + (played.get(x[0]) || 0)) || teamName(x[0]).localeCompare(teamName(y[0]))).map(([id, n]) => chip(id, esc(teamName(id)), n)).join("") + `</div></details>`;
     const shown = upTeam === null ? list : list.filter(({ t }) => t.includes(upTeam));
     const shownDone = upTeam === null ? done : done.filter(({ t }) => t.includes(upTeam));
