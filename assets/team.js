@@ -208,6 +208,7 @@
     el.innerHTML = `<div class="card tm-me"><div class="tm-me-id">${logo(state.team, "tm-logo-lg")}<div><b class="tm-team"><a class="team-link" href="${profileOf(state.team)}">${esc(pair.name)}</a></b>
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><a class="btn ghost small" href="${profileOf(state.team)}">👁 Public profile</a><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
+      ${removedBanner()}
       <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Matches (${upcomingList().length}${(n => n ? ` · 🆕 ${n}` : "")(upcomingList().filter(x => isNewUp(x.e)).length)})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button>${state.fanPolls ? `<button role="tab" data-act="view" data-view="fanpolls" class="${view === "fanpolls" ? "active" : ""}">📣 Fan polls</button>` : ""}</div>
       ${view === "upcoming" ? upcomingHtml() : view === "fanpolls" && state.fanPolls ? fanPollsHtml() : view === "gallery" ? galleryHtml() : view === "courts" ? courtsHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
@@ -353,6 +354,18 @@
     if (key.startsWith("C:")) { const [, ri, mi] = key.split(":"); const m = (((state.cup.rounds || [])[ri] || {}).matches || [])[mi] || {}; return [m.a, m.b]; }
     return key.slice(2).split("-").map(Number);
   };
+  // ✖️ our matches that lost their date (cleared by a team or cancelled by the organizers) and have no new date yet – both teams see it
+  function removedBanner() {
+    const rows = Object.entries(state.removed || {}).map(([key, r]) => {
+      const [a, b] = keyTeams(key), opp = a === state.team ? b : a;
+      if (!opp) return "";
+      const e = r.old || {}, who = r.by === "admin" ? "the organizers" : r.by === state.team ? "your team" : esc(teamName(r.by));
+      const at = new Date(r.at).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+      return `<li>Your match vs <b>${esc(teamName(opp))}</b>${e.date ? ` on ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""}` : ""} no longer has a date – removed by ${who} on ${at}. Please agree on a new date with your opponents.</li>`;
+    }).join("");
+    return rows ? `<div class="card tm-removed"><b>✖️ Match date removed</b><ul>${rows}</ul></div>` : "";
+  }
+
   let meAt = 0, seenBefore = null, seenPosted = false;
   const isNewUp = e => !!(seenBefore && e && e.at && Date.parse(e.at) > seenBefore);
   // opening 📅 Matches: what was fetched counts as seen (once per page visit)

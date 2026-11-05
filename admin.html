@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPL Admin</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=80">
+  <link rel="stylesheet" href="assets/style.css?v=81">
   <style>
     .subnav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
     .subnav button { background: var(--card); color: var(--text); border: 1px solid var(--line); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 600; cursor: pointer; }
@@ -96,6 +96,8 @@
     .md-match { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
     .md-when { font-size: .85rem; color: var(--muted); padding-left: 2px; }
     .sched-new { display: inline-block; font-size: .72rem; font-weight: 800; color: #04240f; background: #d7f23a; padding: 1px 7px; border-radius: 999px; margin-right: 4px; }
+    .md-row.is-removed .md-when s { opacity: .75; }
+    .md-row.is-removed .md-state { color: var(--loss); }
     .sched-new-note .btn { margin-left: 6px; vertical-align: middle; }
     .sched-new-note { margin: 6px 0 10px; padding: 8px 12px; border-radius: 10px; background: color-mix(in srgb, #d7f23a 30%, transparent); font-size: .92rem; }
     .cal-m.new { outline: 2px solid #d7f23a; outline-offset: 1px; border-radius: 6px; }
@@ -714,6 +716,7 @@
     let playedDates = {}; // dates and venues of matches that already have a confirmed result (Admin → Scheduled)
     let schedLoadedAt = 0; // when the list on screen was fetched – a visit only counts what was actually shown
     const isNewSched = e => !!(e && e.at && Date.parse(e.at) > schedSeenBefore);
+    let removed = {}; // matches whose date was removed (by a team or a cancellation) and that have no new date yet
     let schedule = {}; // dates, venues and waiting/disputed results – private in the gatekeeper, fetched with the admin key (👥 Member area)
     async function mergePending() {
       const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, ""), key = localStorage.getItem("gppl-member-admin");
@@ -726,6 +729,7 @@
         schedLoadedAt = asked;
         schedule = d.schedule || {};
         playedDates = d.played || {};
+        removed = d.removed || {};
         moveRequests = d.moveRequests || [];
         d.open.forEach(o => (schedule[o.key] = { ...(schedule[o.key] || {}), pending: o }));
       } catch {}
@@ -1063,7 +1067,7 @@
       renderMoveRequests();
       const list = scheduledList(), upcoming = list.filter(x => !isPast(x.e));
       $("sched-all").hidden = !upcoming.length;
-      const fresh = list.filter(x => isNewSched(x.e)).length;
+      const gone = removedList(), fresh = list.filter(x => isNewSched(x.e)).length + gone.filter(x => isNewSched(x.r)).length;
       $("sched-count").textContent = ` (${upcoming.length}${fresh ? ` · 🆕 ${fresh}` : ""})`;
       // upcoming matches per team – most first, teams without any at the end; in brackets: upcoming + played
       const per = new Map(LEAGUE.pairs.map(p => [p.id, 0])), played = new Map(LEAGUE.pairs.map(p => [p.id, 0]));
@@ -1080,9 +1084,10 @@
       $("sched-view").querySelectorAll("button").forEach(x => x.classList.toggle("active", x.dataset.schedView === schedView));
       const done = playedList();
       if (schedView === "cal") { $("sched-list").innerHTML = calendarHtml(list.concat(done)); return; }
+      const goneHtml = gone.length ? `<h4 class="sched-sub">✖️ Date removed <span class="note">· ${gone.length} · no new date yet</span></h4>` + gone.map(removedRow).join("") : "";
       $("sched-list").innerHTML = newSchedNote(fresh) +
         (list.map(schedRow).join("") || '<p class="muted">No open match has a date.</p>') +
-        (done.length ? `<h4 class="sched-sub">✅ Played <span class="note">· ${done.length} · latest first</span></h4>` + done.map(schedRow).join("") : "");
+        goneHtml + (done.length ? `<h4 class="sched-sub">✅ Played <span class="note">· ${done.length} · latest first</span></h4>` + done.map(schedRow).join("") : "");
     }
     // team requests: a new opponent or a cancellation – approve does the same as 🔁 Change / cancel
     function renderMoveRequests() {
@@ -1108,6 +1113,24 @@
         flash("sched-msg", ok ? "✅ Done – the request is approved." : "✅ Request rejected.", true);
       } catch (err) { flash("sched-msg", `❌ ${err.message}`, false); b.disabled = false; }
     });
+    // ✖️ matches that lost their date (a team cleared it, or a cancellation) – newest first
+    function removedList() {
+      return Object.entries(removed).map(([key, r]) => {
+        let a, b, label;
+        const m = /^L:(\d+)-(\d+)$/.exec(key);
+        if (m) { a = +m[1]; b = +m[2]; const md = fixtureList.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a))); label = md >= 0 ? `Matchday ${md + 1}` : "League"; }
+        else { const [, ri, mi] = key.split(":"), r2 = (cup.rounds || [])[+ri] || {}, cm = (r2.matches || [])[+mi] || {}; a = cm.a; b = cm.b; label = `GPPC Cup · ${r2.name || ""}`; }
+        return { key, a, b, r, label };
+      }).filter(x => x.a && x.b).sort((x, y) => String(y.r.at).localeCompare(String(x.r.at)));
+    }
+    function removedRow({ key, a, b, r, label }) {
+      const who = r.by === "admin" ? "the organizers (cancelled)" : r.by ? escA(name(r.by)) : "someone";
+      const at = new Date(r.at).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+      return `<div class="md-row is-removed">${pairLine(a, b)}
+        <span class="md-info"><span class="md-when">${isNewSched(r) ? '<span class="sched-new" title="Removed since you last marked them as seen">🆕 New</span> ' : ""}<s>${whenText(r.old)}</s></span>
+          <span class="note">${escA(label)}${r.old.by ? ` · date set by ${escA(name(r.old.by))}` : ""}</span>
+          <span class="md-state">✖️ Removed by ${who} · ${at}</span>${r.reason ? `<span class="note">Reason: ${escA(r.reason)}</span>` : ""}</span></div>`;
+    }
     function schedRow({ key, a, b, e, label, done }) {
         const p = !done && e.pending;
         const state = done ? `✅ Played · ${GPPL.scoreText(done, a)}` : p ? `${p.status === "disputed" ? "❗ Disputed" : "⏳ Waiting"} · ${GPPL.scoreText({ a: p.a, sets: p.sets }, a)}` : isPast(e) ? "⏰ Result due" : "";
