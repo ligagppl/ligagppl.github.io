@@ -16,5 +16,14 @@
   "scheduleReleased": true,
   "scheduleReleasedAt": "2026-10-26T20:41:47.871Z",
   "drawSeed": 617805510,
-  "predictShowTop": false
+  "predictShowTop": false,
+  "sharedResults": [
+    "L:9-12",
+    "L:2-12",
+    "L:4-5",
+    "L:2-8",
+    "L:4-7",
+    "L:2-6"
+  ],
+  "sharedResultsAt": "2026-11-08T01:15:39.215Z"
 }
