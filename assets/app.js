@@ -4,7 +4,6 @@ const { pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
 let results = [], cup = { rounds: [] };
 let matchStatus = {}; // member server: "L:a-b" → "scheduled" | "waiting" (no dates, venues or scores)
 let matchOrder = []; // member server: the scheduled matches soonest first (only the order – no dates)
-let top3Ready = false; // member server: every result up to and including the first Super Sunday (15 Nov) is approved
 let statusReady = false; // until the match states arrive, team profiles leave "Next opponent" empty (no guess from the matchdays)
 
 const sign = n => (n > 0 ? "+" + n : String(n));
@@ -78,7 +77,7 @@ function statusLine(games) {
 function loadMatchStatus() {
   const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
   if (!api) { statusReady = true; return; }
-  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; matchOrder = d.order || []; top3Ready = !!d.top3; statusReady = true; renderSchedule(); renderProfile(); renderHome(); })
+  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; matchOrder = d.order || []; statusReady = true; renderSchedule(); renderProfile(); renderHome(); })
     .catch(() => { if (!statusReady) { statusReady = true; renderProfile(); } }); // no answer: fall back to the matchday order
 }
 setInterval(() => { if (!document.hidden) loadMatchStatus(); }, 60000); // a match that starts moves to "played" within a minute
@@ -105,9 +104,9 @@ function renderSchedule() {
 function renderHome() {
   const n = LEAGUE.pairs.length, total = fixtures.length ? fixtures.reduce((s, g) => s + g.length, 0) : n * (n - 1) / 2; // before the draw: everyone plays everyone once
   const last = matchdayWindow(fixtures.length).to;
-  // the Top 3 only shows once every pair has played, or once every result up to the first Super Sunday (15 Nov) is approved
+  // the Top 3 only shows once every pair has an approved result (results.json only – waiting results don't count)
   const ranked = GPPL.rankStandings(results), started = ranked.filter(r => r.p > 0).length;
-  const top = ranked.length && (started === ranked.length || top3Ready) ? ranked.filter(r => r.p > 0).slice(0, 3) : [];
+  const top = ranked.length && started === ranked.length ? ranked.slice(0, 3) : [];
   const pct = (x, of) => (of ? Math.round(100 * x / of) : 0);
   document.getElementById("home-stats").innerHTML = `
     <div class="card hs"><span class="hs-ico">👥</span><div class="note">Pairs</div><b class="hs-n">${n}</b>
@@ -121,10 +120,10 @@ function renderHome() {
     ? `<div class="podium">${order.map(({ r, i }) => `<a class="pod pod-${i + 1}" href="${profileHref(r.id)}">
         <span class="pod-medal">${["🥇", "🥈", "🥉"][i]}</span>${teamLogo(r.id)}<b class="pod-name">${pairName(r.id)}</b>
         <span class="note">${r.p} played · ${r.w} W · ${r.l} L</span><span class="pod-pts">${r.pts} pts</span></a>`).join("")}</div>
-      <a class="home-more" href="#table">Full table →</a>`
+      <a class="home-more" href="#table">Full table →</a>${perMatchTop3(ranked)}`
     : `<div class="top3-wait"><b>${started} of ${ranked.length}</b> pairs have played</div>
       <div class="md-now-bar"><span style="width:${pct(started, ranked.length)}%"></span></div>
-      <p class="note" style="margin-bottom:0">The Top 3 appears once all Super Sunday results (15 November) are in, or sooner if all ${ranked.length} pairs have played a match.</p>`);
+      <p class="note" style="margin-bottom:0">The Top 3 appears once all ${ranked.length} pairs have played at least one match.</p>`);
   // the newest results in the file come last
   const recent = results.slice(-5).reverse();
   const box = document.getElementById("home-results");
@@ -136,6 +135,20 @@ function renderHome() {
   document.getElementById("home-teams").innerHTML = `<h3 class="home-h">👥 The ${n} pairs</h3><div class="home-teams">${LEAGUE.pairs.map(p =>
     `<a class="ht" href="${profileHref(p.id)}">${teamLogo(p.id)}<span>${esc(p.name)}</span></a>`).join("")}</div>`;
   renderMatchdayCard();
+}
+
+// unofficial second Top 3: points per match, for pairs with at least 3 matches – ties: sets won per match, then games won per match
+const PER_MATCH_MIN = 3;
+function perMatchTop3(ranked) {
+  const per = (r, k) => r[k] / r.p;
+  const list = ranked.filter(r => r.p >= PER_MATCH_MIN)
+    .sort((x, y) => per(y, "pts") - per(x, "pts") || per(y, "sf") - per(x, "sf") || per(y, "gf") - per(x, "gf") || pairName(x.id).localeCompare(pairName(y.id)))
+    .slice(0, 3);
+  return `<div class="pm-top3"><h4 class="home-h">📈 Top 3 by points per match</h4>
+    ${list.length ? `<ol class="pm-list">${list.map((r, i) => `<li><span class="pm-medal">${["🥇", "🥈", "🥉"][i]}</span>${teamLogo(r.id)}<a class="team-link" href="${profileHref(r.id)}">${pairName(r.id)}</a>
+      <span class="pm-n"><b>${per(r, "pts").toFixed(2)}</b><span class="note">${r.pts} pts / ${r.p}</span></span></li>`).join("")}</ol>`
+      : `<p class="muted" style="margin:0">No pair has played ${PER_MATCH_MIN} matches yet.</p>`}
+    <p class="note" style="margin:8px 0 0">Points ÷ matches played, for pairs with at least ${PER_MATCH_MIN} matches. Unofficial – only the table counts (§3).</p></div>`;
 }
 
 // which matchday is running (or when the season starts) and how many of its matches are played

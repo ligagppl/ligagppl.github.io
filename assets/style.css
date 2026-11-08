@@ -616,6 +616,13 @@ footer { text-align: center; color: var(--muted); font-size: .85rem; padding: 20
 .pod-pts { font-weight: 800; color: var(--win); }
 @media (max-width: 520px) { .pod .note { display: none; } .pod .mlogo { width: 40px; height: 40px; } .pod-1 .mlogo { width: 50px; height: 50px; } .pod-name { font-size: .9rem; } }
 #home-results[hidden] { display: none; }
+.pm-top3 { margin-top: 16px; padding-top: 14px; border-top: 1px dashed var(--line); }
+.pm-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pm-list li { display: flex; align-items: center; gap: 10px; }
+.pm-list .mlogo { width: 34px; height: 34px; }
+.pm-list .team-link { font-weight: 700; min-width: 0; overflow-wrap: anywhere; }
+.pm-medal { font-size: 1.2rem; }
+.pm-n { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; line-height: 1.15; font-variant-numeric: tabular-nums; }
 #home-md[hidden] { display: none; }
 .home-2 { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 16px; align-items: start; }
 .home-2 > .card, .home-side > .card:last-child { margin-bottom: 0; }
