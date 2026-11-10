@@ -209,8 +209,8 @@
         <span class="muted">${players(state.team)}</span></div></div>
         <div class="tm-me-btns"><a class="btn ghost small" href="${profileOf(state.team)}">👁 Public profile</a><button class="btn ghost small" data-act="reload">↻ Refresh</button><button class="btn ghost small" data-act="logout">Log out</button></div></div>
       ${removedBanner()}
-      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Matches (${upcomingList().length}${(n => n ? ` · 🆕 ${n}` : "")(upcomingList().filter(x => isNewUp(x.e)).length)})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button>${state.fanPolls ? `<button role="tab" data-act="view" data-view="fanpolls" class="${view === "fanpolls" ? "active" : ""}">📣 Fan polls</button>` : ""}</div>
-      ${view === "upcoming" ? upcomingHtml() : view === "fanpolls" && state.fanPolls ? fanPollsHtml() : view === "gallery" ? galleryHtml() : view === "courts" ? courtsHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
+      <div class="tm-tabs" role="tablist"><button role="tab" data-act="view" data-view="team" class="${view === "team" ? "active" : ""}">🎾 My team</button><button role="tab" data-act="view" data-view="upcoming" class="${view === "upcoming" ? "active" : ""}">📅 Matches (${upcomingList().length}${(n => n ? ` · 🆕 ${n}` : "")(upcomingList().filter(x => isNewUp(x.e)).length)})</button><button role="tab" data-act="view" data-view="courts" class="${view === "courts" ? "active" : ""}">🎾 Courts (${(state.slots || []).filter(c => !c.mine && !c.assigned && !c.taken && !c.ourMatch).length})</button><button role="tab" data-act="view" data-view="gallery" class="${view === "gallery" ? "active" : ""}">📸 Gallery</button><button role="tab" data-act="view" data-view="picks" class="${view === "picks" ? "active" : ""}">🎯 Profile</button>${state.fanPolls ? `<button role="tab" data-act="view" data-view="fanpolls" class="${view === "fanpolls" ? "active" : ""}">📣 Fan polls</button>` : ""}</div>
+      ${view === "upcoming" ? upcomingHtml() : view === "fanpolls" && state.fanPolls ? fanPollsHtml() : view === "gallery" ? galleryHtml() : view === "picks" ? picksHtml() : view === "courts" ? courtsHtml() : `<div class="tm-overview">${standingHtml()}${cupStatusHtml()}</div>
       ${progressHtml()}
       ${msgHtml("top")}
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
@@ -375,6 +375,42 @@
     call("/matches-seen", { at: meAt }).catch(() => { seenPosted = false; });
   }
 
+  // ---------- 🎯 Profile: Top 3 teams to beat & starred matches (shown on the public profile only when switched on)
+  const myPicks = () => state.picks || { beat: [], stars: [], showBeat: false, showStars: false };
+  const keyLabel = key => {
+    if (key.startsWith("C:")) { const r = (state.cup.rounds || [])[+key.split(":")[1]]; return `🏆 GPPC Cup · ${r ? r.name : ""}`; }
+    const [x, y] = key.slice(2).split("-").map(Number);
+    const md = GPPL.fixtures.findIndex(g => g.some(([a, b]) => (a === x && b === y) || (a === y && b === x)));
+    return md >= 0 ? `Matchday ${md + 1}` : "League";
+  };
+  function starBtn(key) {
+    const on = myPicks().stars.includes(key);
+    return `<button type="button" class="tm-star${on ? " on" : ""}" data-act="star" data-key="${key}" aria-pressed="${on}" title="${on ? "Starred – tap to remove" : "Star this match (🎯 Profile)"}">${on ? "★ Starred" : "☆ Star"}</button>`;
+  }
+  async function savePicks(body) {
+    picksMsg = null;
+    try { state.picks = (await call("/picks", body)).picks; }
+    catch (err) { picksMsg = `❌ ${err.message}`; }
+    render();
+    if (typeof refreshMatchStatus === "function") refreshMatchStatus(); // the public profile picks up the change
+  }
+  let picksMsg = null;
+  function picksHtml() {
+    const p = myPicks(), others = state.pairs.filter(x => x.id !== state.team);
+    const sw = (k, on) => `<label class="tm-switch"><input type="checkbox" data-pick-show="${k}"${on ? " checked" : ""}> 👁 Show on our <a href="${profileOf(state.team)}">public profile</a></label>`;
+    const chip = x => { const i = p.beat.indexOf(x.id);
+      return `<button type="button" class="tm-beat-team${i >= 0 ? " on" : ""}" data-act="beat" data-team="${x.id}" aria-pressed="${i >= 0}"${i < 0 && p.beat.length >= 3 ? " disabled" : ""}>${i >= 0 ? `<b class="tm-beat-n">${i + 1}</b>` : ""}${logo(x.id, "tm-logo-sm")}<span>${esc(x.name)}</span></button>`; };
+    const stars = p.stars.map(key => { const [a, b] = keyTeams(key); return a && b ? `<div class="tm-star-row">${logo(a, "tm-logo-sm")}<b>${esc(teamName(a))}</b><span class="muted">vs</span><b>${esc(teamName(b))}</b>${logo(b, "tm-logo-sm")}<span class="note">${esc(keyLabel(key))}</span>${starBtn(key)}</div>` : ""; }).join("");
+    return `${picksMsg ? `<div class="msg err">${esc(picksMsg)}</div>` : ""}
+      <div class="card tm-picks"><h3>🎯 Top 3 teams to beat</h3>
+        <p class="note">Tap up to 3 teams – in the order you pick them. You can change them any time.</p>
+        <div class="tm-beat">${others.map(chip).join("")}</div>${sw("beat", p.showBeat)}</div>
+      <div class="card tm-picks"><h3>★ Starred matches</h3>
+        <p class="note">Star any match in <a href="#" data-act="view" data-view="upcoming">📅 Matches</a>. On the public profile only the two teams are shown – never the date, time or venue. Matches drop off once they have a result.</p>
+        ${stars || `<p class="muted">No starred match yet.</p>`}${sw("stars", p.showStars)}</div>
+      <p class="note">Off by default – your picks and stars only show on your profile once you switch it on. They always count anonymously: “Picked as a team to beat by n teams” on profiles and polls, and the home page's ⭐ Most-starred matches (from 3 stars) – only the numbers are shown, never who picked.</p>`;
+  }
+
   function upcomingList() {
     return Object.entries(state.upcoming || {}).map(([key, e]) => ({ key, e, t: keyTeams(key) }))
       .filter(x => x.e.date && x.t[0] && x.t[1] && (matchEnd(x.e) || Date.parse(x.e.date + "T23:59:00")) > Date.now())
@@ -436,7 +472,7 @@
       return `<div class="tm-up${ours ? " tm-up-ours" : ""}${live ? " tm-up-live" : ""}">
         <span class="tm-up-pair">${side(a, "tm-up-a")}<span class="muted">vs</span>${side(b, "tm-up-b")}</span>
         <span class="tm-up-when">📅 ${dayText(e.date)}${e.time ? " · " + esc(GPPL.timeRange(e)) : ""} · ${live ? `<span class="tm-up-livechip">🔴 Playing now</span>` : inDays(e.date)}${e.court ? ` · 📍 <a href="${mapsUrl(e.court)}" target="_blank" rel="noopener">${esc(e.court)}</a>` : ""}</span>
-        <span class="tm-up-label">${isNewUp(e) ? `<span class="tm-up-new" title="Date set or changed since you last opened 📅 Matches">🆕 New</span> ` : ""}${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""}</span>
+        <span class="tm-up-label">${isNewUp(e) ? `<span class="tm-up-new" title="Date set or changed since you last opened 📅 Matches">🆕 New</span> ` : ""}${esc(label(key))}${ours ? ` <span class="tm-up-chip">⭐ Your match</span>` : ""} ${starBtn(key)}</span>
         ${predictHtml(key, a, b, e)}</div>`;
     };
     const fresh = list.filter(x => isNewUp(x.e)).length;
@@ -564,7 +600,7 @@
     const d = predictDialog(), mine = ((state.predictions || {})[pr.key] || {}).mine;
     d.innerHTML = `<div class="tm-pr-form">
       <h3>🔮 Who wins?</h3>
-      <div class="tm-pr-teams">${[pr.a, pr.b].map(id => `<button type="button" class="tm-pr-team${pr.w === id ? " active" : ""}" data-w="${id}">${logo(id)}<b>${esc(teamName(id))}</b></button>`).join("")}</div>
+      <div class="tm-pr-teams">${[pr.a, pr.b].map(id => `<button type="button" class="tm-pr-team${pr.w === id ? " active" : ""}" data-w="${id}">${logo(id)}<b>${esc(teamName(id))}</b>${typeof beatByTag === "function" ? beatByTag(id) : ""}</button>`).join("")}</div>
       <p class="tm-pr-sub">Score in sets</p>
       <div class="tm-pr-scores">${[["2-0", "2–0"], ["2-1", "2–1"]].map(([v, t]) => `<button type="button" class="tm-pr-score${pr.s === v ? " active" : ""}" data-s="${v}">${t}</button>`).join("")}</div>
       <p class="note">${pr.w && pr.s ? `${esc(teamName(pr.w))} wins ${pr.s.replace("-", "–")}. ` : ""}You can change it until ${predictLaunch() ? "the match starts" : "30 minutes before the match"}. Predictions are anonymous – others only see the percentages.</p>
@@ -847,12 +883,17 @@
     const key = b.dataset.key, a = b.dataset.act;
     if (a === "logout") { ls.set(TOKEN_KEY, null); state = null; msg = null; return render(); }
     if (a === "reload") { msg = null; return load(); }
-    if (a === "view") { view = b.dataset.view; form = null; return render(); }
+    if (a === "view") { e.preventDefault(); view = b.dataset.view; form = null; return render(); }
     if (a === "predict") {
       const mine = ((state.predictions || {})[key] || {}).mine;
       pr = { key, a: +b.dataset.a, b: +b.dataset.b, w: mine ? mine.w : 0, s: mine && mine.s || "", err: null, busy: false };
       drawPredict(); predictDialog().showModal();
       return;
+    }
+    if (a === "star") { e.preventDefault(); return savePicks({ star: key, on: !myPicks().stars.includes(key) }); }
+    if (a === "beat") {
+      const id = +b.dataset.team, cur = myPicks().beat;
+      return savePicks({ beat: cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id].slice(0, 3) });
     }
     if (a === "req-withdraw") return act(key, () => call("/move-request", { key, withdraw: true }), "Request withdrawn.");
     if (a === "fp-open") {
@@ -1026,6 +1067,8 @@
   el.addEventListener("input", e => { if (e.target.name === "court") venueInput(e.target); });
   // "Other" reason → a text field to write it
   el.addEventListener("change", e => {
+    const show = e.target.dataset && e.target.dataset.pickShow;
+    if (show) return savePicks(show === "beat" ? { showBeat: e.target.checked } : { showStars: e.target.checked });
     if (e.target.name !== "reason") return;
     const other = e.target.form && e.target.form.elements.other;
     if (other) { other.hidden = e.target.value !== "Other"; other.required = !other.hidden; if (!other.hidden) other.focus(); }

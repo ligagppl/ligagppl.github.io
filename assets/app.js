@@ -4,6 +4,9 @@ const { pairName, fmt, matchdayWindow, fixtures, DAY } = GPPL;
 let results = [], cup = { rounds: [] };
 let matchStatus = {}; // member server: "L:a-b" → "scheduled" | "waiting" (no dates, venues or scores)
 let matchOrder = []; // member server: the scheduled matches soonest first (only the order – no dates)
+let beatCounts = {}; // member server: team id → how many teams picked it as a team to beat (all teams, only the number)
+let starCounts = {}; // member server: match key → number of teams that starred it (only matches with 3 or more)
+let matchPicks = {}; // member server: per team its 🎯 Top 3 teams to beat and ⭐ starred matches – only what the team chose to show (pairings, no dates)
 let statusReady = false; // until the match states arrive, team profiles leave "Next opponent" empty (no guess from the matchdays)
 
 const sign = n => (n > 0 ? "+" + n : String(n));
@@ -77,9 +80,10 @@ function statusLine(games) {
 function loadMatchStatus() {
   const api = (localStorage.getItem("gppl-member-api") || LEAGUE.memberApi || "").replace(/\/+$/, "");
   if (!api) { statusReady = true; return; }
-  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; matchOrder = d.order || []; statusReady = true; renderSchedule(); renderProfile(); renderHome(); })
+  fetch(api + "/match-status").then(r => r.json()).then(d => { matchStatus = d.status || {}; matchOrder = d.order || []; matchPicks = d.picks || {}; starCounts = d.starCounts || {}; beatCounts = d.beatCounts || {}; statusReady = true; renderSchedule(); renderProfile(); renderHome(); if (typeof renderPoll === "function" && poll.data) renderPoll(); })
     .catch(() => { if (!statusReady) { statusReady = true; renderProfile(); } }); // no answer: fall back to the matchday order
 }
+const refreshMatchStatus = loadMatchStatus; // My team calls it after changing its picks
 setInterval(() => { if (!document.hidden) loadMatchStatus(); }, 60000); // a match that starts moves to "played" within a minute
 
 function renderSchedule() {
@@ -131,6 +135,7 @@ function renderHome() {
   box.innerHTML = `<h3 class="home-h">✅ Results</h3>${recent.map(r => matchRow(r.a, r.b)).join("")}
     ${results.length > recent.length ? `<a class="home-more" href="#schedule">All ${results.length} results →</a>` : ""}`;
   renderHomeCup();
+  renderHomeStars();
   // every team, logo first – tap for its profile
   document.getElementById("home-teams").innerHTML = `<h3 class="home-h">👥 The ${n} pairs</h3><div class="home-teams">${LEAGUE.pairs.map(p =>
     `<a class="ht" href="${profileHref(p.id)}">${teamLogo(p.id)}<span>${esc(p.name)}</span></a>`).join("")}</div>`;
@@ -256,6 +261,41 @@ const teamSlug = id => pairName(id).toLowerCase().replace(/&/g, " and ").normali
 const profileHref = id => "#teams/" + teamSlug(id);
 // public data only: confirmed results, the league table, the cup and the match states ("date set" etc.) – never dates or venues
 let profileId = null, profileScope = "all";
+// home: the 3 most-starred matches still to play (3 or more teams starred them) – the teams only, never dates or venues
+function renderHomeStars() {
+  const el = document.getElementById("home-stars");
+  if (!el) return;
+  const teamsOf = k => k.startsWith("L:") ? k.slice(2).split("-").map(Number) : (m => m ? [m.a, m.b] : [])(((cup.rounds[+k.split(":")[1]] || {}).matches || [])[+k.split(":")[2]]);
+  const soon = k => (matchOrder.includes(k) ? matchOrder.indexOf(k) : Infinity);
+  const top = Object.entries(starCounts).filter(([k]) => matchStatus[k] !== "waiting" && teamsOf(k)[1])
+    .sort((x, y) => y[1] - x[1] || soon(x[0]) - soon(y[0])).slice(0, 3);
+  el.hidden = !top.length;
+  el.innerHTML = `<h3 class="home-h">⭐ Most-starred matches</h3>${top.map(([k, n]) => { const [a, b] = teamsOf(k);
+    return `<div class="hs-row">${matchRow(a, b)}<span class="hs-n" title="Starred by ${n} teams">⭐ ${n}</span><span class="note">${k.startsWith("C:") ? `🏆 GPPC Cup · ${esc((cup.rounds[+k.split(":")[1]] || {}).name || "")}` : (md => md >= 0 ? `Matchday ${md + 1}` : "League")(fixtures.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a))))}</span></div>`; }).join("")}
+    <p class="note" style="margin-bottom:0">Starred by 3 or more teams in 🎾 My team – dates and venues only there.</p>`;
+}
+
+// 🎯 Top 3 teams to beat, "picked as a team to beat by n teams" and ⭐ starred matches – only from teams that show them
+function picksCards(id) {
+  const mine = matchPicks[id] || { beat: [], stars: [] };
+  const by = beatBy(id);
+  const teamA = o => `<a class="pf-opp team-link" href="${profileHref(o)}">${teamLogo(o)}<span>${pairName(o)}</span></a>`;
+  const keyTeams = k => k.startsWith("L:") ? k.slice(2).split("-").map(Number) : (m => m ? [m.a, m.b] : [])(((cup.rounds[+k.split(":")[1]] || {}).matches || [])[+k.split(":")[2]]);
+  const stage = k => {
+    if (k.startsWith("C:")) return `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc((cup.rounds[+k.split(":")[1]] || {}).name || "")}`;
+    const [a, b] = keyTeams(k), md = fixtures.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a)));
+    return md >= 0 ? `Matchday ${md + 1}` : "League";
+  };
+  let out = "";
+  if (mine.beat.length || by) out += `<div class="card pf-side"><h3 class="pf-h">🎯 Teams to beat</h3>
+      ${mine.beat.length ? `<span class="note">Their Top 3</span><ol class="pf-beat">${mine.beat.map(o => `<li>${teamA(o)}</li>`).join("")}</ol>` : ""}
+      ${by ? `<div class="pf-kv"><span>Picked as a team to beat by</span><b>${by} team${by === 1 ? "" : "s"}</b></div>` : ""}</div>`;
+  const stars = mine.stars.map(k => [k, keyTeams(k)]).filter(([, t]) => t[0] && t[1]);
+  if (stars.length) out += `<div class="card pf-side"><h3 class="pf-h">⭐ Starred matches</h3><span class="note">Matches they want to see – dates only in 🎾 My team</span>
+      ${stars.map(([k, [a, b]]) => `<div class="pf-star">${teamLogo(a)}<a class="team-link" href="${profileHref(a)}">${pairName(a)}</a><span class="muted">vs</span><a class="team-link" href="${profileHref(b)}">${pairName(b)}</a>${teamLogo(b)}<span class="note">${stage(k)}</span></div>`).join("")}</div>`;
+  return out;
+}
+
 function renderProfile() {
   const el = document.getElementById("profile-body"), id = profileId, p = GPPL.pairById[id];
   if (!el || !p) return;
@@ -388,7 +428,7 @@ function renderProfile() {
           <div class="pf-scope" role="group" aria-label="Matches">${scopeBtn("all", "All")}${scopeBtn("league", "League")}${scopeBtn("cup", "🏆 Cup")}</div>
           ${donut}
           <div class="pf-legend"><div><i class="pf-sw w"></i>Wins<b>${st.w}${rate !== null ? ` · ${rate}%` : ""}</b></div><div><i class="pf-sw l"></i>Losses<b>${st.l}${rate !== null ? ` · ${100 - rate}%` : ""}</b></div></div></div>
-        ${nextCard}
+        ${nextCard}${picksCards(id)}
       </aside>
     </div>`;
 }
@@ -760,12 +800,16 @@ setInterval(() => document.querySelectorAll("[data-closes]").forEach(el => (el.t
 // a logged-in team is sent along, so the poll can tell teams to predict in My team instead
 const pollAuth = () => { try { const t = localStorage.getItem("gppl-team-token"); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; } };
 // a team's league position and its last 5 league results (oldest → latest) – public data, same badges as the team profile
+// "🎯 Picked as a team to beat by n teams" – every team's picks count (only the number is public)
+function beatBy(id) { return beatCounts[id] || 0; }
+function beatByTag(id) { const n = beatBy(id); return n ? `<span class="poll-beat">🎯 Picked as a team to beat by ${n} team${n === 1 ? "" : "s"}</span>` : ""; }
+
 function pollForm(id) {
   const rows = GPPL.rankStandings(results), i = rows.findIndex(r => r.id === id), row = rows[i];
   const list = results.filter(r => r.a === id || r.b === id).map(r => { const e = GPPL.evaluate(r); return e.both ? "-" : e.winner === id ? "W" : "L"; }).slice(-5);
-  if (!row || !row.p) return `<span class="poll-form"><span class="note">No league results yet</span></span>`;
+  if (!row || !row.p) return `<span class="poll-form"><span class="note">No league results yet</span></span>${beatByTag(id)}`;
   const pos = `${i + 1}${["st", "nd", "rd"][i] || "th"}`, medal = ["🥇", "🥈", "🥉"][i] || "";
-  return `<span class="poll-form"><span class="note">${medal} ${pos} · ${row.pts} pts</span><span class="pf-form pf-form-sm">${Array.from({ length: 5 }, (_, k) => { const x = list[k - (5 - list.length)]; return x ? `<span class="pf-f pf-${x === "W" ? "w" : x === "L" ? "l" : "d"}">${x}</span>` : `<span class="pf-f pf-e" aria-hidden="true"></span>`; }).join("")}</span></span>`;
+  return `<span class="poll-form"><span class="note">${medal} ${pos} · ${row.pts} pts</span><span class="pf-form pf-form-sm">${Array.from({ length: 5 }, (_, k) => { const x = list[k - (5 - list.length)]; return x ? `<span class="pf-f pf-${x === "W" ? "w" : x === "L" ? "l" : "d"}">${x}</span>` : `<span class="pf-f pf-e" aria-hidden="true"></span>`; }).join("")}</span></span>${beatByTag(id)}`;
 }
 const pollSaved = () => { try { return JSON.parse(localStorage.getItem("gppl-poll-" + pollToken) || "null"); } catch { return null; } };
 async function loadPoll() {
