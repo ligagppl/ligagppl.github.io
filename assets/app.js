@@ -295,10 +295,8 @@ function picksCards(id) {
   const out = { beat: "", stars: "", chip: "" };
   if (mine.beat.length) out.beat = `<div class="card pf-side"><h3 class="pf-h">🎯 Teams to beat</h3>
       <span class="note">Their Top 3</span><ol class="pf-beat">${mine.beat.map(o => `<li>${teamA(o)}</li>`).join("")}</ol></div>`;
-  // header chip: "🎯 #1 team to beat · picked by 4 teams" – the rank (1 + teams picked more often, ties share it)
-  // only for #1–#3 and from 2 picks on; otherwise just "🎯 picked by n teams"
-  if (by) { const rank = 1 + Object.values(beatCounts).filter(n => n > by).length, ranked = by >= 2 && rank <= 3;
-    out.chip = `<span class="pf-chip" title="Picked as a team to beat by ${by} team${by === 1 ? "" : "s"}">🎯 ${ranked ? `#${rank} team to beat · ` : ""}picked by ${by} team${by === 1 ? "" : "s"}</span>`; }
+  // header chip: "🎯 #1 target · 4 rivals are after them" (see beatText)
+  if (by) out.chip = `<span class="pf-chip" title="Picked as a team to beat by ${by} team${by === 1 ? "" : "s"}">${beatText(id)}</span>`;
   // soonest first by the public order of scheduled matches (only the order is public, never the dates), then the rest
   const soonIdx = k => (matchOrder.includes(k) ? matchOrder.indexOf(k) : Infinity);
   const stars = mine.stars.slice().sort((x, y) => soonIdx(x) - soonIdx(y)).map(k => [k, keyTeams(k)]).filter(([, t]) => t[0] && t[1]);
@@ -812,9 +810,16 @@ setInterval(() => document.querySelectorAll("[data-closes]").forEach(el => (el.t
 // a logged-in team is sent along, so the poll can tell teams to predict in My team instead
 const pollAuth = () => { try { const t = localStorage.getItem("gppl-team-token"); return t ? { Authorization: `Bearer ${t}` } : {}; } catch { return {}; } };
 // a team's league position and its last 5 league results (oldest → latest) – public data, same badges as the team profile
-// "🎯 Picked as a team to beat by n teams" – every team's picks count (only the number is public)
+// how many teams picked this one as a team to beat – every team's picks count (only the number is public)
 function beatBy(id) { return beatCounts[id] || 0; }
-function beatByTag(id) { const n = beatBy(id); return n ? `<span class="poll-beat">🎯 Picked as a team to beat by ${n} team${n === 1 ? "" : "s"}</span>` : ""; }
+// "🎯 #1 target · 4 rivals are after them" – the rank (1 + teams picked more often, ties share it) only for #1–#3 and from 2 picks
+function beatText(id) {
+  const n = beatBy(id);
+  if (!n) return "";
+  const rank = 1 + Object.values(beatCounts).filter(x => x > n).length, rivals = n === 1 ? "1 rival is after them" : `${n} rivals are after them`;
+  return `🎯 ${n >= 2 && rank <= 3 ? `#${rank} target · ` : ""}${rivals}`;
+}
+function beatByTag(id) { const t = beatText(id); return t ? `<span class="poll-beat">${t}</span>` : ""; }
 
 function pollForm(id) {
   const rows = GPPL.rankStandings(results), i = rows.findIndex(r => r.id === id), row = rows[i];

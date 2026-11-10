@@ -429,7 +429,7 @@
       <div class="card tm-picks"><h3>★ Starred matches</h3>
         <p class="note">Star any match in <a href="#" data-act="view" data-view="upcoming">📅 Matches</a>. On the public profile only the two teams are shown – never the date, time or venue. Matches drop off once they have a result.</p>
         ${stars || `<p class="muted">No starred match yet.</p>`}${sw("stars", p.showStars)}</div>
-      <p class="note">Off by default – your picks and stars only show on your profile once you switch it on. They always count anonymously: “Picked as a team to beat by n teams” on profiles and polls, and the home page's ⭐ Most-starred matches (from 3 stars) – only the numbers are shown, never who picked.</p>`;
+      <p class="note">Off by default – your picks and stars only show on your profile once you switch it on. They always count anonymously: “🎯 n rivals are after them” on profiles and polls, and the home page's ⭐ Most-starred matches (from 3 stars) – only the numbers are shown, never who picked.</p>`;
   }
 
   function upcomingList() {
