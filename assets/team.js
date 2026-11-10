@@ -419,7 +419,9 @@
     const sw = (k, on) => `<label class="tm-switch"><input type="checkbox" data-pick-show="${k}"${on ? " checked" : ""}> 👁 Show on our <a href="${profileOf(state.team)}">public profile</a></label>`;
     const chip = x => { const i = p.beat.indexOf(x.id);
       return `<button type="button" class="tm-beat-team${i >= 0 ? " on" : ""}" data-act="beat" data-team="${x.id}" aria-pressed="${i >= 0}"${i < 0 && p.beat.length >= 3 ? " disabled" : ""}>${i >= 0 ? `<b class="tm-beat-n">${i + 1}</b>` : ""}${logo(x.id, "tm-logo-sm")}<span>${esc(x.name)}</span></button>`; };
-    const stars = p.stars.map(key => { const [a, b] = keyTeams(key); return a && b ? `<div class="tm-star-row">${logo(a, "tm-logo-sm")}<b>${esc(teamName(a))}</b><span class="muted">vs</span><b>${esc(teamName(b))}</b>${logo(b, "tm-logo-sm")}<span class="note">${esc(keyLabel(key))}</span><button type="button" class="btn ghost small tm-star-x" data-act="star" data-key="${key}" title="Unstar this match">☆ Unstar</button></div>` : ""; }).join("");
+    // soonest scheduled first, matches without a date after (in the order they were starred)
+    const when = k => { const e = (state.upcoming || {})[k]; return e && e.date ? `${e.date}T${e.time || "23:59"}` : "9999"; };
+    const stars = p.stars.slice().sort((x, y) => when(x).localeCompare(when(y))).map(key => { const [a, b] = keyTeams(key); return a && b ? `<div class="tm-star-row">${logo(a, "tm-logo-sm")}<b>${esc(teamName(a))}</b><span class="muted">vs</span><b>${esc(teamName(b))}</b>${logo(b, "tm-logo-sm")}<span class="note">${esc(keyLabel(key))}</span><button type="button" class="btn ghost small tm-star-x" data-act="star" data-key="${key}" title="Unstar this match">☆ Unstar</button></div>` : ""; }).join("");
     return `${picksMsg ? `<div class="msg err">${esc(picksMsg)}</div>` : ""}
       <div class="card tm-picks"><h3>🎯 Top 3 teams to beat</h3>
         <p class="note">The teams you'd most love to beat – your rivals, not necessarily the strongest teams. Tap up to 3, in the order you pick them. You can change them any time.</p>

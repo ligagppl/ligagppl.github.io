@@ -41,6 +41,12 @@ function renderStandings() {
 const statusOf = (a, b) => GPPL.findResult(results, a, b) ? "played" : matchStatus[`L:${Math.min(a, b)}-${Math.max(a, b)}`] || "open";
 const STATUS = { played: "✅ played", waiting: "✅ played<br>⏳ score pending", scheduled: "📅 date set", open: '<span class="dot-none"></span>no date' };
 
+// a starred match in the same look as matchRow – just "vs", no status (cup matches: the round underneath)
+function starRow(a, b, stage) {
+  return `<div class="match"><span class="a">${teamLogo(a)}<a class="tn team-link" href="${profileHref(a)}">${pairName(a)}</a></span>
+    <span class="score"><span class="muted">vs</span></span><span class="b"><a class="tn team-link" href="${profileHref(b)}">${pairName(b)}</a>${teamLogo(b)}</span></div>${stage ? `<p class="note pf-star-cup">${stage}</p>` : ""}`;
+}
+
 function matchRow(a, b) {
   const r = GPPL.findResult(results, a, b), st = statusOf(a, b);
   let score = `<span class="muted">vs</span><span class="m-status st-${st}">${STATUS[st]}</span>`, wa = "", wb = "";
@@ -293,12 +299,12 @@ function picksCards(id) {
   // only for #1–#3 and from 2 picks on; otherwise just "🎯 picked by n teams"
   if (by) { const rank = 1 + Object.values(beatCounts).filter(n => n > by).length, ranked = by >= 2 && rank <= 3;
     out.chip = `<span class="pf-chip" title="Picked as a team to beat by ${by} team${by === 1 ? "" : "s"}">🎯 ${ranked ? `#${rank} team to beat · ` : ""}picked by ${by} team${by === 1 ? "" : "s"}</span>`; }
-  const stars = mine.stars.map(k => [k, keyTeams(k)]).filter(([, t]) => t[0] && t[1]);
+  // soonest first by the public order of scheduled matches (only the order is public, never the dates), then the rest
+  const soonIdx = k => (matchOrder.includes(k) ? matchOrder.indexOf(k) : Infinity);
+  const stars = mine.stars.slice().sort((x, y) => soonIdx(x) - soonIdx(y)).map(k => [k, keyTeams(k)]).filter(([, t]) => t[0] && t[1]);
   // starred matches: a list in the main column (above "Still to play"), same rows as the match lists
-  const mdOf = k => { if (k.startsWith("C:")) return null; const [a, b] = keyTeams(k); return fixtures.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) + 1; };
-  if (stars.length) out.stars = `<div class="card pf-list"><div class="pf-list-head"><h3 class="pf-h">⭐ Starred matches</h3><span class="note">Matches they want to see · dates and venues only in 🎾 My team</span></div>
-      ${stars.map(([k, [a, b]]) => `<div class="pf-row${k.startsWith("C:") ? " pf-cup" : ""}"><div class="pf-md" aria-hidden="true">${k.startsWith("C:") ? `<span>🏆</span><b>Cup</b>` : `<span>MD</span><b>${mdOf(k) || "–"}</b>`}</div>
-        ${teamLogo(a)}<div class="pf-row-main"><span class="pf-row-title"><b><a class="team-link" href="${profileHref(a)}">${pairName(a)}</a> <span class="muted">vs</span> <a class="team-link" href="${profileHref(b)}">${pairName(b)}</a></b></span><span class="note">${stage(k)}</span></div>${teamLogo(b)}</div>`).join("")}</div>`;
+  if (stars.length) out.stars = `<div class="card pf-list"><div class="pf-list-head"><h3 class="pf-h">⭐ Starred matches</h3><span class="note">Matches they are interested in · dates and venues only in 🎾 My team</span></div>
+      <div class="pf-star-list">${stars.map(([k, [a, b]]) => starRow(a, b, k.startsWith("C:") ? stage(k) : "")).join("")}</div></div>`;
   return out;
 }
 
@@ -360,8 +366,8 @@ function renderProfile() {
   // matches with a date first, soonest first (the server only sends their order, never the dates), then the rest as before
   const soon = t => (t.st === "scheduled" && matchOrder.includes(t.key) ? matchOrder.indexOf(t.key) : Infinity);
   todo.sort((x, y) => soon(x) - soon(y));
-  // next opponent: the soonest match with a date; without one the open cup match (it has the shortest window), then the next matchday
-  const next = !statusReady ? null : todo.find(t => soon(t) < Infinity) || todo.find(t => t.cup) || todo[0] || null;
+  // next match / next opponent: only the soonest match that has a date – without a scheduled match neither is shown
+  const next = !statusReady ? null : todo.find(t => soon(t) < Infinity) || null;
   // streak: league results in order (cup: by round)
   const seq = profileScope === "cup" ? cupList.filter(x => x.done) : league, lastRes = seq.length ? seq[seq.length - 1].res : null;
   let streakN = 0;
@@ -391,7 +397,6 @@ function renderProfile() {
       <div class="pf-row-end"><b class="pf-big">${big}</b><span class="note">${small}</span></div></div>`;
   };
   const todoRow = t => `<div class="pf-row${t.cup ? " pf-cup" : ""}">
-      <div class="pf-md" aria-hidden="true">${t.cup ? `<span>🏆</span><b>Cup</b>` : `<span>MD</span><b>${t.md}</b>`}</div>
       ${teamLogo(t.opp)}<div class="pf-row-main"><span class="pf-row-title"><b>vs ${link(t.opp)}</b>${t === next ? `<span class="pf-next">Next match</span>` : ""}</span><span class="note">${t.cup ? `<span class="pf-cup-tag">🏆 GPPC Cup</span> ${esc(t.round)}` : t.stage}</span></div>
 </div>`;
   // the next opponent's card: their league position and form – the date stays private
