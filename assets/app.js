@@ -286,13 +286,19 @@ function picksCards(id) {
     const [a, b] = keyTeams(k), md = fixtures.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a)));
     return md >= 0 ? `Matchday ${md + 1}` : "League";
   };
-  let out = "";
-  if (mine.beat.length || by) out += `<div class="card pf-side"><h3 class="pf-h">🎯 Teams to beat</h3>
-      ${mine.beat.length ? `<span class="note">Their Top 3</span><ol class="pf-beat">${mine.beat.map(o => `<li>${teamA(o)}</li>`).join("")}</ol>` : ""}
-      ${by ? `<div class="pf-kv"><span>Picked as a team to beat by</span><b>${by} team${by === 1 ? "" : "s"}</b></div>` : ""}</div>`;
+  const out = { beat: "", stars: "", chip: "" };
+  if (mine.beat.length) out.beat = `<div class="card pf-side"><h3 class="pf-h">🎯 Teams to beat</h3>
+      <span class="note">Their Top 3</span><ol class="pf-beat">${mine.beat.map(o => `<li>${teamA(o)}</li>`).join("")}</ol></div>`;
+  // header chip: "🎯 #1 team to beat · picked by 4 teams" – the rank (1 + teams picked more often, ties share it)
+  // only for #1–#3 and from 2 picks on; otherwise just "🎯 picked by n teams"
+  if (by) { const rank = 1 + Object.values(beatCounts).filter(n => n > by).length, ranked = by >= 2 && rank <= 3;
+    out.chip = `<span class="pf-chip" title="Picked as a team to beat by ${by} team${by === 1 ? "" : "s"}">🎯 ${ranked ? `#${rank} team to beat · ` : ""}picked by ${by} team${by === 1 ? "" : "s"}</span>`; }
   const stars = mine.stars.map(k => [k, keyTeams(k)]).filter(([, t]) => t[0] && t[1]);
-  if (stars.length) out += `<div class="card pf-side"><h3 class="pf-h">⭐ Starred matches</h3><span class="note">Matches they want to see – dates only in 🎾 My team</span>
-      ${stars.map(([k, [a, b]]) => `<div class="pf-star">${teamLogo(a)}<a class="team-link" href="${profileHref(a)}">${pairName(a)}</a><span class="muted">vs</span><a class="team-link" href="${profileHref(b)}">${pairName(b)}</a>${teamLogo(b)}<span class="note">${stage(k)}</span></div>`).join("")}</div>`;
+  // starred matches: a list in the main column (above "Still to play"), same rows as the match lists
+  const mdOf = k => { if (k.startsWith("C:")) return null; const [a, b] = keyTeams(k); return fixtures.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a))) + 1; };
+  if (stars.length) out.stars = `<div class="card pf-list"><div class="pf-list-head"><h3 class="pf-h">⭐ Starred matches</h3><span class="note">Matches they want to see · dates and venues only in 🎾 My team</span></div>
+      ${stars.map(([k, [a, b]]) => `<div class="pf-row${k.startsWith("C:") ? " pf-cup" : ""}"><div class="pf-md" aria-hidden="true">${k.startsWith("C:") ? `<span>🏆</span><b>Cup</b>` : `<span>MD</span><b>${mdOf(k) || "–"}</b>`}</div>
+        ${teamLogo(a)}<div class="pf-row-main"><span class="pf-row-title"><b><a class="team-link" href="${profileHref(a)}">${pairName(a)}</a> <span class="muted">vs</span> <a class="team-link" href="${profileHref(b)}">${pairName(b)}</a></b></span><span class="note">${stage(k)}</span></div>${teamLogo(b)}</div>`).join("")}</div>`;
   return out;
 }
 
@@ -400,12 +406,13 @@ function renderProfile() {
       <div class="pf-kv"><span>Their record</span><b>${oRow.w} won, ${oRow.l} lost</b></div>
       <div class="pf-kv pf-kv-form"><span>Their form</span><span class="pf-form pf-form-sm">${formOf(oForm)}</span></div></div>`;
   }
+  const picks = picksCards(id);
   const allResults = [...cupList.filter(x => x.done)].reverse().concat([...league].reverse());
   el.innerHTML = `<div class="pf-band">
       <div class="pf-crumb"><a href="#participants">Teams</a> / ${esc(p.name)}</div>
       <div class="pf-band-row">
         <div class="pf-id">${big}<div>
-          <div class="pf-chips">${row.p ? `<span class="pf-chip">${medal(row, rank - 1) ? medal(row, rank - 1) + " " : ""}#${rank} in the league · ${row.pts} pts</span>` : ""}${cupState ? `<span class="pf-chip">${cupState}</span>` : ""}${row.p ? "" : `<span class="pf-chip">Seed #${id}</span>`}</div>
+          <div class="pf-chips">${row.p ? `<span class="pf-chip">${medal(row, rank - 1) ? medal(row, rank - 1) + " " : ""}#${rank} in the league · ${row.pts} pts</span>` : ""}${cupState ? `<span class="pf-chip">${cupState}</span>` : ""}${row.p ? "" : `<span class="pf-chip">Seed #${id}</span>`}${picks.chip}</div>
           <h2 class="pf-name">${esc(p.name)}</h2>
           <div class="pf-players">${players}</div></div></div>
         <div class="pf-formbox"><span class="pf-formtitle">Form, last 5 league matches</span><div class="pf-form">${formOf(league)}</div><div class="pf-formfoot"><span>Oldest</span><span>Latest</span></div></div>
@@ -417,7 +424,7 @@ function renderProfile() {
       <div class="card pf-kpi"><span>Current streak</span><b>${streak}</b><small>${streakNote}</small></div>
     </div>
     <div class="pf-cols">
-      <div class="pf-main">
+      <div class="pf-main">${picks.stars}
         <div class="card pf-list"><div class="pf-list-head"><h3 class="pf-h">Still to play</h3><span class="note">${todo.length} match${todo.length === 1 ? "" : "es"} · dates and venues only in 🎾 My team</span></div>
           ${todo.map(todoRow).join("") || '<p class="muted">Every match played. 🎉</p>'}</div>
         <div class="card pf-list"><div class="pf-list-head"><h3 class="pf-h">Results</h3><span class="note">Latest first</span></div>
@@ -428,7 +435,7 @@ function renderProfile() {
           <div class="pf-scope" role="group" aria-label="Matches">${scopeBtn("all", "All")}${scopeBtn("league", "League")}${scopeBtn("cup", "🏆 Cup")}</div>
           ${donut}
           <div class="pf-legend"><div><i class="pf-sw w"></i>Wins<b>${st.w}${rate !== null ? ` · ${rate}%` : ""}</b></div><div><i class="pf-sw l"></i>Losses<b>${st.l}${rate !== null ? ` · ${100 - rate}%` : ""}</b></div></div></div>
-        ${nextCard}${picksCards(id)}
+        ${picks.beat}${nextCard}
       </aside>
     </div>`;
 }

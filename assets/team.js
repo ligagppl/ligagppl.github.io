@@ -422,7 +422,7 @@
     const stars = p.stars.map(key => { const [a, b] = keyTeams(key); return a && b ? `<div class="tm-star-row">${logo(a, "tm-logo-sm")}<b>${esc(teamName(a))}</b><span class="muted">vs</span><b>${esc(teamName(b))}</b>${logo(b, "tm-logo-sm")}<span class="note">${esc(keyLabel(key))}</span><button type="button" class="btn ghost small tm-star-x" data-act="star" data-key="${key}" title="Unstar this match">☆ Unstar</button></div>` : ""; }).join("");
     return `${picksMsg ? `<div class="msg err">${esc(picksMsg)}</div>` : ""}
       <div class="card tm-picks"><h3>🎯 Top 3 teams to beat</h3>
-        <p class="note">Tap up to 3 teams – in the order you pick them. You can change them any time.</p>
+        <p class="note">The teams you'd most love to beat – your rivals, not necessarily the strongest teams. Tap up to 3, in the order you pick them. You can change them any time.</p>
         <div class="tm-beat">${others.map(chip).join("")}</div>${sw("beat", p.showBeat)}</div>
       <div class="card tm-picks"><h3>★ Starred matches</h3>
         <p class="note">Star any match in <a href="#" data-act="view" data-view="upcoming">📅 Matches</a>. On the public profile only the two teams are shown – never the date, time or venue. Matches drop off once they have a result.</p>
