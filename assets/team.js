@@ -88,8 +88,26 @@
   const mapsUrl = place => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place)}`;
   // days until a date: "today", "tomorrow", "in 6 days"
   const inDays = d => { const n = Math.round((new Date(d + "T12:00:00") - new Date(new Date().toDateString() + " 12:00")) / 864e5); return n === 0 ? "<b>today</b>" : n === 1 ? "<b>tomorrow</b>" : `in ${n} days`; };
-  // for min= on date pickers – rounded down to the half hour, because step="1800" counts from min (14:00 must stay valid at 15:23)
-  const nowLocal = () => { const d = new Date(Math.floor(Date.now() / 1800000) * 1800000 - new Date().getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+  // the next :00 / :30 from now (local time) – min= on date pickers (step="1800" counts from min, so the grid stays on :00/:30
+  // and no past slot can be picked: at 12:09 the earliest is 12:30); also where an empty picker starts
+  const nextSlot = () => { const d = new Date(Math.ceil((Date.now() + 1) / 1800000) * 1800000 - new Date().getTimezoneOffset() * 60000); return d.toISOString().slice(0, 16); };
+  // date + time fields: a date picker and a time list with only :00 and :30 – past slots of today are greyed out
+  // (phone pickers ignore step="1800" and show every minute, so the time is a list instead of a datetime picker)
+  const SLOT_TIMES = Array.from({ length: 36 }, (_, i) => `${String(6 + Math.floor(i / 2)).padStart(2, "0")}:${i % 2 ? "30" : "00"}`); // 06:00 – 23:30
+  function whenFields(date = "", time = "") {
+    const today = nextSlot().slice(0, 10), times = SLOT_TIMES.includes(time) || !time ? SLOT_TIMES : [...SLOT_TIMES, time].sort();
+    return `<label>Date<input type="date" name="wdate" min="${today}" value="${esc(date)}" required></label>
+      <label>Time<select name="wtime" required><option value="">– pick –</option>${times.map(t => `<option value="${t}"${t === time ? " selected" : ""}>${t}</option>`).join("")}</select></label>`;
+  }
+  // grey out the times that are already past for the chosen day (re-run when the day changes and whenever the list is opened)
+  function syncSlots(form) {
+    const d = form && form.elements.wdate, sel = form && form.elements.wtime;
+    if (!d || !sel) return;
+    const next = nextSlot(), [today, first] = [next.slice(0, 10), next.slice(11)];
+    d.min = today;
+    [...sel.options].forEach(o => { if (o.value) o.disabled = !!d.value && d.value < today || (d.value === today && o.value < first); });
+    if (sel.selectedOptions[0] && sel.selectedOptions[0].disabled) sel.value = "";
+  }
   const dayText = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
   // result deadlines (Rules §11): 48 hours after the booked time to enter the result, then 48 hours to confirm
@@ -218,6 +236,7 @@
       <h3>📅 League</h3>${leagueCards(matches.filter(m => m.group === "league" && !todo.includes(m))) || `<div class="card muted">${LEAGUE.scheduleReleased === false ? "The league schedule appears here once it's published – coming soon." : "The league schedule appears here after the draw."}</div>`}
       <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`}`;
     if (view === "gallery") loadGalleryPhotos();
+    el.querySelectorAll("form").forEach(syncSlots);
   }
 
   // 🎾 Courts: spare courts offered by teams – other teams request them, the organizers decide who gets each one
@@ -256,7 +275,7 @@
     const taken = all.filter(c => c.taken).map(c => row(c, `<span class="tm-up-label muted">Given to another team</span>`));
 
     const offerForm = form === "slots|slot-offer" ? `<form class="tm-form" data-submit="slot-offer" data-key="slots">
-        <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="1800"></label>
+        <div class="tm-row">${whenFields()}
         <label>Duration<select name="duration">${[60, 90, 120].map(d => `<option value="${d}" ${d === 90 ? "selected" : ""}>${d} minutes</option>`).join("")}</select></label></div>
         <div class="tm-venue"><label for="court-slot">Court / venue</label>
           <input id="court-slot" name="court" maxlength="160" autocomplete="off" placeholder="Pick a club or search an address…">
@@ -736,7 +755,7 @@
       body = when + due + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share on WhatsApp</button>` : ""}${locked ? "" : `<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>`}
         ${late ? contactBtn(m) : entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule` && !locked) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
-        <div class="tm-row"><label>Date &amp; time<input type="datetime-local" name="when" step="1800" min="${nowLocal()}" value="${entry.date ? esc(entry.date + "T" + (entry.time || "18:00")) : ""}"></label>
+        <div class="tm-row">${whenFields(entry.date || "", entry.time || "")}
         <label>Duration<select name="duration">${[60, 90, 120].map(d => `<option value="${d}" ${(+entry.duration || 90) === d ? "selected" : ""}>${d} minutes</option>`).join("")}</select></label></div>
         <div class="tm-venue"><label for="court-${m.key}">Court / venue</label>
           <input id="court-${m.key}" name="court" maxlength="160" autocomplete="off" value="${esc(entry.court || "")}" placeholder="Pick a club or search an address…">
@@ -989,14 +1008,14 @@
       return call("/move-request", kind === "cancel-req" ? { key, type: "cancel", reason } : { key, type: "move", opp: +v("opp"), reason });
     }, "Sent – the organizers will decide.");
     if (kind === "schedule") return act(key, () => {
-      const [date = "", time = ""] = v("when").split("T");
+      const date = v("wdate"), time = v("wtime");
       if (!date || !time) throw new Error("Please pick the date and time.");
       if (new Date(`${date}T${time}`).getTime() <= Date.now()) throw new Error("This date and time is in the past – please pick a future one.");
       if (!v("court")) throw new Error("Please add the court / venue.");
       return call("/schedule", { key, date, time: time.slice(0, 5), duration: +v("duration") || 90, court: v("court") });
     }, "Saved.");
     if (kind === "slot-offer") return act(key, () => {
-      const [date = "", time = ""] = v("when").split("T");
+      const date = v("wdate"), time = v("wtime");
       if (!date || !time) throw new Error("Please pick the date and time.");
       if (!v("court")) throw new Error("Please add the court / venue.");
       return call("/slot-offer", { date, time: time.slice(0, 5), duration: +v("duration") || 90, court: v("court") });
@@ -1075,6 +1094,11 @@
   });
   // focusing the empty field shows the whole club list
   el.addEventListener("focusin", e => { if (e.target.name === "court" && !e.target.value.trim()) venueInput(e.target); });
+  // the time list: past slots greyed out for the chosen day – refreshed when the day changes or the list is opened
+  const slotSync = e => { if (e.target.name === "wdate" || e.target.name === "wtime") syncSlots(e.target.form); };
+  el.addEventListener("input", slotSync);
+  el.addEventListener("focusin", slotSync);
+  el.addEventListener("pointerdown", slotSync);
   el.addEventListener("click", e => {
     const b = e.target.closest("[data-venue]");
     if (b) { const input = b.closest(".tm-venue").querySelector("input"); input.value = b.dataset.venue; b.parentElement.hidden = true; input.focus(); return; }

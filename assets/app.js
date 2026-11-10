@@ -271,7 +271,7 @@ function renderHomeStars() {
     .sort((x, y) => y[1] - x[1] || soon(x[0]) - soon(y[0])).slice(0, 3);
   el.hidden = !top.length;
   el.innerHTML = `<h3 class="home-h">⭐ Most-starred matches</h3>${top.map(([k, n]) => { const [a, b] = teamsOf(k);
-    return `<div class="hs-row">${matchRow(a, b)}<span class="hs-n" title="Starred by ${n} teams">⭐ ${n}</span><span class="note">${k.startsWith("C:") ? `🏆 GPPC Cup · ${esc((cup.rounds[+k.split(":")[1]] || {}).name || "")}` : (md => md >= 0 ? `Matchday ${md + 1}` : "League")(fixtures.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a))))}</span></div>`; }).join("")}
+    return `<div class="stars-row">${matchRow(a, b)}<span class="stars-n" title="Starred by ${n} teams">⭐ ${n}</span><span class="note">${k.startsWith("C:") ? `🏆 GPPC Cup · ${esc((cup.rounds[+k.split(":")[1]] || {}).name || "")}` : (md => md >= 0 ? `Matchday ${md + 1}` : "League")(fixtures.findIndex(g => g.some(([x, y]) => (x === a && y === b) || (x === b && y === a))))}</span></div>`; }).join("")}
     <p class="note" style="margin-bottom:0">Starred by 3 or more teams in 🎾 My team – dates and venues only there.</p>`;
 }
 
