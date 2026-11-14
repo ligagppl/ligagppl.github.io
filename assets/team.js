@@ -701,7 +701,13 @@
       <div class="tm-bar"><span style="width:${(100 * pr.played / pr.total).toFixed(0)}%"></span></div>
       ${m ? `<p><b>Next: milestone ${m.n}</b> – ${m.all ? "all matches" : `at least ${m.required} matches`} by <b>${day(m.deadline)}</b>${m.missing ? ` · <b>${m.missing} to go</b>` : ""}</p>` : ""}
       <p class="note">${text}${pr.waiting ? ` ⏳ ${pr.waiting} waiting for confirmation.` : ""}${pr.scheduled ? ` 📅 ${pr.scheduled} scheduled.` : ""}</p>
-      <div class="tm-ms">${pr.milestones.map(x => `<span class="tm-ms-dot ms-${x.status}">${x.status === "reached" ? "✅" : x.status === "missed" ? "🔴" : x === m ? "🏁" : "○"} M${x.n}: ${x.all ? "all" : x.required} by ${day(x.deadline)}</span>`).join("")}</div>
+      <div class="tm-ms-list">${pr.milestones.map(x => {
+        // when this milestone is reached with the matches you've planned (league only – cup matches don't count)
+        const plan = x.status === "reached" ? "✅ Reached" : x.status === "missed" ? "🔴 Missed"
+          : x.reachAt == null ? `📅 ${x.toSchedule} more match${x.toSchedule === 1 ? "" : "es"} to schedule before ${day(x.deadline)}`
+          : x.reachAt <= Date.now() ? "⏳ Reached once the waiting results are confirmed" : `📅 On plan for ${day(x.reachAt)}`;
+        return `<div class="tm-ms-row ms-${x.status}${x === m ? " next" : ""}"><span class="tm-ms-n">${x === m ? "🏁" : x.status === "reached" ? "✅" : x.status === "missed" ? "🔴" : "○"} M${x.n}</span><span class="tm-ms-req">${x.all ? "All matches" : `${x.required} matches`} by <b>${day(x.deadline)}</b></span><span class="tm-ms-plan">${plan}</span></div>`;
+      }).join("")}</div>
     </div>`;
   }
 

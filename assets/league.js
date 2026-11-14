@@ -171,6 +171,13 @@ const GPPL = (() => {
         m.status = possible >= m.required ? "on-track" : m.deadline - now > LEAGUE.matchdayLengthDays * DAY ? "open" : "behind";
       } else m.status = "upcoming";
       m.missing = Math.max(0, m.required - played);
+      // when it will be reached with what's planned: results waiting count now, then the scheduled league matches by date
+      if (m.status !== "reached" && m.status !== "missed") {
+        const queue = Array(waiting).fill(now).concat(planned.slice().sort((x, y) => x - y)), need = m.missing;
+        const inTime = queue.filter(t => t <= m.deadline).length; // only dates before the deadline count
+        m.reachAt = inTime >= need ? queue[need - 1] : null; // null: not enough matches dated before the deadline
+        m.toSchedule = Math.max(0, need - inTime);
+      }
     });
     return { total, played, waiting, scheduled: planned.length, milestones: list, next };
   }

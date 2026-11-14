@@ -954,3 +954,13 @@ a.tbl-team { color: inherit; text-decoration: none; }
 @media (min-width: 640px) { .pf-id { flex-wrap: nowrap; } .pf-id > div { flex: 1 1 auto; } }
 .pf-star-list { padding: 4px 22px 10px; }
 .pf-star-cup { margin: -4px 0 6px; text-align: center; }
+
+/* My team → League progress: one row per milestone with when it's reached as planned */
+.tm-ms-list { margin-top: 8px; border-top: 1px solid var(--line); }
+.tm-ms-row { display: grid; grid-template-columns: 64px minmax(0, 1fr) minmax(0, 1.3fr); gap: 4px 12px; align-items: center; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: .9rem; }
+.tm-ms-row.next { font-weight: 600; }
+.tm-ms-n { font-weight: 800; white-space: nowrap; }
+.tm-ms-plan { color: var(--muted); }
+.tm-ms-row.ms-reached .tm-ms-plan { color: var(--win); }
+.tm-ms-row.ms-missed .tm-ms-plan { color: #c62828; }
+@media (max-width: 560px) { .tm-ms-row { grid-template-columns: 56px 1fr; } .tm-ms-plan { grid-column: 2; } }
