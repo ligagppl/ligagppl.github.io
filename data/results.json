@@ -179,5 +179,24 @@
       ]
     ],
     "link": "https://app.playtomic.com/social/activity/public:c0349972-def2-11f1-9a3b-0afffb04e8a9:16333821?utm_source=app_android&utm_campaign=community&utm_medium=share_externally&product_type=match"
+  },
+  {
+    "a": 6,
+    "b": 11,
+    "sets": [
+      [
+        2,
+        6
+      ],
+      [
+        6,
+        2
+      ],
+      [
+        10,
+        12
+      ]
+    ],
+    "link": "https://app.playtomic.com/matches/8e47a300-38cd-46d9-ba54-3b082a725501?product_type=community_match&utm_medium=copy_link&utm_campaign=share&utm_source=app_ios"
   }
 ]
