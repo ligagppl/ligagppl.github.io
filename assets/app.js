@@ -101,8 +101,8 @@ function renderSchedule() {
     const ms = mi === -1 ? "" : `<div class="milestone">🏁 <b>Milestone ${mi + 1}</b> – by ${datesOn ? fmt(to) : "the end of this matchday"}, every pair has played
       ${milestones[mi].min === "all" ? "<b>all</b> its matches" : `at least <b>${milestones[mi].min}</b> matches`}</div>`;
     const cw = ((LEAGUE.cupWindowsByPairs || {})[LEAGUE.pairs.length] || []).find(w => w.from === md);
-    const cup = cw ? `<div class="cupwindow">🏆 <b>GPPC Cup – ${cw.round}</b>: ${cw.draw || "draw"} at the start of this matchday or a few days earlier,
-      play by the end of matchday ${cw.to}</div>` : "";
+    const cup = cw ? `<div class="cupwindow">🏆 <b>GPPC Cup – ${cw.round}</b>: ${cw.draw || "draw"} ${cw.drawDays && datesOn ? `between ${fmt(new Date(from.getTime() - cw.drawDays * DAY))} and ${fmt(from)}` : "at the start of this matchday or a few days earlier"},
+      play by the end of matchday ${cw.to}${datesOn ? ` (${fmt(matchdayWindow(cw.to).to)})` : ""}</div>` : "";
     const done = games.length && games.every(([a, b]) => GPPL.findResult(results, a, b)); // every result official
     return `<div class="card md ${md === cur ? "current" : ""} ${done ? "done" : ""}">${cup}
       <div class="md-head"><h3>Matchday ${md}</h3>
@@ -207,7 +207,7 @@ function renderHomeCup() {
   if (!cup.rounds.length) {
     const first = ((LEAGUE.cupWindowsByPairs || {})[LEAGUE.pairs.length] || [])[0];
     const when = first && datesOn ? matchdayWindow(first.from) : null;
-    body = when ? `<p>The draw is between <b>${fmt(new Date(when.from.getTime() - 7 * DAY))} and ${fmt(when.from)}</b>.</p>
+    body = when ? `<p>The draw is between <b>${fmt(new Date(when.from.getTime() - (first.drawDays || 7) * DAY))} and ${fmt(when.from)}</b>.</p>
       <p class="note">${esc(first.round)}: ${fmt(when.from)} – ${fmt(matchdayWindow(first.to).to)}</p>`
       : `<p class="muted">The draw is in the second half of the league.</p>`;
   } else {
@@ -225,7 +225,7 @@ function renderCup() {
     const first = ((LEAGUE.cupWindowsByPairs || {})[LEAGUE.pairs.length] || [])[0];
     const when = first && datesOn ? matchdayWindow(first.from) : null;
     el.innerHTML = `<div class="card muted">${when
-      ? `The cup draw is between <b>${fmt(new Date(when.from.getTime() - 7 * DAY))} and ${fmt(when.from)}</b> – ${esc(first.round)} is played in matchdays ${first.from}–${first.to} (${fmt(when.from)} – ${fmt(matchdayWindow(first.to).to)}).`
+      ? `The cup draw is between <b>${fmt(new Date(when.from.getTime() - (first.drawDays || 7) * DAY))} and ${fmt(when.from)}</b> – ${esc(first.round)} is played in matchdays ${first.from}–${first.to} (${fmt(when.from)} – ${fmt(matchdayWindow(first.to).to)}).`
       : "The cup draw hasn't happened yet – it starts in the second half of the league."}</div>`;
     return;
   }
@@ -324,7 +324,7 @@ function renderProfile() {
     cupList.push({ comp: "cup", r: m, ri, mi, rd, opp: vs(m, id), done, res: m.walkover === "both" ? "-" : w === id ? "W" : "L", label: `🏆 Cup · ${rd.name}` });
   }));
   const played = [...league, ...cupList.filter(x => x.done)];
-  const tieBreak = x => x.comp === "league" || !GPPL.cupFullSets(x.rd); // 3rd set = match tie-break (cup semi-finals and final: full sets)
+  const tieBreak = x => x.comp === "league" || !GPPL.cupFullSets(x.rd); // 3rd set = match tie-break in the league (cup: full sets)
   // stats for the chosen scope (sets and games from the scores; walkovers count as 2–0 like in the table)
   const stats = list => {
     const s = { p: list.length, w: 0, l: 0, sf: 0, sa: 0, gf: 0, ga: 0 };
@@ -335,7 +335,7 @@ function renderProfile() {
       (r.sets || []).forEach(([a, b], i) => {
         const [mine, theirs] = r.a === id ? [a, b] : [b, a];
         mine > theirs ? s.sf++ : s.sa++;
-        if (!(i === 2 && tieBreak(x))) { s.gf += mine; s.ga += theirs; } // a match tie-break counts as a set, not as games
+        if (!(i === 2 && (tieBreak(x) || GPPL.isTieBreakSet([a, b])))) { s.gf += mine; s.ga += theirs; } // a match tie-break counts as a set, not as games
       });
     });
     return s;

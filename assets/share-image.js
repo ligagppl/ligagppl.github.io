@@ -88,7 +88,7 @@ const GPPLImage = (() => {
     if (r.walkover) return { label, a, b, center: "W/O", sub: `${GPPL.pairName(r.walkover)} win by walkover`, winner: r.walkover };
     const sets = r.a === a ? r.sets : r.sets.map(([x, y]) => [y, x]);
     let wa = 0; sets.forEach(([x, y]) => (x > y ? wa++ : 0));
-    return { label, a, b, center: sets.map(([x, y], i) => (i === 2 && !fullSets ? `[${x}-${y}]` : `${x}-${y}`)).join("  "), winner: wa >= 2 ? a : b };
+    return { label, a, b, center: sets.map(([x, y], i) => (i === 2 && (!fullSets || GPPL.isTieBreakSet([x, y])) ? `[${x}-${y}]` : `${x}-${y}`)).join("  "), winner: wa >= 2 ? a : b };
   }
 
   // one confirmed match: 🏆 winner banner

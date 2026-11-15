@@ -86,13 +86,15 @@ const GPPL = (() => {
   }
 
   // score text from the point of view of pair `first`
+  // a 3rd set that reaches 10 can only be a match tie-break (a full set ends at 7 at most)
+  const isTieBreakSet = s => !!s && Math.max(s[0], s[1]) >= 10;
   function scoreText(r, first, tieBreakThird = true) {
     if (r.walkover === "both") return "W/O (both −1)";
     if (r.walkover) return "W/O";
     const flip = first !== undefined && r.a !== first;
     return r.sets.map(([x, y], i) => {
       const [p, q] = flip ? [y, x] : [x, y];
-      return tieBreakThird && i === 2 ? `[${p}-${q}]` : `${p}-${q}`;
+      return i === 2 && (tieBreakThird || isTieBreakSet([x, y])) ? `[${p}-${q}]` : `${p}-${q}`; // a cup match can end with an agreed match tie-break
     }).join(" ");
   }
 
@@ -184,8 +186,8 @@ const GPPL = (() => {
 
   // ---------- cup ----------
   // match: { a, b, sets: [[6,4],[3,6],[10,7]], walkover: id, winner: id }
-  // 3rd set: match tie-break, except in the semi-finals and the final (3 full sets)
-  const cupFullSets = round => !!round && (round.name === "Semi-finals" || round.name === "Final");
+  // 3rd set: match tie-break in the league; every cup match has a full 3rd set
+  const cupFullSets = round => !!round; // every cup match is 3 full sets (Rules §4, Version 1.4)
   // walkover "both": both pairs at fault → both out, nobody goes through
   function cupWinner(m) {
     if (m.walkover === "both") return null;
@@ -295,7 +297,7 @@ const GPPL = (() => {
 
   return {
     DAY, get start() { return start; }, setStartDate, fmt, pairById, pairName, matchdayWindow, fixtures, findResult, samePair, milestoneProgress, timeRange,
-    evaluate, scoreText, rankStandings, cupFullSets, cupWinner, cupLoser, cupNextStage, mainRounds, roundName, addFinalIfDue,
+    evaluate, scoreText, isTieBreakSet, rankStandings, cupFullSets, cupWinner, cupLoser, cupNextStage, mainRounds, roundName, addFinalIfDue,
     cleanWords, wordsToSeed, seededShuffle, drawFromOrder, verifyRound,
   };
 })();

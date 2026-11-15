@@ -72,11 +72,11 @@
   const teamCell = (id, us) => `<span class="tm-tc">${logo(id, "tm-logo-sm")}<span class="tm-tn">${esc(teamName(id))}${us ? ` <span class="tm-us">(Us)</span>` : ""}</span></span>`;
   // score table like in Admin: one row per team, one column per set (my team first)
   function board(m, sets) {
-    const labels = ["Set 1", "Set 2", m.fullSets ? "Set 3" : "Tie-break"].slice(0, Math.max(2, sets ? sets.length : 3));
+    const labels = ["Set 1", "Set 2", m.fullSets ? "Set 3 / TB" : "Tie-break"].slice(0, Math.max(2, sets ? sets.length : 3));
     const at = (row, col) => `style="grid-row:${row};grid-column:${col}"`;
     const cell = (i, side) => sets
       ? `<span class="tm-g ${sets[i] && sets[i][side] > sets[i][1 - side] ? "win" : ""}" ${at(side + 2, i + 2)}>${sets[i] ? sets[i][side] : ""}</span>`
-      : `<input type="number" inputmode="numeric" min="0" max="${i === 2 && !m.fullSets ? 99 : 7}" name="s${i}${side ? "b" : "a"}" ${at(side + 2, i + 2)}
+      : `<input type="number" inputmode="numeric" min="0" max="${i === 2 ? 99 : 7}" name="s${i}${side ? "b" : "a"}" ${at(side + 2, i + 2)}
           aria-label="${labels[i]} – ${esc(teamName(side ? m.opp : state.team))}">`;
     // set by set (us, them, next set …) so the tab key goes down each column, like in Admin
     return `<div class="tm-board" style="--sets:${labels.length}">
@@ -110,8 +110,8 @@
   }
   const dayText = d => new Date(d + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
 
-  // result deadlines (Rules §11): 48 hours after the booked time to enter the result, then 48 hours to confirm
-  const H48 = 48 * 3600000;
+  // result deadlines (Rules §11, Version 1.4): 24 hours after the match to enter the result, then 24 hours to confirm
+  const H48 = 24 * 3600000; // name kept – it's the result deadline (24 hours since Version 1.4)
   const matchStart = e => (e && e.date && e.time ? new Date(`${e.date}T${e.time}:00`).getTime() : null);
   const matchEnd = e => (e && e.date && e.time ? new Date(`${e.date}T${e.time}:00`).getTime() + (+e.duration || 90) * 60000 : null);
   const liveNow = e => !!(e && e.time) && new Date(`${e.date}T${e.time}:00`).getTime() <= Date.now() && Date.now() < matchEnd(e);
@@ -139,7 +139,7 @@
   }, 15000);
   // sets as seen by my team: [my games, their games]
   const mine = (sets, a) => (state.team === a ? sets : sets.map(([x, y]) => [y, x]));
-  const scoreText = (sets, fullSets) => sets.map(([x, y], i) => (i === 2 && !fullSets ? `[${x}-${y}]` : `${x}-${y}`)).join(" ");
+  const scoreText = (sets, fullSets) => sets.map(([x, y], i) => (i === 2 && (!fullSets || GPPL.isTieBreakSet([x, y])) ? `[${x}-${y}]` : `${x}-${y}`)).join(" ");
   const won = sets => sets.filter(([x, y]) => x > y).length >= 2;
 
   // my matches: league (by matchday) and cup
@@ -157,7 +157,7 @@
     (state.cup.rounds || []).forEach((r, ri) => (r.matches || []).forEach((m, mi) => {
       if (m.a !== me && m.b !== me) return;
       list.push({ key: `C:${ri}:${mi}`, a: m.a, b: m.b, opp: m.a === me ? m.b : m.a, group: "cup", label: `GPPC Cup · ${r.name}`,
-        fullSets: r.name === "Semi-finals" || r.name === "Final", official: m.sets || m.walkover || m.winner ? m : null });
+        fullSets: true, official: m.sets || m.walkover || m.winner ? m : null });
     }));
     return list;
   }
@@ -234,7 +234,7 @@
       ${todo.length ? `<h3>⚠️ Waiting for you</h3>` + todo.map(card).join("") : ""}
       <h3>🏆 GPPC Cup</h3>${playedLast(matches.filter(m => m.group === "cup" && !todo.includes(m))).map(card).join("") || `<div class="card muted">No cup match for you right now.</div>`}
       <h3>📅 League</h3>${leagueCards(matches.filter(m => m.group === "league" && !todo.includes(m))) || `<div class="card muted">${LEAGUE.scheduleReleased === false ? "The league schedule appears here once it's published – coming soon." : "The league schedule appears here after the draw."}</div>`}
-      <p class="note">Results count once your opponent confirms them – or automatically after 48 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`}`;
+      <p class="note">Results count once your opponent confirms them – or automatically after 24 hours. If something is wrong, tap “Dispute” and the organizers decide.</p>`}`;
     if (view === "gallery") loadGalleryPhotos();
     el.querySelectorAll("form").forEach(syncSlots);
   }
@@ -744,7 +744,7 @@
       body = board(m, s) + (p.link ? `<p class="note">${linkHtml(p.link)}</p>` : "");
       if (p.status === "disputed") body += `<p>This result was disputed. The organizers will decide.</p>` +
         (state.notes && state.notes[m.key] ? `<p class="note">“${esc(state.notes[m.key])}”</p>` : "");
-      else if (p.by === state.team) body += `<p>You entered ${txt}. ${esc(teamName(m.opp))} has 48 hours to confirm – after that it counts automatically.</p>
+      else if (p.by === state.team) body += `<p>You entered ${txt}. ${esc(teamName(m.opp))} has 24 hours to confirm – after that it counts automatically.</p>
         ${dueLine(Date.parse(p.at) + H48, "Counts automatically in", "✅ Counts automatically within the next hour.")}
         <div class="tm-btns"><button class="btn ghost small" data-act="withdraw" data-key="${m.key}">Withdraw & correct</button>${photoBtn(m.key)}</div>`;
       else body += `<div class="tm-ask"><p><b>${esc(teamName(m.opp))}</b> entered ${txt}.<br><b>Is that right?</b></p>
@@ -759,8 +759,8 @@
       const end = matchEnd(entry), start = matchStart(entry);
       const locked = !!start && start <= Date.now(); // date and venue can't change once the match has started
       const frozen = !!start && start - Date.now() < 24 * 3600000; // last 24 hours: the teams can't change the date, time or venue any more
-      const late = !!end && end + H48 <= Date.now(); // no result within 48 hours → the organizers decide (Rules §11)
-      const due = end && end <= Date.now() ? dueLine(end + H48, "Played – enter the result:", "🔴 More than 48 hours since the match – please contact the organizers (Rules §11).") : "";
+      const late = !!end && end + H48 <= Date.now(); // no result within 24 hours → the organizers decide (Rules §11)
+      const due = end && end <= Date.now() ? dueLine(end + H48, "Played – enter the result:", "🔴 More than 24 hours since the match – please contact the organizers (Rules §11).") : "";
       body = when + (frozen && !locked ? `<p class="note">🔒 Less than 24 hours to go – the date, time and venue can't be changed any more. Contact the organizers if something is wrong.</p>` : "") + due + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share on WhatsApp</button>` : ""}${locked || frozen ? "" : `<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>`}
         ${late ? contactBtn(m) : entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
       if (form === `${m.key}|schedule` && !locked && !frozen) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
@@ -816,7 +816,7 @@
   function contactBtn(m) {
     if (!state.organizer) return "";
     const e = state.matches[m.key] || {};
-    const text = `Hi, this is ${teamName(state.team)} (GPPL). Our match ${m.label} vs ${teamName(m.opp)} on ${dayText(e.date)}${e.time ? " at " + e.time : ""} has no result in My team yet and the 48 hours are over. `;
+    const text = `Hi, this is ${teamName(state.team)} (GPPL). Our match ${m.label} vs ${teamName(m.opp)} on ${dayText(e.date)}${e.time ? " at " + e.time : ""} has no result in My team yet and the 24 hours are over. `;
     return `<a class="btn small" href="https://api.whatsapp.com/send?phone=${state.organizer}&text=${encodeURIComponent(text)}" target="_blank" rel="noopener">💬 Contact the organizers</a>`;
   }
 
@@ -840,7 +840,7 @@
   function resultForm(m) {
     return `<form class="tm-form" data-submit="result" data-key="${m.key}" data-full="${m.fullSets ? 1 : 0}">
       <div><b>Score</b>${board(m)}</div>
-      <p class="note">${m.fullSets ? "Semi-finals and final: 3 full sets." : "Leave the tie-break empty if the match ended 2–0. Match tie-break: first to 10, win by 2."}</p>
+      <p class="note">${m.fullSets ? "Cup match: 3 full sets – or, if you both agreed because of time, a match tie-break as set 3 (e.g. 10-7)." : "Leave the tie-break empty if the match ended 2–0. Match tie-break: first to 10, win by 2."}</p>
       <label>Matchday photo (all 4 players)<input type="file" name="photo" accept="image/*"></label>
       <label>Playtomic link <span class="note">the match on Playtomic</span><input type="text" name="link" inputmode="url" autocapitalize="off" placeholder="https://app.playtomic.io/…"></label>
       <button class="btn small" type="submit">Submit result</button></form>`;
@@ -859,7 +859,8 @@
     const third = fullSets ? "set 3" : "the match tie-break";
     if (split && !sets[2]) throw new Error(`Sets are 1-1 – enter ${third}.`);
     if (!split && sets[2]) throw new Error(`The match was over after 2 sets – clear ${third}.`);
-    if (sets[2] && fullSets && !validSet(sets[2])) throw new Error(`Set 3: ${sets[2][0]}-${sets[2][1]} is not a finished set – a set ends 6-0 … 6-4, 7-5 or 7-6.`);
+    // cup: a full 3rd set – or a match tie-break if both pairs agreed on one because of time (Rules §4)
+    if (sets[2] && fullSets && !validSet(sets[2]) && !validTieBreak(sets[2])) throw new Error(`Set 3: ${sets[2][0]}-${sets[2][1]} isn't possible – a full set (6-4, 7-5, 7-6 …) or, if you both agreed, a match tie-break (10-7, 12-10 …).`);
     if (sets[2] && !fullSets && !validTieBreak(sets[2])) throw new Error(`Tie-break: ${sets[2][0]}-${sets[2][1]} isn't possible – first to 10, win by 2 (e.g. 10-7, 12-10).`);
   }
 

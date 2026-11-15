@@ -215,7 +215,7 @@
 
   // ---------------------------------------------------------------- ❗ Disputes tab
   const navBtn = document.querySelector('.subnav button[data-panel="disputes"]');
-  const fullSetsOf = (key, cup) => { const m = /^C:(\d+):/.exec(key); const r = m && cup.rounds[+m[1]]; return !!r && (r.name === "Semi-finals" || r.name === "Final"); };
+  const fullSetsOf = (key, cup) => { const m = /^C:(\d+):/.exec(key); const r = m && cup.rounds[+m[1]]; return !!r; }; // every cup match: 3 full sets
   function matchLabel(key, cup) {
     let m = /^L:(\d+)-(\d+)$/.exec(key);
     if (m) {
@@ -234,10 +234,10 @@
   }
   // editable copy of the score (sets from pair a's view) – tab key goes set by set
   function editBoard(o, fullSets) {
-    const labels = ["Set 1", "Set 2", fullSets ? "Set 3" : "Tie-break"], at = (r, c) => `style="grid-row:${r};grid-column:${c}"`;
+    const labels = ["Set 1", "Set 2", fullSets ? "Set 3 / TB" : "Tie-break"], at = (r, c) => `style="grid-row:${r};grid-column:${c}"`;
     return `<div class="dp-board" style="--sets:3">${labels.map((l, i) => `<span class="dp-bh" ${at(1, i + 2)}>${l}</span>`).join("")}
       <span ${at(2, 1)}><b>${esc(name(o.a))}</b></span><span ${at(3, 1)}><b>${esc(name(o.b))}</b></span>
-      ${[0, 1, 2].map(i => [0, 1].map(s => `<input type="number" min="0" max="${i === 2 && !fullSets ? 99 : 7}" data-s="${i}${s}" value="${o.sets[i] ? o.sets[i][s] : ""}" ${at(s + 2, i + 2)}>`).join("")).join("")}</div>`;
+      ${[0, 1, 2].map(i => [0, 1].map(s => `<input type="number" min="0" max="${i === 2 ? 99 : 7}" data-s="${i}${s}" value="${o.sets[i] ? o.sets[i][s] : ""}" ${at(s + 2, i + 2)}>`).join("")).join("")}</div>`;
   }
   const who = id => `<b>${esc(name(id))}</b>`;
   function openCard(o, cup) {
@@ -250,7 +250,7 @@
         <div>📝 Entered by ${who(o.by)} · ${when(o.at)}</div>
         ${disputed ? `<div>❗ Disputed by ${who(o.disputedBy)} · ${when(o.disputedAt)}</div>
           <div class="dp-note">${o.note ? `“${esc(o.note)}”` : '<span class="note">No comment given.</span>'}</div>`
-          : `<div class="note">Counts automatically 48 hours after it was entered, unless ${esc(name(other))} disputes it.</div>`}
+          : `<div class="note">Counts automatically 24 hours after it was entered, unless ${esc(name(other))} disputes it.</div>`}
       </div>
       ${disputed ? `<div class="dp-edit" hidden>${editBoard(o, fullSetsOf(o.key, cup))}
         <div class="dp-btns"><button class="btn" data-save-edit="${o.key}">💾 Save this score as official</button></div></div>` : ""}

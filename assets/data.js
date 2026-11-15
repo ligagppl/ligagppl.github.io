@@ -62,15 +62,16 @@ const LEAGUE = {
   // by the end of a matchday. min: "all" = every league match (before the finale).
   // Shown in the schedule. For other sizes, add an entry on the same model.
   // GPPC Cup windows per number of pairs: each round is played within league matchdays from–to,
-  // with the draw at the start of the window. Shown in the schedule.
+  // with the draw at the start of the window (drawDays: the draw period before the window, default 7 days). Shown in the schedule.
   cupWindowsByPairs: {
     8:  [{ from: 4, to: 5, round: "Quarter-finals" }, { from: 6, to: 7, round: "Semi-finals" }],
     12: [{ from: 6, to: 7, round: "Round 1" },
          { from: 8, to: 9, round: "Quarter-finals", draw: "lucky loser draw + quarter-final draw" },
          { from: 10, to: 11, round: "Semi-finals" }],
-    13: [{ from: 6, to: 8, round: "Round 1" },
-         { from: 9, to: 10, round: "Quarter-finals", draw: "lucky loser draw + quarter-final draw" },
-         { from: 11, to: 13, round: "Semi-finals" }],
+    // Rules Version 1.4: round 1 drawn in the 20 days before its window (1–21 Dec), later rounds at the start of theirs
+    13: [{ from: 6, to: 9, round: "Round 1", drawDays: 20 },
+         { from: 10, to: 11, round: "Quarter-finals", draw: "lucky loser draw + quarter-final draw" },
+         { from: 12, to: 13, round: "Semi-finals" }],
   },
 
   milestonesByPairs: {
