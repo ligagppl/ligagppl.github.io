@@ -758,11 +758,12 @@
       const when = entry.date ? `<p class="tm-when">📅 ${dayText(entry.date)}${entry.time ? " · " + esc(GPPL.timeRange(entry)) : ""}${entry.court ? ` · 📍 <a href="${mapsUrl(entry.court)}" target="_blank" rel="noopener">${esc(entry.court)}</a>` : ""}</p>` : "";
       const end = matchEnd(entry), start = matchStart(entry);
       const locked = !!start && start <= Date.now(); // date and venue can't change once the match has started
+      const frozen = !!start && start - Date.now() < 24 * 3600000; // last 24 hours: the teams can't change the date, time or venue any more
       const late = !!end && end + H48 <= Date.now(); // no result within 48 hours → the organizers decide (Rules §11)
       const due = end && end <= Date.now() ? dueLine(end + H48, "Played – enter the result:", "🔴 More than 48 hours since the match – please contact the organizers (Rules §11).") : "";
-      body = when + due + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share on WhatsApp</button>` : ""}${locked ? "" : `<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>`}
+      body = when + (frozen && !locked ? `<p class="note">🔒 Less than 24 hours to go – the date, time and venue can't be changed any more. Contact the organizers if something is wrong.</p>` : "") + due + `<div class="tm-btns">${entry.date ? `<button class="btn ghost small" data-act="match-share" data-key="${m.key}">📤 Share on WhatsApp</button>` : ""}${locked || frozen ? "" : `<button class="btn ghost small" data-act="form" data-form="${m.key}|schedule">${entry.date ? "Change Date / Venue" : "Set Date / Venue"}</button>`}
         ${late ? contactBtn(m) : entry.date ? `<button class="btn small" data-act="form" data-form="${m.key}|result">Enter result</button>` : ""}</div>`;
-      if (form === `${m.key}|schedule` && !locked) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
+      if (form === `${m.key}|schedule` && !locked && !frozen) body += `<form class="tm-form" data-submit="schedule" data-key="${m.key}">
         <div class="tm-row">${whenFields(entry.date || "", entry.time || "")}
         <label>Duration<select name="duration">${[60, 90, 120].map(d => `<option value="${d}" ${(+entry.duration || 90) === d ? "selected" : ""}>${d} minutes</option>`).join("")}</select></label></div>
         <div class="tm-venue"><label for="court-${m.key}">Court / venue</label>
