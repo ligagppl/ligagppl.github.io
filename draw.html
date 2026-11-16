@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GPPC Cup – Live Draw</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎱</text></svg>">
-  <link rel="stylesheet" href="assets/style.css?v=62">
+  <link rel="stylesheet" href="assets/style.css?v=89">
   <style>
     body { min-height: 100vh; }
     .stage {
@@ -90,6 +90,12 @@
     .msg { min-height: 1.4em; margin-top: 8px; font-weight: 600; }
     .msg.ok { color: var(--win); }
     .msg.err { color: var(--loss); }
+    .code-row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+    .code-box { font-family: ui-monospace, Menlo, monospace; font-size: 1.3rem; font-weight: 800; letter-spacing: .12em; padding: 6px 14px; border-radius: 8px; border: 1px dashed var(--line); background: color-mix(in srgb, var(--ball) 18%, transparent); }
+    .code-box.fixed { border-style: solid; }
+    .setup .btn-sm { padding: 6px 12px; font-size: .9rem; }
+    .setup .btn-sm.ghost { color: var(--text); border-color: var(--line); }
+    .setup .btn:disabled { opacity: .45; cursor: default; }
     textarea { width: 100%; min-height: 140px; font-family: ui-monospace, Menlo, monospace; font-size: .85rem; padding: 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
   </style>
 </head>
@@ -105,7 +111,7 @@
   <main>
     <div class="stage">
       <h2 id="round-title">Round 1</h2>
-      <div class="status" id="status">Enter the seed words, then press “Fill the bowl &amp; start”.</div>
+      <div class="status" id="status">Set the draw code and seed words in ⚙ Setup, then press “Fill the bowl &amp; start”.</div>
       <div class="ball" id="ball">🎾</div>
       <div class="controls">
         <button class="btn" id="btn-next" disabled>Draw next ball</button>
@@ -139,10 +145,20 @@
         <div id="bowl-preview"></div>
         <p class="note" id="plan"></p>
 
-        <label style="display:block;margin-top:12px"><b>🔐 Seed words</b> – from 3 random people
-          <input type="text" id="seed" placeholder="e.g. mango lahore padel" autocomplete="off">
+        <div style="margin-top:12px"><b>🎲 Draw code</b> – hidden until the words are locked
+          <div class="code-row">
+            <span class="code-box" id="code-box">●●●●-●●●●</span>
+            <button type="button" class="btn ghost btn-sm" id="btn-code-shuffle">🔀 Shuffle</button>
+            <button type="button" class="btn btn-sm" id="btn-code-use" style="background:var(--green);color:#fff">✔ Use this code</button>
+          </div>
+          <p class="note" id="code-note">Shuffle as often as you like – the code stays hidden. Then press “Use this code”: it can't be changed after that, and only its fingerprint is shown.</p>
+        </div>
+
+        <label style="display:block;margin-top:12px"><b>🔐 Seed words</b> – from 3 or more random people
+          <input type="text" id="seed" placeholder="e.g. mango lahore padel" autocomplete="off" disabled>
         </label>
-        <p class="note">Ask 3 randomly chosen people (participants or not) for one word each, revealed at the same time. The words decide the whole draw – anyone can check it afterwards on the <b>Verify draw</b> tab, or with their own program.</p>
+        <div class="code-row"><button type="button" class="btn btn-sm" id="btn-lock" style="background:var(--green);color:#fff" disabled>🔒 Lock words</button></div>
+        <p class="note">Ask 3 or more randomly chosen people (participants or not) for one word each, revealed at the same time. Once the words are locked, the draw code is shown. Code and words decide the whole draw – anyone can check it afterwards on the <b>Verify draw</b> tab, or with their own program.</p>
 
         <!-- filled automatically from the cup results – kept hidden -->
         <div hidden>
@@ -177,7 +193,7 @@
 
   <script src="assets/data.js?v=67"></script>
   <script src="assets/pairs-loader.js?v=8"></script>
-  <script src="assets/league.js?v=15"></script>
+  <script src="assets/league.js?v=16"></script>
   <script src="assets/store.js?v=3"></script>
   <script src="assets/lock.js?v=2"></script>
   <script>
@@ -350,7 +366,7 @@
     }
 
     function shareText() {
-      const verify = `\n\n🔐 Seed words: "${seeded.clean}" – check it on the website's ✅ Verify draw tab`;
+      const verify = `\n\n🎲 Draw code: ${GPPL.fmtCode(drawCode)}\n🔐 Seed words: "${seeded.words}"\nCheck it on the website's ✅ Verify draw tab`;
       if (P.lucky) {
         return `🍀 *GPPC Cup – ${$("round-name").value}*\n\nBack in the cup:\n` +
           drawn.map((id, i) => `${i + 1}. ${name(id)}`).join("\n") + `\n\nCongrats – second chance! 🎾` + verify;
@@ -507,37 +523,97 @@
       $("share-card").hidden = false; // Save & share appears once the draw is complete
     }
 
-    let seeded = null; // { clean, seed, entrants, order }
+    let seeded = null; // { words, clean, seed, entrants, order }
 
-    // (Re)calculate the draw order from the seed words. Allowed until the first ball is drawn.
-    // seed words: at least one word each from 3 people
+    // ---------- draw code + seed words ----------
+    // 1. the organizer shuffles a hidden code as often as they like, 2. "Use this code" fixes it (only its
+    // fingerprint is shown), 3. the seed words are entered and locked, 4. then the code is shown.
+    // Code and words together decide the draw (see the Verify draw tab).
     const MIN_WORDS = 3;
     const wordCount = clean => clean ? clean.split(" ").length : 0;
+    const CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no I, O, 0, 1 – easy to read out
+    let drawCode = "", codeFixed = false, codeFp = "", wordsLocked = false;
+    const newCode = () => Array.from({ length: 8 }, () => CODE_CHARS[randInt(CODE_CHARS.length)]).join("").toLowerCase();
+    const CODE_KEY = "gppl-draw-code";
+    // kept for this browser tab, so a reload doesn't lose a fixed code or locked words
+    const saveCodeState = () => { try { sessionStorage.setItem(CODE_KEY, JSON.stringify({ drawCode, codeFixed, codeFp, wordsLocked, words: $("seed").value })); } catch {} };
+    const clearCodeState = () => { try { sessionStorage.removeItem(CODE_KEY); } catch {} };
+    try {
+      const s = JSON.parse(sessionStorage.getItem(CODE_KEY) || "null");
+      if (s && s.drawCode) {
+        ({ drawCode, codeFixed, codeFp, wordsLocked } = s);
+        $("seed").value = s.words || "";
+      }
+    } catch {}
+    if (!drawCode) drawCode = newCode();
+
+    function renderCode() {
+      const box = $("code-box");
+      box.textContent = wordsLocked ? GPPL.fmtCode(drawCode) : "●●●●-●●●●";
+      box.classList.toggle("fixed", codeFixed);
+      $("btn-code-shuffle").disabled = codeFixed;
+      $("btn-code-use").disabled = codeFixed;
+      $("code-note").innerHTML = wordsLocked ? `✅ Code shown – words locked. Fingerprint: <code>${codeFp}</code>`
+        : codeFixed ? `🔒 Code fixed – fingerprint <code>${codeFp}</code>. Now ask for the seed words.`
+        : "Shuffle as often as you like – the code stays hidden. Then press “Use this code”: it can't be changed after that, and only its fingerprint is shown.";
+      $("seed").disabled = !codeFixed || wordsLocked;
+      const words = GPPL.cleanWords($("seed").value);
+      $("btn-lock").disabled = !codeFixed || wordsLocked || wordCount(words) < MIN_WORDS;
+      $("btn-lock").textContent = wordsLocked ? "🔒 Words locked"
+        : wordCount(words) < MIN_WORDS && codeFixed ? `🔒 Lock words (${wordCount(words)}/${MIN_WORDS})` : "🔒 Lock words";
+    }
+    $("btn-code-shuffle").addEventListener("click", () => {
+      if (codeFixed) return;
+      drawCode = newCode();
+      const box = $("code-box"); // tiny visual feedback that something changed
+      box.animate([{ transform: "scale(.92)" }, { transform: "scale(1)" }], { duration: 180 });
+      saveCodeState();
+    });
+    $("btn-code-use").addEventListener("click", async () => {
+      if (codeFixed) return;
+      codeFp = await GPPL.codeFingerprint(drawCode);
+      codeFixed = true;
+      saveCodeState(); renderCode(); updateStartButton();
+      $("seed").focus();
+    });
+    $("btn-lock").addEventListener("click", () => {
+      const words = GPPL.cleanWords($("seed").value);
+      if (!codeFixed || wordsLocked || wordCount(words) < MIN_WORDS) return;
+      if (!confirm(`Lock these seed words?\n\n“${words}”\n\nThey can't be changed afterwards, and the draw code will be shown.`)) return;
+      $("seed").value = words;
+      wordsLocked = true;
+      saveCodeState(); renderCode(); applySeed(); updateStartButton();
+    });
+
+    // (Re)calculate the draw order from the code and the locked words.
     function applySeed() {
       if (!P || drawn.length) return;
-      const { clean, seed } = GPPL.wordsToSeed($("seed").value);
-      const ready = wordCount(clean) >= MIN_WORDS;
-      seeded = ready ? { clean, seed, ...(({ start, order }) => ({ entrants: start, order }))(GPPL.seededShuffle(seed, bowl)) } : null;
+      const words = GPPL.cleanWords($("seed").value);
+      const ready = wordsLocked && codeFixed;
+      if (ready) {
+        const { clean, seed } = GPPL.wordsToSeed(GPPL.drawText(drawCode, words));
+        seeded = { words, clean, seed, ...(({ start, order }) => ({ entrants: start, order }))(GPPL.seededShuffle(seed, bowl)) };
+      } else seeded = null;
       $("btn-next").disabled = !ready;
       $("btn-auto").disabled = !ready;
       $("status").textContent = !ready
-        ? (clean ? `🔐 At least ${MIN_WORDS} seed words needed (${wordCount(clean)} so far).` : "🔐 Enter the seed words.")
-        : `🔐 Seed words: “${clean}” – ` + (P.lucky
+        ? (!codeFixed ? "🎲 Fix the draw code first (⚙ Setup)." : "🔐 Enter and lock the seed words (⚙ Setup).")
+        : `🎲 ${GPPL.fmtCode(drawCode)} · 🔐 “${words}” – ` + (P.lucky
           ? `${plural(bowl.length, "loser")} in the bowl, ${P.lucky} get${P.lucky === 1 ? "s" : ""} a second chance. Ready!`
           : `${bowl.length} pairs in the bowl, ${plural(P.matches, "match")}` + (P.byes ? `, ${plural(P.byes, "bye")}` : "") + ". Ready!");
     }
-    // changing the words before the first ball updates the draw; after that they're locked
-    $("seed").addEventListener("input", () => { applySeed(); updateStartButton(); });
+    $("seed").addEventListener("input", () => { saveCodeState(); renderCode(); updateStartButton(); });
 
-    // "Fill the bowl & start" needs a draw that's due and seed words
+    // "Fill the bowl & start" needs a draw that's due, a fixed code and locked words
     let stageReady = false;
     let drawStarted = false; // true from the first ball until the draw is saved – no restarting a draw
     function updateStartButton() {
-      const hasWords = wordCount(GPPL.wordsToSeed($("seed").value).clean) >= MIN_WORDS;
-      $("btn-start").disabled = drawStarted || !(stageReady && hasWords);
+      const ready = codeFixed && wordsLocked;
+      $("btn-start").disabled = drawStarted || !(stageReady && ready);
       $("btn-start").title = drawStarted ? "Draw in progress – save it to start the next one"
-        : !stageReady ? "No draw due right now" : hasWords ? "" : `Enter at least ${MIN_WORDS} seed words first`;
+        : !stageReady ? "No draw due right now" : !codeFixed ? "Fix the draw code first" : !wordsLocked ? "Lock the seed words first" : "";
     }
+    renderCode();
 
     $("btn-start").addEventListener("click", () => {
       const ids = selectedIds();
@@ -547,7 +623,7 @@
       autoTimer = null;
       bowl = ids.slice();
       drawn = [];
-      $("seed").disabled = false;
+      renderCode();
       $("round-title").textContent = $("round-name").value || "Draw";
       clearTimeout(infoTimer); $("ball").classList.remove("show-players", "show-info");
       $("ball").textContent = P.lucky ? "🍀" : "🎾";
@@ -643,7 +719,8 @@
         y += 110;
       }
       ctx.fillStyle = "#4c5a50"; ctx.textAlign = "center";
-      fitText(ctx, `🔐 Seed words: “${seeded.clean}”`, W - 120, 28, 600); ctx.fillText(`🔐 Seed words: “${seeded.clean}”`, W / 2, y + 50);
+      const seedInfo = `🎲 Draw code ${GPPL.fmtCode(drawCode)} · 🔐 Seed words “${seeded.words}”`;
+      fitText(ctx, seedInfo, W - 120, 28, 600); ctx.fillText(seedInfo, W / 2, y + 50);
       ctx.font = "600 24px Arial, sans-serif"; ctx.fillText("Check the draw yourself: ligagppl.github.io → ✅ Verify draw", W / 2, y + 90);
       // flag stripe at the bottom
       [["#01411c", 0.25], ["#ffffff", 0.25], ["#111111", 1 / 6], ["#dd0000", 1 / 6], ["#ffce00", 1 / 6]].reduce((x, [col, f]) => {
@@ -689,7 +766,7 @@
         $("round-name").value = ns.name;
         $("round-title").textContent = ns.name;
         if (!P || drawn.length === 0 || drawn.length >= P.total) {
-          $("status").textContent = "Enter the seed words, then press “Fill the bowl & start”.";
+          $("status").textContent = "Set the draw code and seed words in ⚙ Setup, then press “Fill the bowl & start”.";
           $("ball").textContent = ns.type === "lucky" ? "🍀" : "🎾";
         }
         check(ns.entrants);
@@ -728,7 +805,9 @@
             byes: drawn.slice(P.matches * 2),
           };
       // everything needed to verify the draw later
-      round.words = seeded.clean;
+      round.code = GPPL.fmtCode(drawCode);
+      round.codeFingerprint = codeFp;
+      round.words = seeded.words;
       round.seed = seeded.seed;
       round.entrants = seeded.entrants;
       round.labels = Object.fromEntries(seeded.entrants.map(id => [id, plainName(id)]));
@@ -740,9 +819,10 @@
         msg.className = "msg ok";
         msg.textContent = mode === "github" ? "✅ Saved to GitHub – live on the website in about a minute." : "💾 Saved in this browser only (not connected to GitHub).";
         $("btn-save").disabled = true;
-        // fresh seed words for the next draw
+        // fresh draw code and seed words for the next draw
         $("seed").value = "";
-        $("seed").disabled = false;
+        drawCode = newCode(); codeFixed = false; codeFp = ""; wordsLocked = false;
+        clearCodeState(); renderCode();
         drawStarted = false;
         applyNextStage();
       } catch (e) {

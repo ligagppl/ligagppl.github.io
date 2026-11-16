@@ -239,8 +239,20 @@ const GPPL = (() => {
   // ---------- verifiable draw (simple arithmetic – reproducible in any language) ----------
   const M32 = 4294967296; // 2^32
 
-  // keep a–z and single spaces: "Mango  Lahore Padel!" → "mango lahore padel"
+  // keep a–z, 0–9 and single spaces: "Mango  Lahore Padel!" → "mango lahore padel"
   const cleanWords = text => text.toLowerCase().replace(/[^a-z0-9 ]/g, "").split(" ").filter(Boolean).join(" ");
+
+  // the draw code (hidden until the words are locked) comes first, then the seed words.
+  // Draws from before the draw code have no code – then it's just the words.
+  const cleanCode = code => cleanWords(code || "").replace(/ /g, "");
+  const drawText = (code, words) => `${cleanCode(code)} ${words || ""}`;
+  const fmtCode = code => { const c = cleanCode(code).toUpperCase(); return c.length === 8 ? `${c.slice(0, 4)}-${c.slice(4)}` : c; };
+  // fingerprint = first 12 hex characters of SHA-256 of the cleaned code, shown before the words are given
+  async function codeFingerprint(code) {
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cleanCode(code)));
+    const hex = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 12);
+    return hex.match(/.{4}/g).join(" ");
+  }
 
   // seed = (seed × 31 + ASCII code) mod 2^32, character by character
   function wordsToSeed(text) {
@@ -275,7 +287,7 @@ const GPPL = (() => {
 
   // Recompute a saved round from its words and compare with what was saved
   function verifyRound(round) {
-    const { clean, seed } = wordsToSeed(round.words);
+    const { clean, seed } = wordsToSeed(drawText(round.code, round.words));
     const shuffle = seededShuffle(seed, round.entrants);
     const count = round.type === "lucky" ? round.lucky.length : round.matches.length;
     const draw = drawFromOrder(shuffle.order, round.type, count);
@@ -298,6 +310,6 @@ const GPPL = (() => {
   return {
     DAY, get start() { return start; }, setStartDate, fmt, pairById, pairName, matchdayWindow, fixtures, findResult, samePair, milestoneProgress, timeRange,
     evaluate, scoreText, isTieBreakSet, rankStandings, cupFullSets, cupWinner, cupLoser, cupNextStage, mainRounds, roundName, addFinalIfDue,
-    cleanWords, wordsToSeed, seededShuffle, drawFromOrder, verifyRound,
+    cleanWords, cleanCode, drawText, fmtCode, codeFingerprint, wordsToSeed, seededShuffle, drawFromOrder, verifyRound,
   };
 })();

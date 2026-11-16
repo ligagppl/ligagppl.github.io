@@ -445,6 +445,7 @@ iframe.form { width: 100%; min-height: 900px; border: 0; border-radius: var(--ra
 
 /* ---------- Verify draw ---------- */
 .form-row { display: grid; grid-template-columns: 170px 1fr; gap: 10px; align-items: center; margin: 10px 0; }
+.form-row[hidden] { display: none; }
 @media (max-width: 560px) { .form-row { grid-template-columns: 1fr; gap: 4px; } }
 .verify-form select, .verify-form input {
   padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; width: 100%;

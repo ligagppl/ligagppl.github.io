@@ -233,7 +233,7 @@ function renderCup() {
   const champ = ns.type === "done"
     ? `<div class="card" style="text-align:center"><div style="font-size:2rem">🏆</div><h3 style="margin:4px 0">GPPC Cup champions</h3><div style="font-size:1.3rem;font-weight:800">${pairName(ns.champion)}</div></div>` : "";
   const seedLine = (r, i) => r.words
-    ? `<p class="note">🔐 Seed words: “${r.words}”${verifyOn ? ` · <a href="#verify" data-verify="${i}">Verify</a>` : ""}</p>` : "";
+    ? `<p class="note">${r.code ? `🎲 Draw code: ${r.code} · ` : ""}🔐 Seed words: “${r.words}”${verifyOn ? ` · <a href="#verify" data-verify="${i}">Verify</a>` : ""}</p>` : "";
   // latest round first; every match as a small score board (logos, sets, winner) like in 🎾 My team
   const board = (m, r, ri, mi) => {
     const w = GPPL.cupWinner(m), full = GPPL.cupFullSets(r);
@@ -468,9 +468,10 @@ function renderVerifySelect() {
 function fillVerifyForm(clearOutput = true) {
   const v = document.getElementById("v-round").value;
   const disabled = v !== "manual";
-  ["v-words", "v-ids", "v-type", "v-lucky"].forEach(id => (document.getElementById(id).disabled = disabled));
+  ["v-code", "v-words", "v-ids", "v-type", "v-lucky"].forEach(id => (document.getElementById(id).disabled = disabled));
   if (v !== "manual") {
     const r = cup.rounds[+v];
+    document.getElementById("v-code").value = r.code || "";
     document.getElementById("v-words").value = r.words;
     document.getElementById("v-ids").value = r.entrants.join(", ");
     document.getElementById("v-type").value = r.type === "lucky" ? "lucky"
@@ -491,13 +492,14 @@ function runVerify() {
   const out = document.getElementById("v-output");
   const v = document.getElementById("v-round").value;
   const saved = v === "manual" ? null : cup.rounds[+v];
+  const code = document.getElementById("v-code").value;
   const words = document.getElementById("v-words").value;
   const ids = document.getElementById("v-ids").value.split(/[^0-9]+/).filter(Boolean).map(Number);
   const type = document.getElementById("v-type").value;
   const label = id => (saved && saved.labels && saved.labels[id]) || pairName(id);
 
-  const { clean, seed } = GPPL.wordsToSeed(words);
-  if (!clean) { out.innerHTML = `<div class="card verdict bad">Enter the seed words.</div>`; return; }
+  const { clean, seed } = GPPL.wordsToSeed(GPPL.drawText(code, words));
+  if (!GPPL.cleanWords(words)) { out.innerHTML = `<div class="card verdict bad">Enter the seed words.</div>`; return; }
   if (ids.length < 2) { out.innerHTML = `<div class="card verdict bad">Enter at least 2 pair IDs.</div>`; return; }
 
   const shuffle = GPPL.seededShuffle(seed, ids);
@@ -510,6 +512,8 @@ function runVerify() {
     verdict = ok
       ? `<div class="verdict ok">✅ Matches the official draw of “${saved.name}”</div>`
       : `<div class="verdict bad">❌ Does not match the official draw of “${saved.name}”</div>`;
+    // the code must also match the fingerprint that was shown before the words were given
+    if (saved.code && saved.codeFingerprint) verdict += `<div class="note" id="v-fp">Checking the draw code fingerprint…</div>`;
   }
 
   const drawHtml = type === "lucky"
@@ -520,8 +524,9 @@ function runVerify() {
   out.innerHTML = `<div class="card">${verdict}
     <h3 style="margin-top:0">1. Seed</h3>
     <div class="kv">
+      ${GPPL.cleanCode(code) ? `<span class="muted">Draw code</span><span>${GPPL.fmtCode(code).replace(/</g, "&lt;")}</span>` : ""}
       <span class="muted">Words as given</span><span>${words.replace(/</g, "&lt;")}</span>
-      <span class="muted">Cleaned</span><code>${clean}</code>
+      <span class="muted">Cleaned${GPPL.cleanCode(code) ? " (code first)" : ""}</span><code>${clean}</code>
       <span class="muted">Seed number</span><code>${seed}</code>
     </div>
     <h3>2. Start list (sorted IDs)</h3>
@@ -536,6 +541,20 @@ function runVerify() {
     <h3>5. Draw</h3>
     ${drawHtml}
   </div>`;
+
+  if (saved && saved.code && saved.codeFingerprint) {
+    GPPL.codeFingerprint(saved.code).then(fp => {
+      const el = document.getElementById("v-fp");
+      if (!el) return;
+      el.className = fp === saved.codeFingerprint ? "verdict ok" : "verdict bad";
+      el.innerHTML = fp === saved.codeFingerprint
+        ? `✅ The draw code matches the fingerprint <code>${fp}</code> shown before the words were given`
+        : `❌ The draw code doesn't match the fingerprint <code>${saved.codeFingerprint}</code>`;
+    }).catch(() => {
+      const el = document.getElementById("v-fp");
+      if (el) el.textContent = `Fingerprint shown before the words: ${saved.codeFingerprint}`;
+    });
+  }
 }
 
 if (verifyOn) {
