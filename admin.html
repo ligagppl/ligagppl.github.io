@@ -146,7 +146,7 @@
     @media (max-width: 520px) { .cal-d { min-height: 54px; } .cal-m .t { display: none; } }
     .st-pane { margin: 4px 0 16px; border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px; }
     .st-pane summary { cursor: pointer; font-weight: 700; }
-    .st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; margin-top: 10px; }
+    .st-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: repeat(var(--rows, 1), auto); grid-auto-flow: column; gap: 6px 14px; margin-top: 10px; }
     .st-row { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: .92rem; }
     .st-row .dp-logo { width: 26px; height: 26px; }
     .st-row span { min-width: 0; overflow-wrap: anywhere; }
@@ -1083,7 +1083,7 @@
       $("sched-all").hidden = !upcoming.length;
       const gone = removedList(), fresh = list.filter(x => isNewSched(x.e)).length + gone.filter(x => isNewSched(x.r)).length;
       $("sched-count").textContent = ` (${upcoming.length}${fresh ? ` · 🆕 ${fresh}` : ""})`;
-      // upcoming matches per team – most first, teams without any at the end; in brackets: upcoming + played
+      // upcoming matches per team – like My team: most matches (upcoming + played) first, then A–Z, top to bottom then the next column
       const per = new Map(LEAGUE.pairs.map(p => [p.id, 0])), played = new Map(LEAGUE.pairs.map(p => [p.id, 0]));
       const add = (m, ids) => ids.forEach(id => m.has(id) && m.set(id, m.get(id) + 1));
       upcoming.forEach(({ a, b }) => add(per, [a, b]));
@@ -1091,8 +1091,8 @@
       results.forEach(r => add(played, [r.a, r.b]));
       (cup.rounds || []).forEach(r => (r.matches || []).forEach(m => { if (m.sets || m.walkover || m.winner) add(played, [m.a, m.b]); }));
       const open = localStorage.getItem("gppl-sched-teams") !== "closed"; // open/closed is remembered in this browser
-      $("sched-teams").innerHTML = per.size ? `<details class="st-pane"${open ? " open" : ""}><summary>Upcoming matches per team <span class="note">· upcoming (upcoming + played)</span></summary><div class="st-grid">` +
-        [...per].sort((x, y) => y[1] - x[1] || name(x[0]).localeCompare(name(y[0])))
+      $("sched-teams").innerHTML = per.size ? `<details class="st-pane"${open ? " open" : ""}><summary>Upcoming matches per team <span class="note">· upcoming (upcoming + played)</span></summary><div class="st-grid" style="--rows:${Math.ceil(per.size / 2)}">` +
+        [...per].sort((x, y) => (y[1] + played.get(y[0])) - (x[1] + played.get(x[0])) || name(x[0]).localeCompare(name(y[0])))
           .map(([id, n]) => `<span class="st-row${n ? "" : " none"}">${teamLogo(id)}<span>${escA(name(id))}</span><b>${n} <small class="note">(${n + played.get(id)})</small></b></span>`).join("") + `</div></details>` : "";
       $("sched-view").hidden = false;
       $("sched-view").querySelectorAll("button").forEach(x => x.classList.toggle("active", x.dataset.schedView === schedView));
