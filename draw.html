@@ -78,8 +78,11 @@
     .drawn .slot.match .vs { text-align: center; }
     .drawn .slot.match .tb { text-align: right; }
     .drawn .slot.match .tb .slot-logo { margin: 0 0 0 6px; }
-    #setup-dlg { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; margin: auto; border: 1px solid var(--line); color: var(--text); background: var(--card); }
-    #setup-dlg::backdrop { background: rgba(0, 0, 0, .55); }
+    #setup-dlg, #teams-dlg { width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 48px); overflow: auto; margin: auto; border: 1px solid var(--line); color: var(--text); background: var(--card); }
+    #setup-dlg::backdrop, #teams-dlg::backdrop { background: rgba(0, 0, 0, .55); }
+    html:has(dialog[open]) { overflow: hidden; } /* the page behind a popup doesn't scroll */
+    .dlg-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .dlg-close { color: var(--text); border-color: var(--line); padding: 4px 12px; }
     .setup label { display: flex; gap: 8px; align-items: center; padding: 4px 0; }
     .setup select, .setup input[type=number] { padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); font: inherit; }
     .setup select { width: 100%; }
@@ -111,69 +114,70 @@
   <main>
     <div class="stage">
       <h2 id="round-title">Round 1</h2>
-      <div class="status" id="status">Set the draw code and seed words in ⚙ Setup, then press “Fill the bowl &amp; start”.</div>
+      <div class="status" id="status">Set the draw code and seed words (🎲 Draw code), then press “Fill the bowl &amp; start”.</div>
       <div class="ball" id="ball">🎾</div>
       <div class="controls">
         <button class="btn" id="btn-next" disabled>Draw next ball</button>
         <button class="btn ghost" id="btn-auto" disabled>Auto-draw next match</button>
-        <button class="btn ghost" id="btn-setup">⚙ Setup</button>
+        <button class="btn ghost" id="btn-setup">🎲 Draw code</button>
         <button class="btn ghost" id="btn-full">⛶ Fullscreen</button>
       </div>
       <div class="bowl" id="bowl"></div>
     </div>
 
     <div class="layout">
-      <div class="card drawn">
+      <div class="card drawn" id="result-card" hidden>
         <h3 style="margin-top:0">Draw result</h3>
         <div id="result"><p class="muted">Nothing drawn yet.</p></div>
       </div>
 
-      <dialog id="setup-dlg" class="card setup">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">⚙ Setup</h3>
-          <button type="button" class="btn ghost" id="btn-setup-close" aria-label="Close setup" style="color:var(--text);border-color:var(--line);padding:4px 12px">✕</button></div>
+      <!-- teams in the bowl (filled automatically from the cup results) -->
+      <dialog id="teams-dlg" class="card setup">
+        <div class="dlg-head"><h3 style="margin:0">👥 Teams</h3>
+          <button type="button" class="btn ghost dlg-close" data-close="teams-dlg" aria-label="Close">✕</button></div>
         <div class="next-stage" id="next-stage">Loading the cup…</div>
-        <!-- format choice – only for round 1 -->
-        <label id="format-wrap" style="display:none;margin-top:10px">Round 1 format
-          <select id="mode">
-            <option value="lucky-format" selected>Everyone plays – lucky losers fill up 🍀</option>
-            <option value="classic">Classic byes</option>
-            <option value="lucky-draw" hidden>Lucky loser draw</option>
-          </select>
-        </label>
         <p class="note" id="mode-help"></p>
         <p class="note" style="margin:10px 0 4px" id="bowl-label">In the bowl:</p>
         <div id="bowl-preview"></div>
         <p class="note" id="plan"></p>
+      </dialog>
 
-        <div style="margin-top:12px"><b>🎲 Draw code</b> – hidden until the words are locked
+      <!-- draw code + seed words -->
+      <dialog id="setup-dlg" class="card setup">
+        <div class="dlg-head"><h3 style="margin:0">🎲 Draw code &amp; seed words</h3>
+          <button type="button" class="btn ghost dlg-close" data-close="setup-dlg" aria-label="Close">✕</button></div>
+        <p class="note" id="setup-stage" style="margin:6px 0 0"></p>
+
+        <div style="margin-top:12px"><b>🎲 Draw code</b>
           <div class="code-row">
             <span class="code-box" id="code-box">●●●●-●●●●</span>
             <button type="button" class="btn ghost btn-sm" id="btn-code-shuffle">🔀 Shuffle</button>
             <button type="button" class="btn btn-sm" id="btn-code-use" style="background:var(--green);color:#fff">✔ Use this code</button>
           </div>
-          <p class="note" id="code-note">Shuffle as often as you like – the code stays hidden. Then press “Use this code”: it can't be changed after that, and only its fingerprint is shown.</p>
+          <p class="note" id="code-note"></p>
         </div>
 
-        <label style="display:block;margin-top:12px"><b>🔐 Seed words</b> – from 3 or more random people
+        <label style="display:block;margin-top:12px"><b>🔐 Seed words</b> – 3 or more
           <input type="text" id="seed" placeholder="e.g. mango lahore padel" autocomplete="off" disabled>
         </label>
         <div class="code-row"><button type="button" class="btn btn-sm" id="btn-lock" style="background:var(--green);color:#fff" disabled>🔒 Lock words</button></div>
-        <p class="note">Ask 3 or more randomly chosen people (participants or not) for one word each, revealed at the same time. Once the words are locked, the draw code is shown. Code and words decide the whole draw – anyone can check it afterwards on the <b>Verify draw</b> tab, or with their own program.</p>
 
-        <!-- filled automatically from the cup results – kept hidden -->
-        <div hidden>
-          <input type="text" id="round-name" value="Round 1">
-          <span id="lucky-wrap"><input type="number" id="lucky-count" min="1" value="2"></span>
-          <div id="pair-list"></div>
-        </div>
-        <p style="margin:14px 0 4px"><b>⏱ Timing</b></p>
-        <label>Each drawn team stays for <input type="number" id="t-team" min="1" max="30" step="0.5" value="3" style="width:76px"> seconds</label>
-        <label>The match card (A vs B) stays for <input type="number" id="t-vs" min="2" max="60" step="0.5" value="6" style="width:76px"> seconds</label>
-        <p class="note" style="margin-top:2px">The logo shows first, then the name and players. “Auto-draw next match” draws both teams of a match, shows the match card and then waits for you.</p>
-        <div class="controls" style="justify-content:flex-start">
-          <button class="btn" id="btn-start" style="background:var(--green);color:#fff">Fill the bowl &amp; start</button>
+        <div class="controls" style="justify-content:flex-start;margin-top:16px">
+          <button class="btn" id="btn-start" style="background:var(--green);color:#fff" disabled>Fill the bowl &amp; start</button>
         </div>
       </dialog>
+
+      <!-- set in 🔒 Admin → Settings (round 1 format, timing) or from the cup results – kept hidden -->
+      <div hidden>
+        <select id="mode">
+          <option value="lucky-format" selected>Everyone plays – lucky losers fill up</option>
+          <option value="classic">Classic byes</option>
+          <option value="lucky-draw">Lucky loser draw</option>
+        </select>
+        <input type="text" id="round-name" value="Round 1">
+        <span id="lucky-wrap"><input type="number" id="lucky-count" min="1" value="2"></span>
+        <div id="pair-list"></div>
+      </div>
 
       <div class="card share" id="share-card" hidden>
         <h3 style="margin-top:0">Save &amp; share</h3>
@@ -193,7 +197,7 @@
 
   <script src="assets/data.js?v=67"></script>
   <script src="assets/pairs-loader.js?v=8"></script>
-  <script src="assets/league.js?v=16"></script>
+  <script src="assets/league.js?v=17"></script>
   <script src="assets/store.js?v=3"></script>
   <script src="assets/lock.js?v=2"></script>
   <script>
@@ -230,14 +234,13 @@
     const shuffleHtml = id => logoSrc(id) ? `<img class="blogo" src="${esc(logoSrc(id))}" alt="">` : `<span class="bmystery">🎾</span>`;
     // picked: the logo first, then (after LOGO_HOLD) the number, team name and players
     const LOGO_HOLD = 2500;
-    const secs = (id, def, min) => { const v = parseFloat($(id).value); return Math.max(min, isFinite(v) ? v : def) * 1000; };
-    const teamTime = () => secs("t-team", 3, 1);
-    const vsTime = () => secs("t-vs", 6, 2);
+    // timing and the round 1 format are set in 🔒 Admin → Settings (stored in this browser)
+    const drawPrefs = () => { try { return JSON.parse(localStorage.getItem("gppl-draw-times") || "{}"); } catch { return {}; } };
+    const secs = (v, def, min) => { v = parseFloat(v); return Math.max(min, isFinite(v) ? v : def) * 1000; };
+    const teamTime = () => secs(drawPrefs().team, 3, 1);
+    const vsTime = () => secs(drawPrefs().vs, 6, 2);
+    const round1Format = () => drawPrefs().format === "classic" ? "classic" : "lucky-format";
     let vsTimer = null;
-    try { const t = JSON.parse(localStorage.getItem("gppl-draw-times") || "{}"); if (t.team) $("t-team").value = t.team; if (t.vs) $("t-vs").value = t.vs; } catch {}
-    ["t-team", "t-vs"].forEach(id => $(id).addEventListener("change", () => {
-      try { localStorage.setItem("gppl-draw-times", JSON.stringify({ team: $("t-team").value, vs: $("t-vs").value })); } catch {}
-    }));
     const vsHtml = (a, b) => `<span class="bstack"><span class="bvs blogos">${teamMark(a, "blogo-sm")}<span class="bnum">vs</span>${teamMark(b, "blogo-sm")}</span>` +
       `<span class="binfo"><span class="bname bname-sm">${esc(name(a))}</span><span class="bnum" style="margin:4px 0">vs</span><span class="bname bname-sm">${esc(name(b))}</span></span></span>`;
     function ballHtml(id) {
@@ -303,6 +306,7 @@
       const n = selectedIds().length, p = plan(n), m = mode();
       $("mode-help").textContent = HELP[m];
       $("lucky-wrap").style.display = m === "lucky-draw" ? "flex" : "none";
+      $("btn-auto").style.display = m === "lucky-draw" ? "none" : ""; // no matches in a lucky loser draw
       $("bowl-label").textContent = m === "lucky-draw" ? "Losers in the bowl:" : "Pairs in the bowl:";
       $("bowl-preview").innerHTML = selectedIds().map(id => {
         const p = pairs.find(x => x.id === id);
@@ -339,6 +343,8 @@
     }
 
     function renderResult(newIdx) {
+      // the result card only appears once the first ball is drawn (an empty card just made the page scroll)
+      $("result-card").hidden = !drawn.length;
       if (!drawn.length) { $("result").innerHTML = '<p class="muted">Nothing drawn yet.</p>'; return; }
       let html = "";
       if (P.lucky) {
@@ -416,7 +422,7 @@
               : `🎟️ ${name(pick)} gets a bye!`;
             renderBowl();
             renderResult(drawn.length - 1);
-            const stopAuto = () => { autoTimer = null; $("btn-auto").textContent = "Auto-draw next match"; };
+            const stopAuto = () => { autoTimer = null; $("btn-auto").disabled = false; };
             const done = () => {
               busy = false;
               if (drawn.length >= P.total) { stopAuto(); finish(); return; }
@@ -553,9 +559,9 @@
       box.classList.toggle("fixed", codeFixed);
       $("btn-code-shuffle").disabled = codeFixed;
       $("btn-code-use").disabled = codeFixed;
-      $("code-note").innerHTML = wordsLocked ? `✅ Code shown – words locked. Fingerprint: <code>${codeFp}</code>`
-        : codeFixed ? `🔒 Code fixed – fingerprint <code>${codeFp}</code>. Now ask for the seed words.`
-        : "Shuffle as often as you like – the code stays hidden. Then press “Use this code”: it can't be changed after that, and only its fingerprint is shown.";
+      $("code-note").innerHTML = wordsLocked ? `✅ Words locked · fingerprint <code>${codeFp}</code>`
+        : codeFixed ? `🔒 Code fixed · fingerprint <code>${codeFp}</code>`
+        : "Hidden – shuffle as often as you like.";
       $("seed").disabled = !codeFixed || wordsLocked;
       const words = GPPL.cleanWords($("seed").value);
       $("btn-lock").disabled = !codeFixed || wordsLocked || wordCount(words) < MIN_WORDS;
@@ -591,13 +597,13 @@
       const words = GPPL.cleanWords($("seed").value);
       const ready = wordsLocked && codeFixed;
       if (ready) {
-        const { clean, seed } = GPPL.wordsToSeed(GPPL.drawText(drawCode, words));
-        seeded = { words, clean, seed, ...(({ start, order }) => ({ entrants: start, order }))(GPPL.seededShuffle(seed, bowl)) };
+        const clean = GPPL.drawText(drawCode, words);
+        seeded = { words, clean, ...(({ start, order }) => ({ entrants: start, order }))(GPPL.drawShuffle(clean, bowl)) };
       } else seeded = null;
       $("btn-next").disabled = !ready;
       $("btn-auto").disabled = !ready;
       $("status").textContent = !ready
-        ? (!codeFixed ? "🎲 Fix the draw code first (⚙ Setup)." : "🔐 Enter and lock the seed words (⚙ Setup).")
+        ? (!codeFixed ? "🎲 Fix the draw code first (🎲 Draw code)." : "🔐 Enter and lock the seed words (🎲 Draw code).")
         : `🎲 ${GPPL.fmtCode(drawCode)} · 🔐 “${words}” – ` + (P.lucky
           ? `${plural(bowl.length, "loser")} in the bowl, ${P.lucky} get${P.lucky === 1 ? "s" : ""} a second chance. Ready!`
           : `${bowl.length} pairs in the bowl, ${plural(P.matches, "match")}` + (P.byes ? `, ${plural(P.byes, "bye")}` : "") + ". Ready!");
@@ -635,26 +641,21 @@
       renderResult();
       applySeed();
       if (!seeded) $("seed").focus();
-      else dlg.close();
+      else { dlg.close(); $("btn-setup").style.display = "none"; } // code and words are fixed now – back after the draw is saved
     });
 
-    // setup lives in a popup: opens on the setup button (and when the page loads), closes once the bowl is filled
+    // 🎲 Draw code popup (code + seed words, opens when the page loads)
     const dlg = $("setup-dlg");
     const openSetup = () => { if (!dlg.open) dlg.showModal(); };
     $("btn-setup").addEventListener("click", openSetup);
-    $("btn-setup-close").addEventListener("click", () => dlg.close());
+    document.querySelectorAll(".dlg-close").forEach(b => b.addEventListener("click", () => $(b.dataset.close).close()));
     window.addEventListener("load", () => { if (!drawStarted) openSetup(); });
 
     $("btn-next").addEventListener("click", drawNext);
 
     $("btn-auto").addEventListener("click", () => {
-      if (autoTimer) {
-        clearInterval(autoTimer);
-        autoTimer = null;
-        $("btn-auto").textContent = "Auto-draw next match";
-        return;
-      }
-      $("btn-auto").textContent = "Pause";
+      if (autoTimer) return;
+      $("btn-auto").disabled = true; // no pause: the button comes back once the match is drawn
       clearTimeout(vsTimer);
       drawNext();
       autoTimer = true; // drawNext keeps going until the match is complete (see done())
@@ -751,7 +752,6 @@
       const ready = ns.type === "matches" || ns.type === "lucky";
       stageReady = ready;
       updateStartButton();
-      $("format-wrap").style.display = ns.type === "matches" && ns.name === "Round 1" ? "flex" : "none";
       if (!ready) {
         check([]);
         $("bowl-label").textContent = "";
@@ -759,14 +759,23 @@
         $("plan").textContent = "";
         $("mode-help").textContent = "";
       }
+      // a new draw is due and the last one was saved: clear its balls, list and image so the board starts empty
+      if (ready && !drawStarted && P && drawn.length) {
+        bowl = []; drawn = []; P = null; drawBlob = null;
+        renderBowl(); renderResult();
+        $("share").value = ""; $("share-img").removeAttribute("src");
+        $("share-card").hidden = true; $("save-msg").textContent = "";
+        clearTimeout(infoTimer); $("ball").classList.remove("show-players", "show-info");
+      }
       if (ready) {
-        $("mode").value = ns.type === "lucky" ? "lucky-draw" : "lucky-format";
+        // round 1 format from 🔒 Admin → Settings; later rounds: everyone left plays
+        $("mode").value = ns.type === "lucky" ? "lucky-draw" : ns.name === "Round 1" ? round1Format() : "lucky-format";
         $("mode").dispatchEvent(new Event("change"));
         if (ns.type === "lucky") $("lucky-count").value = ns.lucky;
         $("round-name").value = ns.name;
         $("round-title").textContent = ns.name;
         if (!P || drawn.length === 0 || drawn.length >= P.total) {
-          $("status").textContent = "Set the draw code and seed words in ⚙ Setup, then press “Fill the bowl & start”.";
+          $("status").textContent = "Set the draw code and seed words (🎲 Draw code), then press “Fill the bowl & start”.";
           $("ball").textContent = ns.type === "lucky" ? "🍀" : "🎾";
         }
         check(ns.entrants);
@@ -787,7 +796,15 @@
         $("status").textContent = `Champion: ${name(ns.champion)}`;
         box.innerHTML = `🏆 The cup is finished – champion: <b>${name(ns.champion)}</b>!`;
       }
+      // one short line in the draw code popup (the teams themselves are shown in the bowl)
+      $("setup-stage").innerHTML = ready
+        ? `Next up: <b>${esc(ns.name)}</b> – ${plural(ns.entrants.length, ns.type === "lucky" ? "loser" : "pair")} in the bowl`
+        : ns.type === "waiting" ? `⏳ Waiting for the results of <b>${esc(ns.name)}</b>` : box.innerHTML;
     }
+    // round 1 format / timing changed in 🔒 Admin → Settings: pick it up unless a draw is running
+    window.addEventListener("storage", e => {
+      if (e.key === "gppl-draw-times" && !drawStarted && (!P || !drawn.length) && nextStage) applyNextStage();
+    });
 
     $("btn-save").addEventListener("click", async () => {
       const msg = $("save-msg");
@@ -808,7 +825,6 @@
       round.code = GPPL.fmtCode(drawCode);
       round.codeFingerprint = codeFp;
       round.words = seeded.words;
-      round.seed = seeded.seed;
       round.entrants = seeded.entrants;
       round.labels = Object.fromEntries(seeded.entrants.map(id => [id, plainName(id)]));
       const next = structuredClone(cup);
@@ -824,6 +840,7 @@
         drawCode = newCode(); codeFixed = false; codeFp = ""; wordsLocked = false;
         clearCodeState(); renderCode();
         drawStarted = false;
+        $("btn-setup").style.display = "";
         applyNextStage();
       } catch (e) {
         msg.className = "msg err";

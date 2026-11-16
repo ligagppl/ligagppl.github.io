@@ -498,11 +498,11 @@ function runVerify() {
   const type = document.getElementById("v-type").value;
   const label = id => (saved && saved.labels && saved.labels[id]) || pairName(id);
 
-  const { clean, seed } = GPPL.wordsToSeed(GPPL.drawText(code, words));
+  const clean = GPPL.drawText(code, words);
   if (!GPPL.cleanWords(words)) { out.innerHTML = `<div class="card verdict bad">Enter the seed words.</div>`; return; }
   if (ids.length < 2) { out.innerHTML = `<div class="card verdict bad">Enter at least 2 pair IDs.</div>`; return; }
 
-  const shuffle = GPPL.seededShuffle(seed, ids);
+  const shuffle = GPPL.drawShuffle(clean, ids);
   const count = type === "lucky" ? +document.getElementById("v-lucky").value || 1 : matchCount(ids.length, type);
   const draw = GPPL.drawFromOrder(shuffle.order, type === "lucky" ? "lucky" : "matches", count);
 
@@ -513,7 +513,12 @@ function runVerify() {
       ? `<div class="verdict ok">✅ Matches the official draw of “${saved.name}”</div>`
       : `<div class="verdict bad">❌ Does not match the official draw of “${saved.name}”</div>`;
     // the code must also match the fingerprint that was shown before the words were given
-    if (saved.code && saved.codeFingerprint) verdict += `<div class="note" id="v-fp">Checking the draw code fingerprint…</div>`;
+    if (saved.code && saved.codeFingerprint) {
+      const fp = GPPL.codeFingerprint(saved.code);
+      verdict += fp === saved.codeFingerprint
+        ? `<div class="verdict ok">✅ The draw code matches the fingerprint <code>${fp}</code> shown before the words were given</div>`
+        : `<div class="verdict bad">❌ The draw code doesn't match the fingerprint <code>${saved.codeFingerprint}</code></div>`;
+    }
   }
 
   const drawHtml = type === "lucky"
@@ -522,39 +527,24 @@ function runVerify() {
       (draw.byes.length ? `<div class="note" style="margin-top:6px">🎟️ Bye: ${draw.byes.map(label).join(", ")}</div>` : "");
 
   out.innerHTML = `<div class="card">${verdict}
-    <h3 style="margin-top:0">1. Seed</h3>
+    <h3 style="margin-top:0">1. Text</h3>
     <div class="kv">
       ${GPPL.cleanCode(code) ? `<span class="muted">Draw code</span><span>${GPPL.fmtCode(code).replace(/</g, "&lt;")}</span>` : ""}
       <span class="muted">Words as given</span><span>${words.replace(/</g, "&lt;")}</span>
       <span class="muted">Cleaned${GPPL.cleanCode(code) ? " (code first)" : ""}</span><code>${clean}</code>
-      <span class="muted">Seed number</span><code>${seed}</code>
     </div>
     <h3>2. Start list (sorted IDs)</h3>
     <p>${shuffle.start.map(id => `<b>${id}</b> ${label(id)}`).join(" · ")}</p>
     <h3>3. Shuffle steps</h3>
     <div class="table-wrap"><table class="steps">
-      <tr><th>i</th><th>state</th><th>j = state mod (i+1)</th><th class="left">List after swapping i and j</th></tr>
-      ${shuffle.steps.map(s => `<tr><td>${s.i}</td><td>${s.state}</td><td>${s.j}</td><td class="left">${s.i === s.j ? '<span class="muted">no change</span>' : s.list.join(", ")}</td></tr>`).join("")}
+      <tr><th>i</th><th>SHA-256 (first 12 hex)</th><th>j = mod (i+1)</th><th class="left">List after swapping i and j</th></tr>
+      ${shuffle.steps.map(s => `<tr><td>${s.i}</td><td><code>${s.hex}</code></td><td>${s.j}</td><td class="left">${s.i === s.j ? '<span class="muted">no change</span>' : s.list.join(", ")}</td></tr>`).join("")}
     </table></div>
     <h3>4. Final order</h3>
     <p><code>${shuffle.order.join(", ")}</code></p>
     <h3>5. Draw</h3>
     ${drawHtml}
   </div>`;
-
-  if (saved && saved.code && saved.codeFingerprint) {
-    GPPL.codeFingerprint(saved.code).then(fp => {
-      const el = document.getElementById("v-fp");
-      if (!el) return;
-      el.className = fp === saved.codeFingerprint ? "verdict ok" : "verdict bad";
-      el.innerHTML = fp === saved.codeFingerprint
-        ? `✅ The draw code matches the fingerprint <code>${fp}</code> shown before the words were given`
-        : `❌ The draw code doesn't match the fingerprint <code>${saved.codeFingerprint}</code>`;
-    }).catch(() => {
-      const el = document.getElementById("v-fp");
-      if (el) el.textContent = `Fingerprint shown before the words: ${saved.codeFingerprint}`;
-    });
-  }
 }
 
 if (verifyOn) {

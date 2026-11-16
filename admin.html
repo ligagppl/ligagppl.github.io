@@ -344,7 +344,7 @@
     <!-- LIVE DRAW -->
     <div class="panel" id="panel-draw">
       <p class="note" style="margin-top:0">Tip: <a href="draw.html" target="_blank">open the draw in its own window</a> for a TV or screen share.</p>
-      <iframe id="draw-frame" src="draw.html" title="GPPC Cup live draw" allow="fullscreen"
+      <iframe id="draw-frame" src="draw.html?v=4" title="GPPC Cup live draw" allow="fullscreen"
         style="width:100%;min-height:720px;border:0;display:block"></iframe>
     </div>
 
@@ -540,6 +540,19 @@
 
     <div class="panel" id="panel-settings">
       <div class="card">
+        <h3 style="margin-top:0">🎱 Live draw</h3>
+        <p class="note">Stored in this browser – set it on the device that runs the draw.</p>
+        <div class="form-row"><label for="dr-format">Round 1 format</label>
+          <select id="dr-format">
+            <option value="lucky-format">Everyone plays – lucky losers fill up 🍀</option>
+            <option value="classic">Classic byes</option>
+          </select>
+        </div>
+        <div class="form-row"><label for="dr-team">Each drawn team stays</label><span><input type="number" id="dr-team" min="1" max="30" step="0.5" value="3" style="width:90px"> seconds</span></div>
+        <div class="form-row"><label for="dr-vs">Match card (A vs B) stays</label><span><input type="number" id="dr-vs" min="2" max="60" step="0.5" value="6" style="width:90px"> seconds</span></div>
+        <p class="note" style="margin-bottom:0">The logo shows first, then the name and players. “Auto-draw next match” draws both teams of a match, shows the match card and then waits.</p>
+      </div>
+      <div class="card">
         <h3 style="margin-top:0">Save to GitHub</h3>
         <p class="note">Results are saved straight into the website's GitHub repository. The token is stored <b>only in this browser</b> – every admin sets it up once on their own device.</p>
         <div class="form-row"><label for="gh-owner">GitHub owner</label><input type="text" id="gh-owner" placeholder="e.g. gppl"></div>
@@ -575,7 +588,7 @@
 
   <script src="assets/data.js?v=67"></script>
   <script src="assets/pairs-loader.js?v=9"></script>
-  <script src="assets/league.js?v=16"></script>
+  <script src="assets/league.js?v=17"></script>
   <script src="assets/store.js?v=5"></script>
   <script src="assets/lock.js?v=2"></script>
   <script src="assets/members-admin.js?v=58" defer></script>
@@ -2071,6 +2084,20 @@
       flash("local-msg", "Local test data cleared.");
       await reload();
     });
+
+    // ---------- live draw settings (read by draw.html from this browser's storage) ----------
+    {
+      const KEY = "gppl-draw-times";
+      let prefs = {};
+      try { prefs = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch {}
+      if (prefs.format) $("dr-format").value = prefs.format;
+      if (prefs.team) $("dr-team").value = prefs.team;
+      if (prefs.vs) $("dr-vs").value = prefs.vs;
+      ["dr-format", "dr-team", "dr-vs"].forEach(id => $(id).addEventListener("change", () => {
+        const next = { format: $("dr-format").value, team: $("dr-team").value, vs: $("dr-vs").value };
+        try { localStorage.setItem(KEY, JSON.stringify(next)); } catch {}
+      }));
+    }
 
     // ---------- tabs ----------
     document.querySelectorAll(".subnav button").forEach(btn => btn.addEventListener("click", async () => {

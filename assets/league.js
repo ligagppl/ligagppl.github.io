@@ -236,42 +236,63 @@ const GPPL = (() => {
     return { type: "matches", name: roundName(adv.length), entrants: adv };
   }
 
-  // ---------- verifiable draw (simple arithmetic – reproducible in any language) ----------
-  const M32 = 4294967296; // 2^32
+  // ---------- verifiable draw (SHA-256 – reproducible in any language) ----------
+
+  // SHA-256 of a text (UTF-8) as 64 hex characters. Plain JavaScript, so it also works
+  // without a secure context; same result as Python's hashlib.sha256(text.encode()).hexdigest().
+  const K256 = [0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+    0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+    0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc, 0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+    0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+    0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+    0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+    0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+    0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208, 0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2];
+  function sha256(text) {
+    const bytes = [...new TextEncoder().encode(text)], bitLen = bytes.length * 8;
+    bytes.push(0x80);
+    while (bytes.length % 64 !== 56) bytes.push(0);
+    for (let s = 56; s >= 0; s -= 8) bytes.push(s >= 32 ? Math.floor(bitLen / 2 ** s) & 255 : (bitLen >>> s) & 255);
+    const h = [0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a, 0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19];
+    const rotr = (x, n) => (x >>> n) | (x << (32 - n));
+    const w = new Array(64);
+    for (let o = 0; o < bytes.length; o += 64) {
+      for (let t = 0; t < 16; t++) w[t] = (bytes[o + 4 * t] << 24) | (bytes[o + 4 * t + 1] << 16) | (bytes[o + 4 * t + 2] << 8) | bytes[o + 4 * t + 3];
+      for (let t = 16; t < 64; t++) {
+        const s0 = rotr(w[t - 15], 7) ^ rotr(w[t - 15], 18) ^ (w[t - 15] >>> 3);
+        const s1 = rotr(w[t - 2], 17) ^ rotr(w[t - 2], 19) ^ (w[t - 2] >>> 10);
+        w[t] = (w[t - 16] + s0 + w[t - 7] + s1) | 0;
+      }
+      let [a, b, c, d, e, f, g, k] = h;
+      for (let t = 0; t < 64; t++) {
+        const t1 = (k + (rotr(e, 6) ^ rotr(e, 11) ^ rotr(e, 25)) + ((e & f) ^ (~e & g)) + K256[t] + w[t]) | 0;
+        const t2 = ((rotr(a, 2) ^ rotr(a, 13) ^ rotr(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+        k = g; g = f; f = e; e = (d + t1) | 0; d = c; c = b; b = a; a = (t1 + t2) | 0;
+      }
+      [a, b, c, d, e, f, g, k].forEach((v, i) => (h[i] = (h[i] + v) | 0));
+    }
+    return h.map(v => (v >>> 0).toString(16).padStart(8, "0")).join("");
+  }
 
   // keep a–z, 0–9 and single spaces: "Mango  Lahore Padel!" → "mango lahore padel"
   const cleanWords = text => text.toLowerCase().replace(/[^a-z0-9 ]/g, "").split(" ").filter(Boolean).join(" ");
 
-  // the draw code (hidden until the words are locked) comes first, then the seed words.
-  // Draws from before the draw code have no code – then it's just the words.
+  // the draw code (hidden until the words are locked) comes first, then the seed words
   const cleanCode = code => cleanWords(code || "").replace(/ /g, "");
-  const drawText = (code, words) => `${cleanCode(code)} ${words || ""}`;
+  const drawText = (code, words) => cleanWords(`${cleanCode(code)} ${words || ""}`);
   const fmtCode = code => { const c = cleanCode(code).toUpperCase(); return c.length === 8 ? `${c.slice(0, 4)}-${c.slice(4)}` : c; };
   // fingerprint = first 12 hex characters of SHA-256 of the cleaned code, shown before the words are given
-  async function codeFingerprint(code) {
-    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(cleanCode(code)));
-    const hex = [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 12);
-    return hex.match(/.{4}/g).join(" ");
-  }
+  const codeFingerprint = code => sha256(cleanCode(code)).slice(0, 12).match(/.{4}/g).join(" ");
 
-  // seed = (seed × 31 + ASCII code) mod 2^32, character by character
-  function wordsToSeed(text) {
-    const clean = cleanWords(text);
-    let seed = 0;
-    for (const c of clean) seed = (seed * 31 + c.charCodeAt(0)) % M32;
-    return { clean, seed };
-  }
-
-  // Fisher–Yates with the generator state = (1664525 × state + 1013904223) mod 2^32
-  function seededShuffle(seed, ids) {
+  // Fisher–Yates: for i = last position down to 1, j = (first 12 hex of SHA-256("<text>:<i>")) mod (i + 1)
+  function drawShuffle(text, ids) {
     const order = ids.slice().sort((a, b) => a - b);
     const steps = [];
-    let state = seed;
     for (let i = order.length - 1; i > 0; i--) {
-      state = (1664525 * state + 1013904223) % M32;
-      const j = state % (i + 1);
+      const hex = sha256(`${text}:${i}`).slice(0, 12);
+      const j = parseInt(hex, 16) % (i + 1);
       [order[i], order[j]] = [order[j], order[i]];
-      steps.push({ i, state, j, list: order.slice() });
+      steps.push({ i, hex, j, list: order.slice() });
     }
     return { start: ids.slice().sort((a, b) => a - b), order, steps };
   }
@@ -285,17 +306,17 @@ const GPPL = (() => {
     return { matches, byes: order.slice(count * 2) };
   }
 
-  // Recompute a saved round from its words and compare with what was saved
+  // Recompute a saved round from its code and words and compare with what was saved
   function verifyRound(round) {
-    const { clean, seed } = wordsToSeed(drawText(round.code, round.words));
-    const shuffle = seededShuffle(seed, round.entrants);
+    const clean = drawText(round.code, round.words);
+    const shuffle = drawShuffle(clean, round.entrants);
     const count = round.type === "lucky" ? round.lucky.length : round.matches.length;
     const draw = drawFromOrder(shuffle.order, round.type, count);
     const same = (x, y) => x.length === y.length && x.every((v, i) => v === y[i]);
     const ok = round.type === "lucky"
       ? same(draw.lucky, round.lucky)
       : round.matches.every((m, i) => m.a === draw.matches[i].a && m.b === draw.matches[i].b) && same(draw.byes, round.byes || []);
-    return { ok, clean, seed, shuffle, draw };
+    return { ok, clean, shuffle, draw };
   }
 
   // If the semi-finals are complete and there's no final yet, add it (semi-final 1 winner vs semi-final 2 winner).
@@ -310,6 +331,6 @@ const GPPL = (() => {
   return {
     DAY, get start() { return start; }, setStartDate, fmt, pairById, pairName, matchdayWindow, fixtures, findResult, samePair, milestoneProgress, timeRange,
     evaluate, scoreText, isTieBreakSet, rankStandings, cupFullSets, cupWinner, cupLoser, cupNextStage, mainRounds, roundName, addFinalIfDue,
-    cleanWords, cleanCode, drawText, fmtCode, codeFingerprint, wordsToSeed, seededShuffle, drawFromOrder, verifyRound,
+    sha256, cleanWords, cleanCode, drawText, fmtCode, codeFingerprint, drawShuffle, drawFromOrder, verifyRound,
   };
 })();
