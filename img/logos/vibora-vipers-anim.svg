@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Vibora Vipers logo, animated">
+  <style>
+    .r{transform-box:view-box;transform-origin:120px 216px;animation:r 3.6s cubic-bezier(.45,0,.35,1) infinite}
+    @keyframes r{0%{transform:translate(0,0) rotate(0)}38%{transform:translate(36px,4px) rotate(40deg)}44%{transform:translate(36px,4px) rotate(40deg)}60%{transform:translate(-4px,0) rotate(-30deg)}70%{transform:translate(-8px,0) rotate(-38deg)}100%{transform:translate(0,0) rotate(0)}}
+    .f{animation:f 3.6s linear infinite;opacity:0}
+    @keyframes f{0%{opacity:0;transform:translate(130px,-70px)}8%{opacity:1;transform:translate(130px,-70px)}30%{transform:translate(92px,-48px)}52%{transform:translate(52px,-4px)}59%{transform:translate(4px,40px)}66%{transform:translate(-40px,108px) scale(1.15,.8)}71%{transform:translate(-62px,98px) scale(1)}77%{transform:translate(-90px,110px) scale(1.08,.9)}83%{transform:translate(-120px,108px);opacity:1}89%,100%{transform:translate(-145px,110px);opacity:0}}
+    .spin{transform-box:fill-box;transform-origin:50% 50%;animation:spin .4s linear infinite}
+    @keyframes spin{to{transform:rotate(-360deg)}}
+    .snk{animation:snk 3.6s linear infinite;opacity:0}
+    @keyframes snk{0%,52%{opacity:0}54%,89%{opacity:1}90%,100%{opacity:0}}
+    .tr{animation:tr 3.6s linear infinite;opacity:0}
+    @keyframes tr{0%,54%{opacity:0}63%{opacity:.75}83%{opacity:.5}91%,100%{opacity:0}}
+    .tg{animation:tg .5s steps(1) infinite}
+    @keyframes tg{0%,50%{opacity:1}51%,100%{opacity:0}}
+    @media (prefers-reduced-motion: reduce){*{animation:none!important}.tr{opacity:0}.f,.snk{opacity:1}}
+  </style>
+  <defs>
+    <g id="h"><circle cx="-16" cy="-24" r="4.2"/><circle cx="0" cy="-24" r="4.2"/><circle cx="16" cy="-24" r="4.2"/><circle cx="-24" cy="-8" r="4.2"/><circle cx="-8" cy="-8" r="4.2"/><circle cx="8" cy="-8" r="4.2"/><circle cx="24" cy="-8" r="4.2"/><circle cx="-16" cy="8" r="4.2"/><circle cx="0" cy="8" r="4.2"/><circle cx="16" cy="8" r="4.2"/><circle cx="-8" cy="24" r="4.2"/><circle cx="8" cy="24" r="4.2"/></g>
+    <path id="arc" d="M34 120 A86 86 0 0 0 206 120" fill="none"/>
+    <clipPath id="clip"><circle cx="120" cy="120" r="104"/></clipPath>
+  </defs>
+  <circle cx="120" cy="120" r="116" fill="#0f2a1a"/>
+  <g clip-path="url(#clip)"><g transform="translate(33 14) scale(0.72)">
+    <path d="M-10 196 L250 196" stroke="#3ccf6e" stroke-width="2" opacity=".25"/>
+    <path class="tr" d="M180 50 C140 84 100 140 88 166 C80 158 72 158 66 160 C50 166 30 164 10 166" fill="none" stroke="#3ccf6e" stroke-width="4" stroke-linecap="round" stroke-dasharray="6 8"/>
+    <g class="r">
+      <ellipse cx="120" cy="72" rx="44" ry="50" fill="#eef3ee" stroke="#0b1f13" stroke-width="3"/>
+      <ellipse cx="120" cy="72" rx="36" ry="42" fill="none" stroke="#c9d6cc" stroke-width="2"/>
+      <g fill="#0f2a1a" transform="translate(120 72) scale(1.15)"><use href="#h"/></g>
+      <path d="M106 118 L134 118 L128 132 L112 132 Z" fill="#eef3ee" stroke="#0b1f13" stroke-width="3"/>
+      <rect x="110" y="130" width="20" height="86" rx="6" fill="#eef3ee" stroke="#0b1f13" stroke-width="3"/>
+      <path d="M110 150 L130 158 M110 168 L130 176 M110 186 L130 194" stroke="#9fb3a4" stroke-width="3"/>
+    </g>
+    <g class="f">
+      <g class="snk" transform="translate(24 24)"><path d="M78 34 C80 22 128 22 130 34" fill="none" stroke="#14532d" stroke-width="10" stroke-linecap="round"/></g>
+      <g class="spin"><circle cx="128" cy="56" r="19" fill="#d7f34a" stroke="#0b1f13" stroke-width="3"/><path d="M111 49 C121 56 135 56 146 49 M111 63 C121 56 135 56 146 63" fill="none" stroke="#fff" stroke-width="3"/></g>
+      <g class="snk" transform="translate(24 24)">
+        <path d="M78 34 C80 46 128 46 130 34" fill="none" stroke="#3ccf6e" stroke-width="10" stroke-linecap="round"/>
+        <path d="M78 34 C80 46 128 46 130 34" fill="none" stroke="#b9f5cf" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M130 34 C134 40 140 42 146 40" fill="none" stroke="#3ccf6e" stroke-width="7" stroke-linecap="round"/>
+        <path d="M68 30 C60 20 46 20 44 28 C42 36 54 40 62 38 C68 36 70 33 68 30 Z" fill="#3ccf6e" stroke="#0b1f13" stroke-width="2.5"/>
+        <circle cx="53" cy="27" r="2.6" fill="#f5c400"/>
+        <path class="tg" d="M43 30 L34 29 M38 29.5 L34 33" stroke="#e53935" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      </g>
+    </g>
+  </g></g>
+  <circle cx="120" cy="120" r="106" fill="none" stroke="#3ccf6e" stroke-width="3"/>
+  <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="17" letter-spacing="3" fill="#dcdcdc"><textPath href="#arc" startOffset="50%" text-anchor="middle">VIBORA VIPERS</textPath></text>
+</svg>

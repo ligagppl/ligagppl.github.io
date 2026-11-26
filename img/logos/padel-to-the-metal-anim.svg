@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Padel to the Metal logo, animated">
+  <style>
+    .needle{transform-box:view-box;transform-origin:120px 100px;animation:needle 3s cubic-bezier(.5,0,.3,1) infinite}
+    @keyframes needle{0%,8%{transform:rotate(-70deg)}20%{transform:rotate(-20deg)}26%{transform:rotate(-34deg)}40%{transform:rotate(48deg)}44%{transform:rotate(58deg)}46%{transform:rotate(52deg)}48%{transform:rotate(60deg)}50%{transform:rotate(54deg)}54%{transform:rotate(62deg)}70%{transform:rotate(30deg)}100%{transform:rotate(-70deg)}}
+    .shake{animation:shake 3s linear infinite}
+    @keyframes shake{0%,40%{transform:translate(0,0)}41%{transform:translate(1.5px,-1px)}42%{transform:translate(-1.5px,1px)}43%{transform:translate(1.5px,1px)}44%{transform:translate(-1px,-1.5px)}45%{transform:translate(1.5px,0)}46%{transform:translate(-1.5px,1px)}47%{transform:translate(1px,-1px)}48%{transform:translate(-1px,1px)}49%{transform:translate(1.5px,0)}50%,100%{transform:translate(0,0)}}
+    .red{animation:red 3s linear infinite}
+    @keyframes red{0%,38%{stroke:#e53935;opacity:.7}42%,52%{stroke:#ff5252;opacity:1}46%{stroke:#ffd54f}60%,100%{stroke:#e53935;opacity:.7}}
+    .ball{animation:ball 3s cubic-bezier(.6,0,.9,.4) infinite}
+    @keyframes ball{0%,10%{transform:translate(0,0);opacity:0}16%,49%{transform:translate(0,0);opacity:1}58%{transform:translate(90px,-30px);opacity:1}62%,100%{transform:translate(130px,-44px);opacity:0}}
+    .lines{animation:lines 3s linear infinite;opacity:0}
+    @keyframes lines{0%,49%{opacity:0}52%{opacity:.9}64%,100%{opacity:0}}
+    .puff{transform-box:fill-box;transform-origin:50% 50%;animation:puff 3s ease-out infinite;opacity:0}
+    .puff.b{animation-delay:.12s}
+    @keyframes puff{0%,40%{opacity:0;transform:translate(0,0) scale(.4)}44%{opacity:.8}60%{opacity:0;transform:translate(-26px,14px) scale(1.4)}100%{opacity:0}}
+    @media (prefers-reduced-motion: reduce){*{animation:none!important}.lines,.puff{opacity:0}.ball{opacity:1}.needle{transform:rotate(54deg)}}
+  </style>
+  <defs>
+    <radialGradient id="steel" cx="35%" cy="30%" r="80%"><stop offset="0" stop-color="#f2f4f6"/><stop offset=".55" stop-color="#9aa3ad"/><stop offset="1" stop-color="#4b525a"/></radialGradient>
+    <path id="arc" d="M34 120 A86 86 0 0 0 206 120" fill="none"/>
+    <clipPath id="clip"><circle cx="120" cy="120" r="104"/></clipPath>
+  </defs>
+  <circle cx="120" cy="120" r="116" fill="#16181b"/>
+  <g clip-path="url(#clip)">
+    <g class="shake">
+      <ellipse cx="120" cy="92" rx="56" ry="62" fill="url(#steel)" stroke="#111" stroke-width="3"/>
+      <path d="M76 116 A50 50 0 1 1 164 116" fill="none" stroke="#16181b" stroke-width="10" stroke-linecap="round"/>
+      <path class="red" d="M140 52 A50 50 0 0 1 164 116" fill="none" stroke="#e53935" stroke-width="10" stroke-linecap="round"/>
+      <g stroke="#16181b" stroke-width="3" stroke-linecap="round"><path d="M84 100 L92 98 M88 74 L96 78 M104 56 L108 64 M120 50 L120 58 M136 56 L132 64 M152 74 L144 78"/></g>
+      <path class="needle" d="M120 100 L120 58" stroke="#e53935" stroke-width="5" stroke-linecap="round"/><circle cx="120" cy="100" r="7" fill="#16181b"/>
+      <rect x="111" y="152" width="18" height="40" rx="5" fill="#16181b" stroke="#9aa3ad" stroke-width="3"/>
+    </g>
+    <circle class="puff" cx="112" cy="196" r="8" fill="#9aa3ad"/><circle class="puff b" cx="124" cy="200" r="6" fill="#bdc3c9"/>
+    <g class="lines" stroke="#d7f34a" stroke-width="3" stroke-linecap="round"><path d="M154 128 L200 114 M156 140 L208 126 M160 152 L202 140"/></g>
+    <g class="ball"><g transform="translate(174 136)"><circle r="14" fill="#d7f34a" stroke="#111" stroke-width="2.5"/><path d="M-12 -5 C-4 1 4 1 12 -5 M-12 5 C-4 -1 4 -1 12 5" fill="none" stroke="#fff" stroke-width="2.2"/></g></g>
+  </g>
+  <circle cx="120" cy="120" r="106" fill="none" stroke="#e53935" stroke-width="3"/>
+  <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="13" letter-spacing="2" fill="#dcdcdc"><textPath href="#arc" startOffset="50%" text-anchor="middle">PADEL TO THE METAL</textPath></text>
+</svg>

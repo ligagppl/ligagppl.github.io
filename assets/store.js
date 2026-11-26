@@ -1,0 +1,1 @@
+const STORE={async load(t,a){try{const a=await fetch(`data/${t}.json?t=${Date.now()}`,{cache:"no-store"});if(!a.ok)throw new Error(a.status);return await a.json()}catch{return a}}};

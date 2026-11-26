@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Spin Reapers logo">
+  <defs>
+    <path id="top" d="M32 120 A88 88 0 0 1 208 120" fill="none"/>
+    <path id="bot" d="M36 120 A84 84 0 0 0 204 120" fill="none"/>
+    <path id="top2" d="M34 120 A86 86 0 0 1 206 120" fill="none"/>
+    <path id="bot2" d="M32 120 A88 88 0 0 0 208 120" fill="none"/>
+    <clipPath id="inside"><circle cx="120" cy="120" r="104"/></clipPath>
+    <clipPath id="upper"><rect x="-16" y="-16" width="32" height="16"/></clipPath>
+    <clipPath id="lower"><rect x="-16" y="0" width="32" height="16"/></clipPath>
+    <g id="swirl" fill="none" stroke="#d7f34a" stroke-width="2" stroke-linecap="round" opacity=".75">
+      <path d="M-17 -5 A18 18 0 0 1 -5 -17"/><path d="M17 5 A18 18 0 0 1 5 17"/>
+      <path d="M-21 6 A22 22 0 0 0 -11 19" opacity=".5"/><path d="M21 -6 A22 22 0 0 0 11 -19" opacity=".5"/></g>
+    <g id="ball"><circle r="12" fill="#d7f34a" stroke="#0d0d0d" stroke-width="2.4"/>
+      <path d="M-11 -4.5 C-4 1 4 1 11 -4.5 M-11 4.5 C-4 -1 4 -1 11 4.5" fill="none" stroke="#fff" stroke-width="2"/></g>
+  </defs>
+  <circle cx="120" cy="120" r="116" fill="#120f1a"/>
+  <circle cx="120" cy="120" r="106" fill="none" stroke="#a78bfa" stroke-width="3"/>
+  <g transform="translate(0 -2.42611)"><g transform="rotate(3.125 66 178)"><g transform="translate(4 10)"><g stroke-linecap="round"><path d="M66 178 L170 54" stroke="#0d0d0d" stroke-width="9"/><path d="M66 178 L170 54" stroke="#4b3b2a" stroke-width="5"/></g>
+      <path d="M172 52 C150 34 112 34 86 52 C112 44 144 48 164 66 Z" fill="#cfd3dc" stroke="#0d0d0d" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M164 58 C146 46 120 43 100 48" fill="none" stroke="#fff" stroke-width="1.6" opacity=".85"/></g></g><path d="M120 44 C140 58 168 82 172 116 C174 140 170 158 162 172 L78 172 C70 158 66 140 68 116 C72 82 100 58 120 44 Z" fill="#1b1626" stroke="#a78bfa" stroke-width="2.5" stroke-linejoin="round"/>
+      <path d="M86 150 C84 110 98 76 120 60 C142 76 156 110 154 150" fill="none" stroke="#2a2238" stroke-width="3" stroke-linecap="round"/>
+      <ellipse cx="120" cy="112" rx="29" ry="35" fill="#07050b"/>
+      <path d="M120 86 C134 86 143 96 143 108 C143 116 139 121 135 124 L135 132 C135 134 133 136 131 136 L109 136 C107 136 105 134 105 132 L105 124 C101 121 97 116 97 108 C97 96 106 86 120 86 Z" fill="#ece8df" stroke="#0d0d0d" stroke-width="2"/>
+      <circle cx="111" cy="107" r="6.5" fill="#0d0d0d"/><circle cx="129" cy="107" r="6.5" fill="#0d0d0d"/>
+      <path d="M120 115 L116.5 121 L123.5 121 Z" fill="#0d0d0d"/>
+      <path d="M111 129 L111 136 M116 129 L116 136 M121 129 L121 136 M126 129 L126 136 M131 129 L131 136" stroke="#0d0d0d" stroke-width="1.6"/><g opacity="0.350"><circle cx="111" cy="107" r="7" fill="#ff3b3b" opacity=".45"/><circle cx="129" cy="107" r="7" fill="#ff3b3b" opacity=".45"/></g><circle cx="111" cy="107" r="2.6" fill="#ff5252"/><circle cx="129" cy="107" r="2.6" fill="#ff5252"/></g><g clip-path="url(#inside)"><g opacity="1.000"><g transform="translate(156.938 147.444)"><g transform="rotate(-1020.17)"><use href="#ball"/><use href="#swirl"/></g></g></g><g opacity="0.000"><g transform="translate(150 150)"><g transform="rotate(0)"><g clip-path="url(#upper)"><use href="#ball"/></g></g></g><g transform="translate(150 150)"><g transform="rotate(0)"><g clip-path="url(#lower)"><use href="#ball"/></g></g></g></g></g><g opacity="0.000"><path d="M128 128 C142 140 156 152 176 160" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><path d="M132 124 C146 136 160 148 178 154" fill="none" stroke="#c4b5fd" stroke-width="2" stroke-linecap="round" opacity=".8"/></g>
+  <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="18" letter-spacing="4" fill="#ede9fe">
+    <textPath href="#top2" startOffset="50%" text-anchor="middle">SPIN REAPERS</textPath>
+  </text>
+  <text font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="10" letter-spacing="1.2" fill="#a78bfa">
+    <textPath href="#bot2" startOffset="50%" text-anchor="middle">SACRIFICE MY LIFE FOR PADEL</textPath>
+  </text>
+
+  <g fill="#a78bfa"><circle cx="21" cy="120" r="3.5"/><circle cx="219" cy="120" r="3.5"/></g>
+</svg>
